@@ -4,6 +4,7 @@ from datetime import datetime
 from bot import bot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from users import get_all_users
+from admin import get_admin_by_username
 import threading
 
 pending_newsletters = {}
@@ -60,11 +61,15 @@ def start_sending_newsletters():
     threading.Thread(target=send_newsletter, daemon=True).start()
 
 
-@bot.message_handler(func=lambda message: message.text == "📢 Отправить рассылку")
+@bot.message_handler(func=lambda message: message.text == "Отправить рассылку")
 def ask_newsletter_text(message):
-    chat_id = message.chat.id
-    bot.send_message(chat_id, "📝 Введите текст рассылки:")
-    bot.register_next_step_handler(message, ask_send_time)
+    user = get_admin_by_username('@' + message.from_user.username)
+    if user and user[1] == 0:
+      chat_id = message.chat.id
+      bot.send_message(chat_id, "📝 Введите текст рассылки:")
+      bot.register_next_step_handler(message, ask_send_time)
+    else:
+        bot.send_message(message.chat.id, "❌ У вас нет доступа к этой команде.")
 
 def ask_send_time(message):
     chat_id = message.chat.id
