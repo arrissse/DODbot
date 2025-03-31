@@ -206,8 +206,20 @@ def process_fusername(m):
 @bot.callback_query_handler(func=lambda call: call.data.startswith("give_merch"))
 def process_merch_callback(call):
     _, merch_price, merch_type, username = call.data.split(":")
+    markup = InlineKeyboardMarkup()
+    markup.add('Да', callback_data=f'yes:{merch_price}:{merch_type}:{username}')
+    markup.add('Нет', callback_data=f'no')
+    bot.send_message(call.message.chat.id, f"Выдать {username} {merch_type}?", reply_markup=markup)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("yes"))
+def process_merch_call_yes(call):
+    _, merch_price, merch_type, username = call.data.split(":")
     give_merch(username, merch_type)
     update_merch_points(username, merch_price)
     print(int(get_merch_price(merch_type)))
     bot.answer_callback_query(call.id, "✅ Мерч за квест выдан!")
     bot.send_message(call.message.chat.id, f"✅ Пользователю {username} выдан мерч за квест!")
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("no"))
+def process_merch_call_no(call):
+    bot.send_message(call.message.chat.id, f"❌ Операция отменена.")
