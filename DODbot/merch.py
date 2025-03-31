@@ -14,7 +14,6 @@ def create_merch_table():
             shirt INTEGER DEFAULT 0, -- получить футболку (8)
             notebook INTEGER DEFAULT 0, -- блокнот (2)
             pb INTEGER DEFAULT 0 -- ПБ (15)
-            got_merch INTEGER DEFAULT 0
     )
     """)
 
