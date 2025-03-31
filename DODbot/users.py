@@ -1,6 +1,7 @@
 import sqlite3
 import openpyxl
 from openpyxl.styles import Font, PatternFill
+from merch import is_got_any_merch
 
 
 def create_users_table():
@@ -331,15 +332,7 @@ def update_user_queststation(username):
 -----------------------
 '''
 def is_quest_finished(username):
-    conn = sqlite3.connect("users.db", check_same_thread=False)
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT quest_station FROM users WHERE username = ?", (username,))
-    result = cursor.fetchone()
-
-    conn.close()
-
-    return result is not None and result[0] == 11
+    return is_got_any_merch(username)
 
 
 '''
