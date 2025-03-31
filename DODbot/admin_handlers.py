@@ -264,21 +264,27 @@ def add_merch_type(message):
 def process_type(message):
     type = message.text
     bot.send_message(message.chat.id, "Введите стоимость новой позиции мерча: ")
-    bot.register_next_step_handler(message, process_type_cost(message, type))
+    bot.register_next_step_handler(message, lambda msg: process_type_cost(msg, type))
 
 def process_type_cost(message, type):
-    cost = int(message.text)
+    try:
+        cost = int(message.text)
+    except ValueError:
+        bot.send_message(message.chat.id, "❌ Стоимость должна быть числом. Попробуйте ещё раз.")
+        return
     conn = sqlite3.connect("merch.db", check_same_thread=False)
     cursor = conn.cursor()
 
-    cursor.execute(f"""
-    INSERT OR IGNORE INTO merch_prices (merch_type, price) VALUES 
-        ({type}, {cost})
-    """)
+    cursor.execute("""
+        INSERT OR IGNORE INTO merch_prices (merch_type, price) VALUES (?, ?)
+    """, (type, cost))
 
     conn.commit()
     conn.close()
+    
     try:
         add_column(type)
     except Exception as e:
-        bot.send_message(message.chat.id, e)
+        bot.send_message(message.chat.id, f"❌ Ошибка при добавлении колонки: {e}")
+
+    bot.send_message(message.chat.id, f"✅ Позиция '{type}' добавлена с ценой {cost} баллов.")
