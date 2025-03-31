@@ -45,21 +45,13 @@ def start(m):
     parts = m.text.split()
     if len(parts) > 1:
         param = parts[1]
-        if param == "action1":
-            do_action1(m)
-        elif param == "action2":
-            do_action2(m)
-        else:
-            bot.send_message(m.chat.id, "Неизвестное действие.")
-    else:
-        bot.send_message(m.chat.id, "Добро пожаловать в бота!")
+        print(param[-1])
+        photo_url = f"img/{param[-1]}.png"
+        do_action(m, photo_url)
 
-def do_action1(message):
-    bot.send_message(message.chat.id, "Выполняется действие 1 (QR код 1)!")
-
-def do_action2(message):
-    bot.send_message(message.chat.id, "Выполняется действие 2 (QR код 2)!")
-
+def do_action(message, photo_url):
+    with open(photo_url, "rb") as photo:
+        bot.send_photo(message.chat.id, photo, caption="Ваше местоположение: ")
 
 @bot.message_handler(func=lambda message: message.text == "📅 Расписание лекций")
 def send_schedule_photo(m):
@@ -170,36 +162,6 @@ def quest11(message):
     bot.send_message(message.chat.id, "Станция ПИШ РПИ", reply_markup=quest_started_keyboard())
     username = message.from_user.username
     send_quest_points(message, username, 11)
-
-
-@bot.message_handler(commands=["map"])
-def map(message):
-    markup = types.InlineKeyboardMarkup()
-
-    # Добавление кнопок с параметрами
-    button1 = types.InlineKeyboardButton("Действие 1", callback_data="action1")
-    button2 = types.InlineKeyboardButton("Действие 2", callback_data="action2")
-    
-    markup.add(button1, button2)
-
-    bot.send_message(message.chat.id, "Выберите действие:", reply_markup=markup)
-
-# Обработчик callback данных (нажатие на кнопку)
-@bot.callback_query_handler(func=lambda call: True)
-def callback_query(call):
-    if call.data == "action1":
-        do_action1(call.message)
-    elif call.data == "action2":
-        do_action2(call.message)
-    else:
-        bot.send_message(call.message.chat.id, "Неизвестное действие.")
-
-def do_action1(message):
-    bot.send_message(message.chat.id, "Выполняется действие 1!")
-
-def do_action2(message):
-    bot.send_message(message.chat.id, "Выполняется действие 2!")
-
 
 @bot.message_handler(content_types=["text"])
 def handle_text(message):
