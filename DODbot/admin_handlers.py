@@ -207,8 +207,10 @@ def process_fusername(m):
 def process_merch_callback(call):
     _, merch_price, merch_type, username = call.data.split(":")
     markup = InlineKeyboardMarkup()
-    markup.add('Да', callback_data=f'yes:{merch_price}:{merch_type}:{username}')
-    markup.add('Нет', callback_data=f'no')
+    markup.add(
+        InlineKeyboardButton('Да', callback_data=f'yes:{merch_price}:{merch_type}:{username}'),
+        InlineKeyboardButton('Нет', callback_data='no')
+    )
     bot.send_message(call.message.chat.id, f"Выдать {username} {merch_type}?", reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("yes"))
@@ -222,4 +224,5 @@ def process_merch_call_yes(call):
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("no"))
 def process_merch_call_no(call):
-    bot.send_message(call.message.chat.id, f"❌ Операция отменена.")
+    bot.answer_callback_query(call.id, "❌ Операция отменена.")
+    bot.send_message(call.message.chat.id, "❌ Операция отменена.")
