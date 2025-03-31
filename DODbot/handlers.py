@@ -56,9 +56,11 @@ def do_action(message, photo_url):
 @bot.message_handler(func=lambda message: message.text == "📅 Расписание лекций")
 def send_schedule_photo(m):
     photo_url = "img/schedule.png"
-    with open(photo_url, "rb") as photo:
-        bot.send_photo(m.chat.id, photo,
-                   caption="📅 Вот ваше расписание лекций!")
+    try:
+        with open(photo_url, "rb") as photo:
+            bot.send_photo(m.chat.id, photo, caption="📅 Вот ваше расписание лекций!")
+    except Exception as e:
+        bot.send_message(m.chat.id, f"Ошибка при отправке: {e}")
 
 @bot.message_handler(func=lambda message: message.text == "🎯 Квест")
 def qwest(message):
