@@ -46,8 +46,8 @@ def process_level(m, username):
         for name, number in stations.items():
             markup.add(InlineKeyboardButton(name, callback_data=f"select_station&{username}&{number}&{admin_level}"))
 
-        bot.send_message(
-            m.chat.id, "Введите номер станции админа (от 1 до 11):")
+            bot.send_message(m.chat.id, "Выберите номер станции админа:",
+                         reply_markup=markup)
         # bot.register_next_step_handler(
         #     m, lambda msg: process_number(msg, username, admin_level))
     else:
