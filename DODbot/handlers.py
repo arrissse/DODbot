@@ -58,7 +58,7 @@ def send_schedule_photo(m):
     photo_url = "img/schedule.png"
     try:
         with open(photo_url, "rb") as photo:
-            bot.send_photo(m.chat.id, photo, caption="📅 Вот ваше расписание лекций!")
+            bot.send_photo(m.chat.id, photo, caption="📅 Расписание лекций:")
     except Exception as e:
         bot.send_message(m.chat.id, f"Ошибка при отправке: {e}")
 
