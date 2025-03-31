@@ -57,13 +57,13 @@ def process_level(m, username):
 def process_number(call):
     _, username, questnum, admin_level = call.data.split("&")
     try:
-        add_admin_to_db(call.m, username, admin_level)
+        add_admin_to_db(call.message, username, admin_level)
         update_admin_questnum(username, questnum)
         bot.send_message(
-                call.m.chat.id, f"✅ Админу {username} назначена станция №{questnum}.")
+                call.message.chat.id, f"✅ Админу {username} назначена станция №{questnum}.")
     except Exception as e:
                 bot.send_message(
-                call.m.chat.id, f"{e}")
+                call.message.chat.id, f"{e}")
 
 
 def add_admin_to_db(m, username, admin_level):
