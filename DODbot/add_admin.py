@@ -1,5 +1,6 @@
 from bot import bot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from handlers import stations
 from users import get_all_users
 from admin import add_admin, get_all_admins, update_admin_questnum, get_admin_by_username
 
@@ -41,31 +42,24 @@ def process_level(m, username):
         return
 
     if admin_level == 2:
+        markup = InlineKeyboardMarkup()
+        for name, number in stations.items():
+            markup.add(InlineKeyboardButton(name, callback_data=f"select_station&{username}&{number}&{admin_level}"))
+
         bot.send_message(
             m.chat.id, "Введите номер станции админа (от 1 до 11):")
-        bot.register_next_step_handler(
-            m, lambda msg: process_number(msg, username, admin_level))
+        # bot.register_next_step_handler(
+        #     m, lambda msg: process_number(msg, username, admin_level))
     else:
         add_admin_to_db(m, username, admin_level)
 
-
-def process_number(m, username, admin_level):
-    try:
-        questnum = int(m.text)
-        if 1 <= questnum <= 11:
-            add_admin_to_db(m, username, admin_level)
-            update_admin_questnum(username, questnum)
-            bot.send_message(
-                m.chat.id, f"✅ Админу {username} назначена станция №{questnum}.")
-        else:
-            bot.send_message(m.chat.id, "❌ Введите число от 1 до 11.")
-            bot.register_next_step_handler(
-                m, process_number, username, admin_level)
-    except ValueError:
-        bot.send_message(
-            m.chat.id, "❌ Введите корректный номер станции (число от 1 до 11).")
-        bot.register_next_step_handler(
-            m, process_number, username, admin_level)
+@bot.callback_query_handler(func=lambda call: call.data.startswith("select_station&"))
+def process_number(call):
+    _, username, questnum, admin_level = call.data.split("&")
+    add_admin_to_db(call.m, username, admin_level)
+    update_admin_questnum(username, questnum)
+    bot.send_message(
+                call.m.chat.id, f"✅ Админу {username} назначена станция №{questnum}.")
 
 
 def add_admin_to_db(m, username, admin_level):
