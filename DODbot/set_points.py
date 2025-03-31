@@ -31,9 +31,9 @@ def process_username(m):
 
     if admin[1] == 0:
         markup = InlineKeyboardMarkup()
-        for i in stations:
-            markup.add(InlineKeyboardButton(
-                f"{stations[i]}", callback_data=f"select_station&{username}&{i}"))
+        for name, number in stations.items():
+            markup.add(InlineKeyboardButton(name, callback_data=f"select_station&{username}&{number}"))
+
 
         bot.send_message(m.chat.id, "Выберите номер станции:",
                          reply_markup=markup)
