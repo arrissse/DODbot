@@ -92,74 +92,28 @@ def back(message):
 
 
 def send_quest_points(message, username, station):
-  bot.send_message(message.chat.id, f"Всего баллов: {check_points(username)}", reply_markup=quest_started_keyboard())
-  bot.send_message(message.chat.id, f"Баллы за данную станцию: {check_st_points(username, station)}", reply_markup=quest_started_keyboard())
+    bot.send_message(message.chat.id, f"Всего баллов: {check_points(username)}", reply_markup=quest_started_keyboard())
+    bot.send_message(message.chat.id, f"Баллы за данную станцию: {check_st_points(username, station)}", reply_markup=quest_started_keyboard())
 
-@bot.message_handler(func=lambda message: message.text == "станция ФРКТ")
-def quest1(message):
-    username = message.from_user.username
-    bot.send_message(message.chat.id, "Станция ФРКТ", reply_markup=quest_started_keyboard())
-    send_quest_points(message, username, 1)
+stations = {
+    "станция ФРКТ": 1,
+    "станция ЛФИ": 2,
+    "станция ФАКТ": 3,
+    "станция ФЭФМ": 4,
+    "станция ФПМИ": 5,
+    "станция ФБМФ": 6,
+    "станция КНТ": 7,
+    "станция ФБВТ": 8,
+    "станция ВШПИ": 9,
+    "станция ВШМ": 10,
+    "станция ПИШ РПИ": 11
+}
 
-@bot.message_handler(func=lambda message: message.text == "станция ЛФИ")
-def quest2(message):
-    bot.send_message(message.chat.id, "Станция ЛФИ", reply_markup=quest_started_keyboard())
-    username = message.from_user.username
-    send_quest_points(message, username, 2)
-
-@bot.message_handler(func=lambda message: message.text == "станция ФАКТ")
-def quest3(message):
-    bot.send_message(message.chat.id, "Станция ФАКТ", reply_markup=quest_started_keyboard())
-    username = message.from_user.username
-    send_quest_points(message, username, 3)
-
-@bot.message_handler(func=lambda message: message.text == "станция ФЭФМ")
-def quest4(message):
-    bot.send_message(message.chat.id, "Станция ФЭФМ", reply_markup=quest_started_keyboard())
-    username = message.from_user.username
-    send_quest_points(message, username, 4)
-
-@bot.message_handler(func=lambda message: message.text == "станция ФПМИ")
-def quest5(message):
-    bot.send_message(message.chat.id, "Станция ФПМИ", reply_markup=quest_started_keyboard())
-    username = message.from_user.username
-    send_quest_points(message, username, 5)
-
-@bot.message_handler(func=lambda message: message.text == "станция ФБМФ")
-def quest6(message):
-    bot.send_message(message.chat.id, "Станция ФБМФ", reply_markup=quest_started_keyboard())
-    username = message.from_user.username
-    send_quest_points(message, username, 6)
-
-@bot.message_handler(func=lambda message: message.text == "станция КНТ")
-def quest7(message):
-    bot.send_message(message.chat.id, "Станция КНТ", reply_markup=quest_started_keyboard())
-    username = message.from_user.username
-    send_quest_points(message, username, 7)
-
-@bot.message_handler(func=lambda message: message.text == "станция ФБВТ")
-def quest9(message):
-    bot.send_message(message.chat.id, "Станция ФБВТ", reply_markup=quest_started_keyboard())
-    username = message.from_user.username
-    send_quest_points(message, username, 8)
-
-@bot.message_handler(func=lambda message: message.text == "станция ВШПИ")
-def quest9(message):
-    bot.send_message(message.chat.id, "Станция ВШПИ", reply_markup=quest_started_keyboard())
-    username = message.from_user.username
-    send_quest_points(message, username, 9)
-
-@bot.message_handler(func=lambda message: message.text == "станция ВШМ")
-def quest10(message):
-    bot.send_message(message.chat.id, "Станция ВШМ", reply_markup=quest_started_keyboard())
-    username = message.from_user.username
-    send_quest_points(message, username, 10)
-
-@bot.message_handler(func=lambda message: message.text == "станция ПИШ РПИ")
-def quest11(message):
-    bot.send_message(message.chat.id, "Станция ПИШ РПИ", reply_markup=quest_started_keyboard())
-    username = message.from_user.username
-    send_quest_points(message, username, 11)
+@bot.message_handler(func=lambda message: message.text in stations)
+def handle_station(message):
+    station_number = stations[message.text]
+    bot.send_message(message.chat.id, message.text, reply_markup=quest_started_keyboard())
+    send_quest_points(message, message.from_user.username, station_number)
 
 @bot.message_handler(func=lambda message: message.text == "🗺 Карта")
 def send_map_photo(message):
