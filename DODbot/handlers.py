@@ -57,7 +57,7 @@ def do_action(message, photo_url):
 def send_schedule_photo(m):
     photo_url = "img/schedule.png"
     with open(photo_url, "rb") as photo:
-        bot.send_photo(m.chat.id, photo_url,
+        bot.send_photo(m.chat.id, photo,
                    caption="📅 Вот ваше расписание лекций!")
 
 @bot.message_handler(func=lambda message: message.text == "🎯 Квест")
