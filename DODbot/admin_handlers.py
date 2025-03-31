@@ -141,9 +141,16 @@ def update_merch_price(merch_type, new_price):
 
 @bot.message_handler(func=lambda message: message.text == "Стоимость мерча")
 def merch_prices_menu(message):
+    conn = sqlite3.connect("merch.db", check_same_thread=False)
+    cursor = conn.cursor()
+    cursor.execute("SELECT merch_type FROM merch_prices")
+    merch_types = [row[0] for row in cursor.fetchall()]
+    conn.close()
+
     markup = types.InlineKeyboardMarkup()
-    for merch in ["Раскрасить футболку", "Раскрасить шоппер", "Футболка", "Блокнот", "ПБ"]:
+    for merch in merch_types:
         markup.add(types.InlineKeyboardButton(merch, callback_data=f"edit_price:{merch}"))
+
     bot.send_message(message.chat.id, "Выберите товар для изменения стоимости:", reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_price"))
@@ -281,7 +288,7 @@ def process_type_cost(message, type):
 
     conn.commit()
     conn.close()
-    
+
     try:
         add_column(type)
     except Exception as e:
