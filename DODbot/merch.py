@@ -81,21 +81,3 @@ def is_got_any_merch(username):
     result = cursor.fetchone()
     conn.close()
     return result[0] > 0
-
-'''
------------------------
-
-Количество завершивших квест
-
------------------------
-'''
-
-def count_finished_quests():
-    conn = sqlite3.connect("merch.db", check_same_thread=False)
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT COUNT(*) FROM merch WHERE got_merch = 1")
-    result = cursor.fetchone()[0]
-    conn.close()
-
-    return result

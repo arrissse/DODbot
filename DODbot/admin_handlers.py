@@ -4,10 +4,10 @@ from telebot import types
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from keyboard import main_keyboard
 from users import save_users_to_excel, count_active_quests, get_user_by_username
-from users import is_quest_finished, finish_quest, update_user_queststation, is_quiz_finished
+from users import is_quest_finished, finish_quest, update_user_queststation, is_quiz_finished, count_finished_quests
 from users import check_points, update_merch_points
 from admin import save_admins_to_excel, get_admin_by_username, get_admin_level
-from merch import give_merch, is_got_merch, got_merch, count_finished_quests
+from merch import give_merch, is_got_merch, got_merch
 
 '''
 -----------------------
