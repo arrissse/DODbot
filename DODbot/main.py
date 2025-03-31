@@ -22,10 +22,9 @@ def test():
 def webhook():
     print("Webhook received!")
     json_str = request.get_data(as_text=True)
-    print(f"Raw data: {json_str}")  # 🔴 Логируем поступающие данные
-
+    print(f"Raw data: {json_str}")
     if not json_str:
-        return "No data received", 400  # Возвращаем ошибку, если данных нет
+        return "No data received", 400
 
     try:
         update = telebot.types.Update.de_json(json_str)
@@ -49,25 +48,25 @@ def set_webhook_with_retry():
     retries = 5
     for _ in range(retries):
         try:
-            bot.set_webhook(url="https://dodbot.duckdns.org/your-webhook-path")
+            bot.set_webhook(url="https://proxy2.cod.phystech.edu/your-webhook-path")
             print("Webhook установлен успешно!")
             return
         except Exception as e:
             print(f"Ошибка при установке webhook: {e}")
-            time.sleep(10)  # Задержка перед повторной попыткой
+            time.sleep(10)
     print("Не удалось установить webhook после нескольких попыток.")
 
 if __name__ == '__main__':
     #bot.remove_webhook()
     try:
-        bot.set_webhook(url="https://dodbot.duckdns.org/your-webhook-path")
+        bot.set_webhook(url="https://proxy2.cod.phystech.edu/your-webhook-path")
     except ApiTelegramException as e:
         if e.result_json['error_code'] == 429:
             retry_after = e.result_json['parameters']['retry_after']
             print(f"Too many requests. Retrying after {retry_after} seconds...")
             time.sleep(1)
-            bot.set_webhook(url="https://dodbot.duckdns.org/your-webhook-path")
+            bot.set_webhook(url="https://proxy2.cod.phystech.edu/your-webhook-path")
 
     print(bot.get_webhook_info())
 
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=10181, debug=True)
