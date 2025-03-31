@@ -7,7 +7,7 @@ from users import save_users_to_excel, count_active_quests, get_user_by_username
 from users import is_quest_finished, finish_quest, update_user_queststation, is_quiz_finished, count_finished_quests
 from users import check_points, update_merch_points
 from admin import save_admins_to_excel, get_admin_by_username, get_admin_level
-from merch import give_merch, is_got_merch, got_merch
+from merch import give_merch, is_got_merch, got_merch, add_column
 
 '''
 -----------------------
@@ -242,3 +242,43 @@ def process_merch_call_yes(call):
 def process_merch_call_no(call):
     bot.answer_callback_query(call.id, "❌ Операция отменена.")
     bot.send_message(call.message.chat.id, "❌ Операция отменена.")
+
+
+'''
+-----------------------
+
+Добавить позицию мерча
+
+-----------------------
+'''
+@bot.message_handler(func=lambda message: message.text == "Добавить позицию мерча")
+def add_merch_type(message):
+    user = get_admin_by_username('@' + message.from_user.username)
+    if user and user[1] == 0:
+        bot.send_message(message.chat.id, "Введите название новой позиции мерча: ")
+        bot.register_next_step_handler(message, process_type)
+    else:
+        bot.send_message(message.chat.id, "❌ У вас нет доступа к этой команде.")
+
+
+def process_type(message):
+    type = message.text
+    bot.send_message(message.chat.id, "Введите стоимость новой позиции мерча: ")
+    bot.register_next_step_handler(message, process_type_cost(message, type))
+
+def process_type_cost(message, type):
+    cost = int(message.text)
+    conn = sqlite3.connect("merch.db", check_same_thread=False)
+    cursor = conn.cursor()
+
+    cursor.execute(f"""
+    INSERT OR IGNORE INTO merch_prices (merch_type, price) VALUES 
+        ({type}, {cost})
+    """)
+
+    conn.commit()
+    conn.close()
+    try:
+        add_column(type)
+    except Exception as e:
+        bot.send_message(message.chat.id, e)

@@ -48,8 +48,6 @@ def process_level(m, username):
 
         bot.send_message(m.chat.id, "Выберите номер станции админа:",
                          reply_markup=markup)
-        # bot.register_next_step_handler(
-        #     m, lambda msg: process_number(msg, username, admin_level))
     else:
         add_admin_to_db(m, username, admin_level)
 

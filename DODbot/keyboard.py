@@ -19,7 +19,8 @@ def pro_admin_keyboard():
     item6 = types.KeyboardButton("Выдать мерч")
     item7 = types.KeyboardButton("Переключить меню")
     item8 = types.KeyboardButton("Стоимость мерча")
-    markup.add(item1, item2, item3, item4, item5, item6, item7, item8)
+    item9 = types.KeyboardButton("Добавить позицию мерча")
+    markup.add(item1, item2, item3, item4, item5, item6, item7, item8, item9)
     return markup
 
 def mipt_admin_keyboard():

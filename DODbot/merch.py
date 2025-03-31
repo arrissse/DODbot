@@ -80,3 +80,19 @@ def is_got_any_merch(username):
     result = cursor.fetchone()
     conn.close()
     return result[0] > 0
+
+def add_column(column_name, column_type="INTEGER DEFAULT 0"):
+    conn = sqlite3.connect("merch.db", check_same_thread=False)
+    cursor = conn.cursor()
+
+    cursor.execute("PRAGMA table_info(merch);")
+    existing_columns = [row[1] for row in cursor.fetchall()]
+
+    if column_name not in existing_columns:
+        cursor.execute(f"ALTER TABLE merch ADD COLUMN {column_name} {column_type};")
+        conn.commit()
+        print(f"Столбец '{column_name}' добавлен в таблицу.")
+    else:
+        print(f"Столбец '{column_name}' уже существует.")
+
+    conn.close()
