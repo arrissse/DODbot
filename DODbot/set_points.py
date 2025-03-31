@@ -4,6 +4,7 @@ from keyboard import main_keyboard
 from users import update_user_points, get_user_by_username, is_quest_started
 from users import update_user_queststation
 from admin import get_admin_by_username, get_admin_level
+from handlers import stations
 
 @bot.message_handler(func=lambda message: message.text == "Квест. Проставить баллы")
 def set_points(message):
@@ -30,9 +31,9 @@ def process_username(m):
 
     if admin[1] == 0:
         markup = InlineKeyboardMarkup()
-        for i in range(1, 12):
+        for i in stations:
             markup.add(InlineKeyboardButton(
-                f"Станция {i}", callback_data=f"select_station&{username}&{i}"))
+                f"{stations[i]}", callback_data=f"select_station&{username}&{i}"))
 
         bot.send_message(m.chat.id, "Выберите номер станции:",
                          reply_markup=markup)
