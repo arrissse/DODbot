@@ -381,25 +381,6 @@ def count_active_quests():
 '''
 -----------------------
 
-Количество завершивших квест
-
------------------------
-'''
-
-def count_finished_quests():
-    conn = sqlite3.connect("users.db", check_same_thread=False)
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT COUNT(*) FROM users WHERE quest_station = 11")
-    result = cursor.fetchone()[0]
-    conn.close()
-
-    return result
-
-
-'''
------------------------
-
 Проставить баллы за квест
 
 -----------------------
