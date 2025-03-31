@@ -48,7 +48,7 @@ def set_webhook_with_retry():
     retries = 5
     for _ in range(retries):
         try:
-            bot.set_webhook(url="https://proxy2.cod.phystech.edu/your-webhook-path")
+            bot.set_webhook(url="https://fest.mipt.ru/your-webhook-path")
             print("Webhook установлен успешно!")
             return
         except Exception as e:
@@ -59,13 +59,13 @@ def set_webhook_with_retry():
 if __name__ == '__main__':
     #bot.remove_webhook()
     try:
-        bot.set_webhook(url="https://proxy2.cod.phystech.edu/your-webhook-path")
+        bot.set_webhook(url="https://fest.mipt.ru/your-webhook-path")
     except ApiTelegramException as e:
         if e.result_json['error_code'] == 429:
             retry_after = e.result_json['parameters']['retry_after']
             print(f"Too many requests. Retrying after {retry_after} seconds...")
             time.sleep(1)
-            bot.set_webhook(url="https://proxy2.cod.phystech.edu/your-webhook-path")
+            bot.set_webhook(url="https://fest.mipt.ru/your-webhook-path")
 
     print(bot.get_webhook_info())
 
