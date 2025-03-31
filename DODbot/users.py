@@ -368,10 +368,10 @@ def is_quiz_finished(username):
 '''
 
 def count_active_quests():
-    conn = sqlite3.connect("merch.db", check_same_thread=False)
+    conn = sqlite3.connect("users.db", check_same_thread=False)
     cursor = conn.cursor()
 
-    cursor.execute("SELECT COUNT(*) FROM merch WHERE quest_started = 1")
+    cursor.execute("SELECT COUNT(*) FROM users WHERE quest_started = 1")
     result = cursor.fetchone()[0]
     conn.close()
 
