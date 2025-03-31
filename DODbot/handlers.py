@@ -161,12 +161,11 @@ def quest11(message):
     username = message.from_user.username
     send_quest_points(message, username, 11)
 
-@bot.message_handler(content_types=["text"])
-def handle_text(message):
-    responses = {
-        "📍 Расположение физтех-школ": "📍 Физтех-школы расположены в кампусе.",
-        "🗺 Карта": "🗺 Вот карта университета.",
-    }
-
-    response = responses.get(message.text, "❌ Неизвестная команда.")
-    bot.send_message(message.chat.id, response)
+@bot.message_handler(func=lambda message: message.text == "🗺 Карта")
+def send_map_photo(message):
+    photo_url = "img/schedule.png"
+    try:
+        with open(photo_url, "rb") as photo:
+            bot.send_photo(message.chat.id, photo, caption="🗺 Карта института:")
+    except Exception as e:
+        bot.send_message(message.chat.id, f"Ошибка при отправке: {e}")

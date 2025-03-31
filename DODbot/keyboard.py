@@ -3,11 +3,10 @@ from telebot import types
 def main_keyboard():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     item1 = types.KeyboardButton("📅 Расписание лекций")
-    item2 = types.KeyboardButton("📍 Расположение физтех-школ")
-    item3 = types.KeyboardButton("🗺 Карта")
-    item4 = types.KeyboardButton("🎯 Квест")
-    item5 = types.KeyboardButton("🎓 Квизы")
-    markup.add(item1, item2, item3, item5, item4)
+    item2 = types.KeyboardButton("🗺 Карта")
+    item3 = types.KeyboardButton("🎯 Квест")
+    item4 = types.KeyboardButton("🎓 Квизы")
+    markup.add(item1, item2, item3, item4)
     return markup
 
 def pro_admin_keyboard():

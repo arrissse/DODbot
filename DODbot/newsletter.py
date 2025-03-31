@@ -28,7 +28,6 @@ def create_db():
 create_db()
 
 def add_newsletter(message, send_time):
-    """Добавляем рассылку в БД с корректным форматом времени"""
     conn = sqlite3.connect("newsletter.db", check_same_thread=False)
     cursor = conn.cursor()
     
@@ -43,7 +42,6 @@ def add_newsletter(message, send_time):
     conn.close()
 
 def send_newsletter():
-    """Фоновая проверка и отправка рассылки"""
     while True:
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
 
@@ -69,7 +67,6 @@ def send_newsletter():
         time.sleep(60)
 
 def start_sending_newsletters():
-    """Запуск фонового потока отправки рассылок"""
     thread = threading.Thread(target=send_newsletter, daemon=True)
     thread.start()
 
@@ -98,7 +95,6 @@ def ask_send_time(message):
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("send_now") or call.data.startswith("schedule_later"))
 def handle_send_option(call):
-    """Обрабатываем выбор: отправить сейчас или позже"""
     chat_id = int(call.data.split("_")[-1])
     text = pending_newsletters.get(chat_id, "🔔 Без текста")
 
@@ -110,7 +106,6 @@ def handle_send_option(call):
         bot.register_next_step_handler(call.message, schedule_newsletter, text)
 
 def schedule_newsletter(message, text):
-    """Запланированная рассылка"""
     chat_id = message.chat.id
     send_time = message.text.strip()
 
@@ -122,7 +117,6 @@ def schedule_newsletter(message, text):
         bot.send_message(chat_id, "❌ Неверный формат! Введите дату и время в формате: YYYY-MM-DD HH:MM")
 
 def send_newsletter_now(text):
-    """Мгновенная рассылка"""
     users = get_all_users()
     for user in users:
         user_id = user[0]
