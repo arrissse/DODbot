@@ -206,12 +206,24 @@ def process_fusername(m):
 @bot.callback_query_handler(func=lambda call: call.data.startswith("give_merch"))
 def process_merch_callback(call):
     _, merch_price, merch_type, username = call.data.split(":")
+    s = ''
+    if merch_type == 'pshirt':
+        s = 'Раскрасить футболку'
+    elif merch_type == 'pshopper':
+        s = 'Раскрасить шоппер'
+    elif merch_type == 'shirt':
+        s = 'Футболка'
+    elif merch_type == 'notebook':
+        s = 'Блокнот'
+    elif merch_type == 'pb':
+        s = 'ПБ'
+
     markup = InlineKeyboardMarkup()
     markup.add(
         InlineKeyboardButton('Да', callback_data=f'yes:{merch_price}:{merch_type}:{username}'),
         InlineKeyboardButton('Нет', callback_data='no')
     )
-    bot.send_message(call.message.chat.id, f"Выдать {username} {merch_type}?", reply_markup=markup)
+    bot.send_message(call.message.chat.id, f"Выдать {username} {s}?", reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("yes"))
 def process_merch_call_yes(call):
