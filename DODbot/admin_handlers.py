@@ -81,11 +81,15 @@ def chage_menu(m):
 def statistics(message):
     user = get_admin_by_username('@' + message.from_user.username)
     if user:
-        active_users = count_active_quests()
-        finished_users = count_finished_quests()
-        bot.send_message(
-            message.chat.id, f"Количество пользователей, начавших квест: {active_users}\n"
+        try:
+            active_users = count_active_quests()
+            finished_users = count_finished_quests()
+            bot.send_message(
+                message.chat.id, f"Количество пользователей, начавших квест: {active_users}\n"
                          f"Количество пользователей, завершивших квест: {finished_users}\n")
+        except Exception as e:
+             bot.send_message(
+                message.chat.id, f"{e}")
     else:
         bot.send_message(message.chat.id, "❌ У вас нет доступа к этой команде.")
     
