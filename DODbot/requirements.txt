@@ -1,0 +1,8 @@
+telebot
+openpyxl
+sqlite3
+datetime
+time
+threading
+pyTelegramBotAPI
+requests
