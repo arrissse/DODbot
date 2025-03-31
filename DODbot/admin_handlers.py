@@ -241,4 +241,4 @@ def process_merch_call_yes(call):
 @bot.callback_query_handler(func=lambda call: call.data.startswith("no"))
 def process_merch_call_no(call):
     bot.answer_callback_query(call.id, "❌ Операция отменена.")
-    bot.send_message(call.message.chat.id, "❌ Операция отменена.", reply_markup=main_keyboard())
+    bot.send_message(call.message.chat.id, "❌ Операция отменена.")
