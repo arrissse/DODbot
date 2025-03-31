@@ -44,7 +44,7 @@ def process_level(m, username):
     if admin_level == 2:
         markup = InlineKeyboardMarkup()
         for name, number in stations.items():
-            markup.add(InlineKeyboardButton(name, callback_data=f"select_station&{username}&{number}&{admin_level}"))
+            markup.add(InlineKeyboardButton(name, callback_data=f"select_station_&{username}&{number}&{admin_level}"))
 
         bot.send_message(m.chat.id, "Выберите номер станции админа:",
                          reply_markup=markup)
@@ -53,13 +53,17 @@ def process_level(m, username):
     else:
         add_admin_to_db(m, username, admin_level)
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("select_station&"))
+@bot.callback_query_handler(func=lambda call: call.data.startswith("select_station_&"))
 def process_number(call):
     _, username, questnum, admin_level = call.data.split("&")
-    add_admin_to_db(call.m, username, admin_level)
-    update_admin_questnum(username, questnum)
-    bot.send_message(
+    try:
+        add_admin_to_db(call.m, username, admin_level)
+        update_admin_questnum(username, questnum)
+        bot.send_message(
                 call.m.chat.id, f"✅ Админу {username} назначена станция №{questnum}.")
+    except Exception as e:
+                bot.send_message(
+                call.m.chat.id, f"{e}")
 
 
 def add_admin_to_db(m, username, admin_level):
