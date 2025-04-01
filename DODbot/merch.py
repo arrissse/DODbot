@@ -17,8 +17,6 @@ def create_merch_table():
     )
     """)
 
-create_merch_table()
-
 def got_merch(username, type):
     conn = sqlite3.connect("merch.db", check_same_thread=False)
     cursor = conn.cursor()

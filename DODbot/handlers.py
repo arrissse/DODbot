@@ -6,9 +6,11 @@ from keyboard import main_keyboard, admin_keyboard, pro_admin_keyboard, mipt_adm
 from users import add_user, start_quest, is_quest_started, check_points, check_st_points
 from admin import get_all_admins, add_admin, get_admin_level
 from telebot.types import BotCommand
+from merch import create_merch_table
 
 create_admins_table()
 create_users_table()
+create_merch_table()
 
 add_admin("@arrisse", 0)
 add_admin("@Nikita_Savel", 0)

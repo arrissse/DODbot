@@ -176,7 +176,6 @@ def update_merch_price(merch_type, new_price):
 @bot.message_handler(func=lambda message: message.text == "Стоимость мерча")
 def merch_prices_menu(message):
     conn = sqlite3.connect("merch.db", check_same_thread=False)
-    create_price_table()
     cursor = conn.cursor()
     cursor.execute("SELECT merch_type FROM merch_prices")
     merch_types = [row[0] for row in cursor.fetchall()]
