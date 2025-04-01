@@ -78,13 +78,13 @@ def qwest(message):
         keyboard = quest_started_keyboard()
     else:
         keyboard = quest_keyboard()
-        start_quest(message.from_user.username)
     bot.send_message(message.chat.id, "Выберите действие:",
                      reply_markup=keyboard)
 
 @bot.message_handler(func=lambda message: message.text == "▶️ Начать")
 
 def start(message):
+    start_quest(message.from_user.username)
     markup = continue_quest_keyboard()
     bot.send_message(message.chat.id, "Выберите станцию:", reply_markup=markup)
 
