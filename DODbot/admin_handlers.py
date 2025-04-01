@@ -262,25 +262,28 @@ def give_merch_to_user(message):
         bot.send_message(message.chat.id, "❌ У вас нет доступа к этой команде.")
 
 def process_fusername(m):
-    username = m.text.lstrip('@')
-    if is_got_merch(username):
-        bot.send_message(m.chat.id, f"❌ Пользователь {username} уже получил мерч.")
-        return
-    if not get_user_by_username(username):
-        bot.send_message(m.chat.id, f"❌ Пользователя {username} нет в базе.")
-        return
+    try:
+        username = m.text.lstrip('@')
+        if is_got_merch(username):
+            bot.send_message(m.chat.id, f"❌ Пользователь {username} уже получил мерч.")
+            return
+        if not get_user_by_username(username):
+            bot.send_message(m.chat.id, f"❌ Пользователя {username} нет в базе.")
+            return
 
-    markup = InlineKeyboardMarkup()
+        markup = InlineKeyboardMarkup()
 
-    merch_types = get_merch_types()
-    for merch in merch_types:
-        if check_points(username) >= get_merch_price(merch) and not got_merch(username, merch.lower()):
-            markup.add(InlineKeyboardButton(merch, callback_data=f'give_merch:{get_merch_price(merch)}:{merch.lower()}:{username}'))
+        merch_types = get_merch_types()
+        for merch in merch_types:
+            if check_points(username) >= get_merch_price(merch) and not got_merch(username, merch.lower()):
+                markup.add(InlineKeyboardButton(merch, callback_data=f'give_merch:{get_merch_price(merch)}:{merch.lower()}:{username}'))
 
-    if markup.keyboard:
-        bot.send_message(m.chat.id, f"Выберите мерч пользователю {username}:", reply_markup=markup)
-    else:
-        bot.send_message(m.chat.id, f"❌ Пользователь {username} не может получить мерч.")
+        if markup.keyboard:
+            bot.send_message(m.chat.id, f"Выберите мерч пользователю {username}:", reply_markup=markup)
+        else:
+            bot.send_message(m.chat.id, f"❌ Пользователь {username} не может получить мерч.")
+    except Exception as e:
+        bot.send_message(m.chat.id, e)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("give_merch"))
 def process_merch_callback(call):
