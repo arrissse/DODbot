@@ -158,7 +158,7 @@ quiz_list = {
 def handle_quiz_start(message):
     quiz_number = quiz_list[message.text]
     markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("Да", callback_data=f'start_quiz:{quiz_number}:'), InlineKeyboardButton(
+    markup.add(InlineKeyboardButton("Да", callback_data=f'start_quiz:{quiz_number}'), InlineKeyboardButton(
         "Нет", callback_data=f'not_start_quiz:'), )
     bot.send_message(message.chat.id, f"Начать {message.text}?", reply_markup=markup)
 
