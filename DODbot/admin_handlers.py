@@ -69,7 +69,7 @@ def send_admins_list(message):
 '''
 
 @bot.message_handler(func=lambda message: message.text == "Мерч")
-def pro_admin_merch(message):
+def pro_admin_merch_button(message):
     user = get_admin_by_username('@' + message.from_user.username)
     level = get_admin_level('@' + message.from_user.username)
 
