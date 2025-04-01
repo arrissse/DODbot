@@ -263,21 +263,13 @@ def process_fusername(m):
 @bot.callback_query_handler(func=lambda call: call.data.startswith("give_merch"))
 def process_merch_callback(call):
     _, merch_price, merch_type, username = call.data.split(":")
-    merch_names = {
-        'pshirt': 'Раскрасить футболку',
-        'pshopper': 'Раскрасить шоппер',
-        'shirt': 'Футболка',
-        'notebook': 'Блокнот',
-        'pb': 'ПБ'
-    }
-    merch_name = merch_names.get(merch_type, merch_type)
 
     markup = InlineKeyboardMarkup()
     markup.add(
         InlineKeyboardButton('Да', callback_data=f'yes:{merch_price}:{merch_type}:{username}'),
         InlineKeyboardButton('Нет', callback_data='no')
     )
-    bot.send_message(call.message.chat.id, f"Выдать {username} {merch_name}?", reply_markup=markup)
+    bot.send_message(call.message.chat.id, f"Выдать {username} {merch_type}?", reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("yes"))
 def process_merch_call_yes(call):
@@ -338,3 +330,49 @@ def process_type_cost(message, type):
         bot.send_message(message.chat.id, f"❌ Ошибка при добавлении колонки: {e}")
 
     bot.send_message(message.chat.id, f"✅ Позиция '{type}' добавлена с ценой {cost} баллов.")
+
+'''
+-----------------------
+
+Удалить позицию мерча
+
+-----------------------
+'''
+@bot.message_handler(func=lambda message: message.text == "Удалить позицию мерча")
+def remove_merch_type(message):
+    user = get_admin_by_username('@' + message.from_user.username)
+    if user and user[1] == 0:
+        bot.send_message(message.chat.id, "Введите название позиции мерча, которую необходимо удалить: ")
+        bot.register_next_step_handler(message, process_r_type)
+    else:
+        bot.send_message(message.chat.id, "❌ У вас нет доступа к этой команде.")
+
+def process_r_type(message):
+    merch_type = message.text.strip()
+
+    conn = sqlite3.connect("merch.db", check_same_thread=False)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) FROM merch_prices WHERE merch_type = ?", (merch_type,))
+    if cursor.fetchone()[0] == 0:
+        bot.send_message(message.chat.id, f"❌ Позиция '{merch_type}' не найдена.")
+        conn.close()
+        return
+
+    cursor.execute("DELETE FROM merch_prices WHERE merch_type = ?", (merch_type,))
+
+    cursor.execute("PRAGMA table_info(merch);")
+    columns = [row[1] for row in cursor.fetchall()]
+
+    if merch_type in columns:
+        new_columns = [col for col in columns if col != merch_type]
+        columns_str = ", ".join(new_columns)
+
+        cursor.execute("CREATE TABLE merch_temp AS SELECT {} FROM merch;".format(columns_str))
+        cursor.execute("DROP TABLE merch;")
+        cursor.execute("ALTER TABLE merch_temp RENAME TO merch;")
+
+    conn.commit()
+    conn.close()
+
+    bot.send_message(message.chat.id, f"✅ Позиция '{merch_type}' удалена.")

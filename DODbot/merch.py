@@ -9,11 +9,11 @@ def create_merch_table():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS merch (
             username TEXT UNIQUE,            -- Имя пользователя (@username)
-            pshirt INTEGER DEFAULT 0, -- раскрасить футболку (7)
-            pshopper INTEGER DEFAULT 0, -- раскрасить шоппер (5)
-            shirt INTEGER DEFAULT 0, -- получить футболку (8)
-            notebook INTEGER DEFAULT 0, -- блокнот (2)
-            pb INTEGER DEFAULT 0 -- ПБ (15)
+            'Раскрасить футболку' INTEGER DEFAULT 0, -- раскрасить футболку (7)
+            'Раскрасить шоппер' INTEGER DEFAULT 0, -- раскрасить шоппер (5)
+            'Футболка' INTEGER DEFAULT 0, -- получить футболку (8)
+            'Блокнот' INTEGER DEFAULT 0, -- блокнот (2)
+            'ПБ' INTEGER DEFAULT 0 -- ПБ (15)
     )
     """)
 
