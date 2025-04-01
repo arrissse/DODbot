@@ -28,7 +28,6 @@ def pro_admin_merch():
     item3 = types.KeyboardButton("Добавить позицию мерча")
     item4 = types.KeyboardButton("Удалить позицию мерча")
     markup.add(item1, item2, item3, item4)
-    pass
 
 def mipt_admin_keyboard():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
