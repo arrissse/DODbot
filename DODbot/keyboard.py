@@ -16,8 +16,8 @@ def pro_admin_keyboard():
     item3 = types.KeyboardButton("Квест. Текущая статистика")
     item4 = types.KeyboardButton("Отправить рассылку")
     item5 = types.KeyboardButton("Добавить админа")
-    item6 = types.KeyboardButton("Переключить меню")
-    item7 = types.KeyboardButton("Мерч")
+    item6 = types.KeyboardButton("Мерч")
+    item7 = types.KeyboardButton("Переключить меню")
     markup.add(item1, item2, item3, item4, item5, item6, item7)
     return markup
 
