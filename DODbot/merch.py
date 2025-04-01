@@ -24,7 +24,7 @@ def got_merch(username, type):
     cursor.execute("INSERT OR IGNORE INTO merch (username) VALUES (?)",
                    (username,))
     cursor.execute(
-        f"SELECT {type} FROM merch WHERE username = ?", (username,))
+        f'SELECT "{type}" FROM merch WHERE username = ?', (username,))
     result = cursor.fetchone()
     conn.close()
 
@@ -36,7 +36,7 @@ def give_merch(username, type):
     cursor.execute("INSERT OR IGNORE INTO merch (username) VALUES (?)",
                    (username,))
     cursor.execute(
-        f"UPDATE merch SET {type} = 1 WHERE username = ?", (username,))
+        f'UPDATE merch SET "{type}" = 1 WHERE username = ?', (username,))
     conn.commit()
     conn.close()
 
