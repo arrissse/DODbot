@@ -262,6 +262,9 @@ def give_merch_to_user(message):
         bot.send_message(message.chat.id, "❌ У вас нет доступа к этой команде.")
 
 def process_fusername(m):
+    if m.text[0] != '@':
+        bot.send_message(m.chat.id, f"❌ Введите корректно ник пользователя.")
+        return
     username = m.text.lstrip('@')
     if is_got_merch(username):
         bot.send_message(m.chat.id, f"❌ Пользователь {username} уже получил мерч.")
