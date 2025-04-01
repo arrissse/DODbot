@@ -18,6 +18,7 @@ def pro_admin_keyboard():
     item5 = types.KeyboardButton("Добавить админа")
     item6 = types.KeyboardButton("Мерч")
     item7 = types.KeyboardButton("Переключить меню")
+    item8 = types.KeyboardButton("Начать квиз")
     markup.add(item1, item2, item3, item4, item5, item6, item7)
     return markup
 
@@ -29,6 +30,17 @@ def pro_admin_merch():
     item4 = types.KeyboardButton("Удалить позицию мерча")
     item5 = types.KeyboardButton("Назад ⬅️")
     markup.add(item1, item2, item3, item4, item5)
+    return markup
+
+def pro_admin_quiz_start():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    item1 = types.KeyboardButton("Квиз 1")
+    item2 = types.KeyboardButton("Квиз 2")
+    item3 = types.KeyboardButton("Квиз 3")
+    item4 = types.KeyboardButton("Квиз 4")
+    item5 = types.KeyboardButton("Квиз 5")
+    item6 = types.KeyboardButton("Назад ⬅️")
+    markup.add(item1, item2, item3, item4, item5, item6)
     return markup
 
 def mipt_admin_keyboard():
@@ -78,13 +90,4 @@ def continue_quest_keyboard():
     item11 = types.KeyboardButton("станция ПИШ РПИ")
     item12 = types.KeyboardButton("⬅️ Назад")
     markup.add(item1, item2, item3, item4, item5, item6, item7, item8, item9, item10, item11, item12)
-    return markup
-
-
-def mipt_admin_quest_started():
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    item1 = types.KeyboardButton("1️⃣")
-    item2 = types.KeyboardButton("2️⃣")
-    item3 = types.KeyboardButton("⬅️ Назад")
-    markup.add(item1, item2, item3)
     return markup

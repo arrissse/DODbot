@@ -15,6 +15,14 @@ create_users_table()
 add_admin("@arrisse", 0)
 add_admin("@Nikita_Savel", 0)
 
+'''
+-----------------------
+
+Старт + обработка QR-кодов
+
+-----------------------
+'''
+
 
 @bot.message_handler(commands=["start"])
 def start(m):
@@ -63,6 +71,14 @@ def do_action(message, photo_url):
     with open(photo_url, "rb") as photo:
         bot.send_photo(message.chat.id, photo, caption="Ваше местоположение: ")
 
+'''
+-----------------------
+
+Расписание лекций
+
+-----------------------
+'''
+
 @bot.message_handler(func=lambda message: message.text == "📅 Расписание лекций")
 def send_schedule_photo(m):
     photo_url = "img/schedule.png"
@@ -71,6 +87,14 @@ def send_schedule_photo(m):
             bot.send_photo(m.chat.id, photo, caption="📅 Расписание лекций:")
     except Exception as e:
         bot.send_message(m.chat.id, f"Ошибка при отправке: {e}")
+
+'''
+-----------------------
+
+Квест
+
+-----------------------
+'''
 
 @bot.message_handler(func=lambda message: message.text == "🎯 Квест")
 def qwest(message):
@@ -124,6 +148,14 @@ def handle_station(message):
     station_number = stations[message.text]
     bot.send_message(message.chat.id, message.text, reply_markup=quest_started_keyboard())
     send_quest_points(message, message.from_user.username, station_number)
+
+'''
+-----------------------
+
+Карта
+
+-----------------------
+'''
 
 @bot.message_handler(func=lambda message: message.text == "🗺 Карта")
 def send_map_photo(message):
