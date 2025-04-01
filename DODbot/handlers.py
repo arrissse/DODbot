@@ -45,9 +45,17 @@ def start(m):
     parts = m.text.split()
     if len(parts) > 1:
         param = parts[1]
-        print(param[-1])
-        photo_url = f"img/{param[-1]}.png"
-        do_action(m, photo_url)
+    
+        try:
+            if int(param[-2:]) >= 10:
+                name = param[-2:]
+            else:
+                name = param[-1]
+        except ValueError:
+            name = param[-1]
+    
+    photo_url = f"img/{name}.png"
+    do_action(m, photo_url)
 
 def do_action(message, photo_url):
     with open(photo_url, "rb") as photo:
