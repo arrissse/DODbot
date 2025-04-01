@@ -8,7 +8,7 @@ def create_merch_table():
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS merch (
-            username TEXT,            -- Имя пользователя (@username)
+            username TEXT UNIQUE,            -- Имя пользователя (@username)
             pshirt INTEGER DEFAULT 0, -- раскрасить футболку (7)
             pshopper INTEGER DEFAULT 0, -- раскрасить шоппер (5)
             shirt INTEGER DEFAULT 0, -- получить футболку (8)
