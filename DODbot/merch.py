@@ -7,15 +7,16 @@ def create_merch_table():
     cursor = conn.cursor()
 
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS merch (
-            username TEXT UNIQUE,            -- Имя пользователя (@username)
-            'Раскрасить футболку' INTEGER DEFAULT 0, -- раскрасить футболку (7)
-            'Раскрасить шоппер' INTEGER DEFAULT 0, -- раскрасить шоппер (5)
-            'Футболка' INTEGER DEFAULT 0, -- получить футболку (8)
-            'Блокнот' INTEGER DEFAULT 0, -- блокнот (2)
-            'ПБ' INTEGER DEFAULT 0 -- ПБ (15)
-    )
+        CREATE TABLE IF NOT EXISTS merch (
+            username TEXT UNIQUE,                 -- Имя пользователя (@username)
+            "Раскрасить футболку" INTEGER DEFAULT 0,  -- раскрасить футболку (7)
+            "Раскрасить шоппер" INTEGER DEFAULT 0,   -- раскрасить шоппер (5)
+            "Футболка" INTEGER DEFAULT 0,           -- получить футболку (8)
+            "Блокнот" INTEGER DEFAULT 0,           -- блокнот (2)
+            "ПБ" INTEGER DEFAULT 0                 -- ПБ (15)
+        )
     """)
+
 
 def got_merch(username, type):
     conn = sqlite3.connect("merch.db", check_same_thread=False)
