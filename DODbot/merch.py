@@ -51,15 +51,20 @@ def is_got_merch(username):
 
     numeric_columns = [col[1] for col in columns if col[1] != 'username' and col[2] in ('INTEGER', 'REAL')]
 
-    sum_query = " + ".join([f"COALESCE({col}, 0)" for col in numeric_columns])
+    if not numeric_columns:
+        conn.close()
+        return False  
+
+    sum_query = " + ".join([f'COALESCE("{col}", 0)' for col in numeric_columns])
 
     query = f"SELECT {sum_query} FROM merch WHERE username = ?"
     cursor.execute(query, (username,))
     
     result = cursor.fetchone()
-    column_count = len(columns)
     conn.close()
-    return result[0] == column_count
+
+    return result[0] == len(numeric_columns)
+
 
 def is_got_any_merch(username):
     conn = sqlite3.connect("merch.db", check_same_thread=False)
