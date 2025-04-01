@@ -22,30 +22,28 @@ quiz_schedule = {
 
 @bot.message_handler(func=lambda message: message.text == "🎓 Квизы")
 def send_quiz(m):
-    try:
-        current_time = datetime.now().strftime("%H:%M")
-        selected_quiz = None
+    current_time = datetime.now().strftime("%H:%M")
+    selected_quiz = None
 
-        for quiz_time, info in quiz_schedule.items():
-            if is_within_range(current_time, quiz_time, delta_minutes=10):
-                selected_quiz = (quiz_time, info)
+    for quiz_time, info in quiz_schedule.items():
+        if is_within_range(current_time, quiz_time, delta_minutes=10):
+            selected_quiz = (quiz_time, info)
+            break
+    if selected_quiz:
+        quiz_time, (quiz_name, location, quiz_function_name) = selected_quiz
+        bot.send_message(m.chat.id, "Введите кодовое слово:")
+    else:
+        upcoming = None
+        for time, info in quiz_schedule.items():
+            if time > current_time:
+                upcoming = [time, info]
                 break
-        if selected_quiz:
-            quiz_time, (quiz_name, location, quiz_function_name) = selected_quiz
-            bot.send_message(m.chat.id, "Введите кодовое слово:")
+        if upcoming:
+            n_quiz_time, (n_quiz_name, n_location, n_quiz_function_name) = upcoming
         else:
-            for time, info in quiz_schedule.items():
-                if time > current_time:
-                    upcoming = [time, info]
-                    break
-            if upcoming:
-                n_quiz_time, (n_quiz_name, n_location, n_quiz_function_name) = upcoming
-            else:
-                next_quiz_time = min(quiz_schedule.keys())
-            bot.send_message(m.chat.id, f"Ближайший квиз начнется в {n_quiz_time} в {n_location}")
-            return
-    except Exception as e:
-        bot.send_message(m.chat.id, e)
+            next_quiz_time = min(quiz_schedule.keys())
+        bot.send_message(m.chat.id, f"Ближайший квиз начнется в {n_quiz_time} в {n_location}")
+        return
 
     def process_message(message):
         message_text = message.text.lower().strip()
