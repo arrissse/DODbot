@@ -7,7 +7,7 @@ from users import save_users_to_excel, count_active_quests, get_user_by_username
 from users import is_quest_finished, finish_quest, update_user_queststation, is_quiz_finished, count_finished_quests
 from users import check_points, update_merch_points
 from admin import save_admins_to_excel, get_admin_by_username, get_admin_level
-from merch import give_merch, is_got_merch, got_merch, add_column
+from merch import give_merch, is_got_merch, got_merch, add_column, save_merch_to_excel
 
 '''
 -----------------------
@@ -31,6 +31,32 @@ def send_admins_list(message):
                 bot.send_document(message.chat.id, file)
         else:
             bot.send_message(message.chat.id, "❌ В базе данных нет пользователей.")
+    else:
+        bot.send_message(message.chat.id, "❌ У вас нет доступа к этой команде.")
+
+
+'''
+-----------------------
+
+merch
+
+-----------------------
+'''
+@bot.message_handler(commands=["merch"])
+def send_admins_list(message):
+    
+    user = get_admin_by_username('@' + message.from_user.username)
+    level = get_admin_level('@' + message.from_user.username)
+
+    if user and level == 0:
+        filename = save_merch_to_excel()
+        print(f"Файл Excel создан: {filename}")
+
+        if filename:
+            with open(filename, "rb") as file:
+                bot.send_document(message.chat.id, file)
+        else:
+            bot.send_message(message.chat.id, "❌ База данных пуста.")
     else:
         bot.send_message(message.chat.id, "❌ У вас нет доступа к этой команде.")
 

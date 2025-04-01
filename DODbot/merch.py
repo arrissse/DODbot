@@ -96,3 +96,41 @@ def add_column(column_name, column_type="INTEGER DEFAULT 0"):
         print(f"Столбец '{column_name}' уже существует.")
 
     conn.close()
+
+def get_all_merch():
+    conn = sqlite3.connect("merch.db", check_same_thread=False)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM merch")
+    merch = cursor.fetchall()
+    conn.close()
+    return [(merch_) for merch_ in merch]
+
+
+def get_table_columns(table_name):
+    conn = sqlite3.connect("merch.db", check_same_thread=False)
+    cursor = conn.cursor()
+    cursor.execute(f"PRAGMA table_info({table_name});")
+    columns = [column[1] for column in cursor.fetchall()]
+    conn.close()
+    return columns
+
+
+def save_merch_to_excel():
+    merch = get_all_merch()
+    columns = get_table_columns('merch')
+
+    if not merch:
+        return None
+
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+    sheet.title = "Мерч"
+
+    sheet.append(columns)
+
+    for merch_ in merch:
+        sheet.append(list(merch_))
+
+    filename = "merch.xlsx"
+    workbook.save(filename)
+    return filename
