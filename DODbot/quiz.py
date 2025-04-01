@@ -42,7 +42,7 @@ def send_quiz(m):
             if upcoming:
                 n_quiz_time, (n_quiz_name, n_location, n_quiz_function_name) = upcoming
             else:
-                n_quiz_time = min(quiz_schedule.keys())
+                n_quiz_time, (n_quiz_name, n_location, n_quiz_function_name) = min(quiz_schedule.keys())
             bot.send_message(m.chat.id, f"Ближайший квиз начнется в {n_quiz_time} в {n_location}")
             return
     except Exception as e:
