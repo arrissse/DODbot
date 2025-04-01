@@ -73,10 +73,13 @@ def pro_admin_merch(message):
     user = get_admin_by_username('@' + message.from_user.username)
     level = get_admin_level('@' + message.from_user.username)
 
-    if user and level == 0:
-        bot.send_message(message.chat.id, "Выберите действие:", reply_markup=pro_admin_merch())
-    else:
-        bot.send_message(message.chat.id, "❌ У вас нет доступа к этой команде.")
+    try:
+        if user and level == 0:
+            bot.send_message(message.chat.id, "Выберите действие:", reply_markup=pro_admin_merch())
+        else:
+            bot.send_message(message.chat.id, "❌ У вас нет доступа к этой команде.")
+    except Exception as e:
+        bot.send_message(message.chat.id, e)
 '''
 -----------------------
 
