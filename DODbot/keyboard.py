@@ -16,12 +16,19 @@ def pro_admin_keyboard():
     item3 = types.KeyboardButton("Квест. Текущая статистика")
     item4 = types.KeyboardButton("Отправить рассылку")
     item5 = types.KeyboardButton("Добавить админа")
-    item6 = types.KeyboardButton("Выдать мерч")
-    item7 = types.KeyboardButton("Переключить меню")
-    item8 = types.KeyboardButton("Стоимость мерча")
-    item9 = types.KeyboardButton("Добавить позицию мерча")
-    markup.add(item1, item2, item3, item4, item5, item6, item7, item8, item9)
+    item6 = types.KeyboardButton("Переключить меню")
+    item7 = types.KeyboardButton("Мерч")
+    markup.add(item1, item2, item3, item4, item5, item6, item7)
     return markup
+
+def pro_admin_merch():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    item1 = types.KeyboardButton("Выдать мерч")
+    item2 = types.KeyboardButton("Стоимость мерча")
+    item3 = types.KeyboardButton("Добавить позицию мерча")
+    item4 = types.KeyboardButton("Удалить позицию мерча")
+    markup.add(item1, item2, item3, item4)
+    pass
 
 def mipt_admin_keyboard():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)

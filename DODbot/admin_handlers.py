@@ -2,7 +2,7 @@ from bot import bot
 import sqlite3
 from telebot import types
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-from keyboard import main_keyboard
+from keyboard import main_keyboard, pro_admin_merch
 from users import save_users_to_excel, count_active_quests, get_user_by_username
 from users import count_finished_quests
 from users import check_points, update_merch_points
@@ -60,7 +60,23 @@ def send_admins_list(message):
     else:
         bot.send_message(message.chat.id, "❌ У вас нет доступа к этой команде.")
 
+'''
+-----------------------
 
+Мерч
+
+-----------------------
+'''
+
+@bot.message_handler(func=lambda message: message.text == "Мерч")
+def pro_admin_merch(message):
+    user = get_admin_by_username('@' + message.from_user.username)
+    level = get_admin_level('@' + message.from_user.username)
+
+    if user and level == 0:
+        bot.send_message(message.chat.id, "Выберите действие:", reply_markup=pro_admin_merch())
+    else:
+        bot.send_message(message.chat.id, "❌ У вас нет доступа к этой команде.")
 '''
 -----------------------
 
