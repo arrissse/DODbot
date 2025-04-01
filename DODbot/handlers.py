@@ -8,9 +8,9 @@ from admin import get_all_admins, add_admin, get_admin_level
 from telebot.types import BotCommand
 from merch import create_merch_table
 
+create_merch_table()
 create_admins_table()
 create_users_table()
-create_merch_table()
 
 add_admin("@arrisse", 0)
 add_admin("@Nikita_Savel", 0)
