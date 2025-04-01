@@ -394,9 +394,14 @@ def process_r_type(message):
 
     if merch_type in columns:
         new_columns = [col for col in columns if col != merch_type]
-        columns_str = ", ".join(new_columns)
+        if not new_columns:
+            bot.send_message(message.chat.id, "❌ Ошибка: нельзя удалить последнюю колонку.")
+            conn.close()
+            return
 
-        cursor.execute("CREATE TABLE merch_temp AS SELECT {} FROM merch;".format(columns_str))
+        columns_str = ", ".join(f'"{col}"' for col in new_columns)
+
+        cursor.execute(f"CREATE TABLE merch_temp AS SELECT {columns_str} FROM merch;")
         cursor.execute("DROP TABLE merch;")
         cursor.execute("ALTER TABLE merch_temp RENAME TO merch;")
 
@@ -404,3 +409,4 @@ def process_r_type(message):
     conn.close()
 
     bot.send_message(message.chat.id, f"✅ Позиция '{merch_type}' удалена.")
+
