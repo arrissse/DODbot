@@ -19,7 +19,7 @@ def pro_admin_keyboard():
     item6 = types.KeyboardButton("Мерч")
     item7 = types.KeyboardButton("Переключить меню")
     item8 = types.KeyboardButton("Начать квиз")
-    markup.add(item1, item2, item3, item4, item5, item6, item7)
+    markup.add(item1, item2, item3, item4, item5, item6, item7, item8)
     return markup
 
 def pro_admin_merch():
