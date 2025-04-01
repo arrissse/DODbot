@@ -2,7 +2,7 @@ from bot import bot
 import sqlite3
 from telebot import types
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-from keyboard import main_keyboard, pro_admin_merch
+from keyboard import main_keyboard, pro_admin_merch, pro_admin_keyboard
 from users import save_users_to_excel, count_active_quests, get_user_by_username
 from users import count_finished_quests
 from users import check_points, update_merch_points
@@ -81,6 +81,28 @@ def pro_admin_merch_button(message):
             bot.send_message(message.chat.id, "❌ У вас нет доступа к этой команде.")
     except Exception as e:
         bot.send_message(message.chat.id, e)
+
+
+'''
+-----------------------
+
+Назад
+
+-----------------------
+'''
+
+@bot.message_handler(func=lambda message: message.text == "Назад ⬅️")
+def pro_admin_merch_back(message):
+    user = get_admin_by_username('@' + message.from_user.username)
+    level = get_admin_level('@' + message.from_user.username)
+    try:
+        if user and level == 0:
+            bot.send_message(message.chat.id, "🔑 Админ-меню:", reply_markup=pro_admin_keyboard())
+        else:
+            bot.send_message(message.chat.id, "❌ У вас нет доступа к этой команде.")
+    except Exception as e:
+        bot.send_message(message.chat.id, e)
+
 '''
 -----------------------
 
