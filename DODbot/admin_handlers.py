@@ -160,7 +160,7 @@ def handle_quiz_start(message):
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton("Да", callback_data=f'start_quiz:{quiz_number}:'), InlineKeyboardButton(
         "Нет", callback_data=f'not_start_quiz:'), )
-    bot.send_message(message.chat.id, f"Начать {message.text}?")
+    bot.send_message(message.chat.id, f"Начать {message.text}?", reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("start_quiz:"))
