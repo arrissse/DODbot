@@ -124,6 +124,14 @@ def create_price_table():
 
 create_price_table()
 
+def get_merch_types():
+    conn = sqlite3.connect("merch.db", check_same_thread=False)
+    cursor = conn.cursor()
+    cursor.execute("SELECT merch_type FROM merch_prices")
+    types = [row[0] for row in cursor.fetchall()]
+    conn.close()
+    return types
+
 def get_merch_price(merch_type):
     conn = sqlite3.connect("merch.db", check_same_thread=False)
     cursor = conn.cursor()
@@ -197,17 +205,10 @@ def process_fusername(m):
 
     markup = InlineKeyboardMarkup()
 
-    if check_points(username) >= int(get_merch_price('Раскрасить футболку')) and not got_merch(username, 'pshirt'):
-        markup.add(InlineKeyboardButton('Раскрасить футболку', callback_data=f'give_merch:{get_merch_price("Раскрасить футболку")}:pshirt:{username}'))
-    if check_points(username) >= get_merch_price('Раскрасить шоппер') and not got_merch(username, 'pshopper'):
-        markup.add(InlineKeyboardButton('Раскрасить шоппер', callback_data=f'give_merch:{get_merch_price("Раскрасить шоппер")}:pshopper:{username}'))
-    if check_points(username) >= get_merch_price('Футболка') and not got_merch(username, 'shirt'):
-        markup.add(InlineKeyboardButton('Футболка', callback_data=f'give_merch:{get_merch_price("Футболка")}:shirt:{username}'))
-    if check_points(username) >= get_merch_price('Блокнот') and not got_merch(username, 'notebook'):
-        markup.add(InlineKeyboardButton('Блокнот', callback_data=f'give_merch:{get_merch_price("Блокнот")}:notebook:{username}'))
-    if check_points(username) >= get_merch_price('ПБ') and not got_merch(username, 'pb'):
-        markup.add(InlineKeyboardButton('ПБ', callback_data=f'give_merch:{get_merch_price("ПБ")}:pb:{username}'))
-
+    merch_types = get_merch_types()
+    for merch in merch_types:
+        if check_points(username) >= get_merch_price(merch) and not got_merch(username, merch.lower()):
+            markup.add(InlineKeyboardButton(merch, callback_data=f'give_merch:{get_merch_price(merch)}:{merch.lower()}:{username}'))
 
     if markup.keyboard:
         bot.send_message(m.chat.id, f"Выберите мерч пользователю {username}:", reply_markup=markup)
@@ -217,24 +218,21 @@ def process_fusername(m):
 @bot.callback_query_handler(func=lambda call: call.data.startswith("give_merch"))
 def process_merch_callback(call):
     _, merch_price, merch_type, username = call.data.split(":")
-    s = ''
-    if merch_type == 'pshirt':
-        s = 'Раскрасить футболку'
-    elif merch_type == 'pshopper':
-        s = 'Раскрасить шоппер'
-    elif merch_type == 'shirt':
-        s = 'Футболка'
-    elif merch_type == 'notebook':
-        s = 'Блокнот'
-    elif merch_type == 'pb':
-        s = 'ПБ'
+    merch_names = {
+        'pshirt': 'Раскрасить футболку',
+        'pshopper': 'Раскрасить шоппер',
+        'shirt': 'Футболка',
+        'notebook': 'Блокнот',
+        'pb': 'ПБ'
+    }
+    merch_name = merch_names.get(merch_type, merch_type)
 
     markup = InlineKeyboardMarkup()
     markup.add(
         InlineKeyboardButton('Да', callback_data=f'yes:{merch_price}:{merch_type}:{username}'),
         InlineKeyboardButton('Нет', callback_data='no')
     )
-    bot.send_message(call.message.chat.id, f"Выдать {username} {s}?", reply_markup=markup)
+    bot.send_message(call.message.chat.id, f"Выдать {username} {merch_name}?", reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("yes"))
 def process_merch_call_yes(call):
