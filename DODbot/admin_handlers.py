@@ -174,14 +174,16 @@ def start_quiz(call):
                          f"Ошибка при извлечении номера квиза: {e}")
         return
 
+
     current_time = datetime.now().strftime("%H:%M")
-    quiz_times = sorted(quiz_schedule.keys())
-    if quiz_number > len(quiz_times):
+    sorted_times = sorted(quiz_schedule.keys())
+    if quiz_number > len(sorted_times):
         bot.send_message(call.message.chat.id,
                          "Ошибка: квиз с таким номером не найден.")
         return
-    selected_time = quiz_times[quiz_number - 1]
-    quiz_info = quiz_schedule[selected_time]
+    old_time = sorted_times[quiz_number - 1]
+    quiz_info = quiz_schedule.pop(old_time)
+    quiz_schedule[current_time] = quiz_info
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton("Отправить следующий вопрос", callback_data=f'next_question:{quiz_number}:'))
     bot.send_message(call.message.chat.id,
