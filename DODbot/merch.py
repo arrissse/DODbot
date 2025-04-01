@@ -44,42 +44,44 @@ def give_merch(username, type):
 def is_got_merch(username):
     conn = sqlite3.connect("merch.db", check_same_thread=False)
     cursor = conn.cursor()
-    cursor.execute("INSERT OR IGNORE INTO merch (username) VALUES (?)",
-                   (username,))
-    query = """
-        SELECT 
-            COALESCE(pshirt, 0) +
-            COALESCE(pshopper, 0) +
-            COALESCE(shirt, 0) +
-            COALESCE(notebook, 0) +
-            COALESCE(pb, 0)
-        FROM merch
-        WHERE username = ?
-    """
+
+    cursor.execute("INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
+
+    cursor.execute("PRAGMA table_info(merch);")
+    columns = cursor.fetchall()
+
+    numeric_columns = [col[1] for col in columns if col[1] != 'username' and col[2] in ('INTEGER', 'REAL')]
+
+    sum_query = " + ".join([f"COALESCE({col}, 0)" for col in numeric_columns])
+
+    query = f"SELECT {sum_query} FROM merch WHERE username = ?"
     cursor.execute(query, (username,))
+    
     result = cursor.fetchone()
+    column_count = len(columns)
     conn.close()
-    return result[0] == 5
+    return result[0] == column_count
 
 def is_got_any_merch(username):
     conn = sqlite3.connect("merch.db", check_same_thread=False)
     cursor = conn.cursor()
-    cursor.execute("INSERT OR IGNORE INTO merch (username) VALUES (?)",
-                   (username,))
-    query = """
-        SELECT 
-            COALESCE(pshirt, 0) +
-            COALESCE(pshopper, 0) +
-            COALESCE(shirt, 0) +
-            COALESCE(notebook, 0) +
-            COALESCE(pb, 0)
-        FROM merch
-        WHERE username = ?
-    """
+
+    cursor.execute("INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
+
+    cursor.execute("PRAGMA table_info(merch);")
+    columns = cursor.fetchall()
+
+    numeric_columns = [col[1] for col in columns if col[1] != 'username' and col[2] in ('INTEGER', 'REAL')]
+
+    sum_query = " + ".join([f"COALESCE({col}, 0)" for col in numeric_columns])
+
+    query = f"SELECT {sum_query} FROM merch WHERE username = ?"
     cursor.execute(query, (username,))
+    
     result = cursor.fetchone()
     conn.close()
-    return result[0] > 0
+    
+    return result[0] > 0 if result else False
 
 def add_column(column_name, column_type="INTEGER DEFAULT 0"):
     conn = sqlite3.connect("merch.db", check_same_thread=False)
