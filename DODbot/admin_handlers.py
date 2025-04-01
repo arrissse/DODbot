@@ -9,6 +9,7 @@ from users import check_points, update_merch_points
 from admin import save_admins_to_excel, get_admin_by_username, get_admin_level
 from merch import give_merch, is_got_merch, got_merch, add_column, save_merch_to_excel
 
+
 '''
 -----------------------
 
@@ -167,7 +168,6 @@ def create_price_table():
     conn.commit()
     conn.close()
 
-create_price_table()
 
 def get_merch_types():
     conn = sqlite3.connect("merch.db", check_same_thread=False)

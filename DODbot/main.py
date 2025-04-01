@@ -10,6 +10,7 @@ import admin_handlers
 import handlers
 import logging
 
+admin_handlers.create_price_table()
 
 app = Flask(__name__)
 app.logger.setLevel(logging.DEBUG)
