@@ -9,7 +9,7 @@ from users import count_finished_quests
 from users import check_points, update_merch_points
 from admin import save_admins_to_excel, get_admin_by_username, get_admin_level
 from merch import give_merch, is_got_merch, got_merch, add_column, save_merch_to_excel
-from quiz import quiz_schedule
+from quiz import get_db_connection
 
 
 '''
@@ -166,28 +166,90 @@ def handle_quiz_start(message):
 @bot.callback_query_handler(func=lambda call: call.data.startswith("start_quiz:"))
 def start_quiz(call):
     bot.answer_callback_query(call.id)
-    try:
-        _, quiz_number_str = call.data.split(":")
-        quiz_number = int(quiz_number_str)
-    except ValueError as e:
-        bot.send_message(call.message.chat.id,
-                         f"Ошибка при извлечении номера квиза: {e}")
+    _, quiz_id = call.data.split(":")
+    quiz_id = int(quiz_id)
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("SELECT name FROM quizzes WHERE id = ?", (quiz_id,))
+    quiz_info = cur.fetchone()
+    conn.close()
+
+    if not quiz_info:
+        bot.send_message(call.message.chat.id, "Ошибка: квиз не найден.")
         return
 
-
-    current_time = datetime.now().strftime("%H:%M")
-    sorted_times = sorted(quiz_schedule.keys())
-    if quiz_number > len(sorted_times):
-        bot.send_message(call.message.chat.id,
-                         "Ошибка: квиз с таким номером не найден.")
-        return
-    old_time = sorted_times[quiz_number - 1]
-    quiz_info = quiz_schedule.pop(old_time)
-    quiz_schedule[current_time] = quiz_info
+    quiz_name = quiz_info[0]
     markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("Отправить следующий вопрос", callback_data=f'next_question:{quiz_number}:'))
+    markup.add(InlineKeyboardButton("Отправить первый вопрос",
+               callback_data=f'next_question:{quiz_id}:1'))
     bot.send_message(call.message.chat.id,
-                     f"✅ {quiz_info[0]} начат!", reply_markup=markup)
+                     f"✅ {quiz_name} начат!", reply_markup=markup)
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("next_question:"))
+def send_next_question(call):
+    bot.answer_callback_query(call.id)
+    _, quiz_id, question_number = call.data.split(":")
+    quiz_id, question_number = int(quiz_id), int(question_number)
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT id, text FROM questions 
+        WHERE quiz_id = ? ORDER BY id ASC LIMIT 1 OFFSET ?
+    """, (quiz_id, question_number - 1))
+    question = cur.fetchone()
+
+    if not question:
+        bot.send_message(call.message.chat.id, "Квиз завершён!")
+        conn.close()
+        return
+
+    question_id, question_text = question
+
+    cur.execute(
+        "SELECT id, text FROM answers WHERE question_id = ?", (question_id,))
+    answers = cur.fetchall()
+
+    markup = InlineKeyboardMarkup()
+    for answer_id, answer_text in answers:
+        markup.add(InlineKeyboardButton(
+            answer_text, callback_data=f'answer:{question_id}:{answer_id}'))
+
+    bot.send_message(call.message.chat.id, question_text, reply_markup=markup)
+
+    # Добавляем кнопку "Следующий вопрос"
+    markup_next = InlineKeyboardMarkup()
+    markup_next.add(InlineKeyboardButton("Следующий вопрос",
+                    callback_data=f'next_question:{quiz_id}:{question_number + 1}'))
+    bot.send_message(call.message.chat.id,
+                     "Готовы к следующему вопросу?", reply_markup=markup_next)
+
+    conn.close()
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("answer:"))
+def check_answer(call):
+    bot.answer_callback_query(call.id)
+    _, question_id, answer_id = call.data.split(":")
+    question_id, answer_id = int(question_id), int(answer_id)
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("SELECT is_correct FROM answers WHERE id = ?", (answer_id,))
+    result = cur.fetchone()
+
+    if result and result[0] == 1:
+        bot.send_message(call.message.chat.id, "✅ Верно!")
+    else:
+        bot.send_message(call.message.chat.id, "❌ Неверно.")
+
+    conn.close()
+
 
 
 @bot.callback_query_handler(func=lambda call: call.data == "not_start_quiz")
