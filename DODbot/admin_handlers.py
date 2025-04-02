@@ -146,11 +146,11 @@ def pro_admin_quiz_button(message):
 
 
 quiz_list = {
-    "Квиз 1": 1,
-    "Квиз 2": 2,
-    "Квиз 3": 3,
-    "Квиз 4": 4,
-    "Квиз 5": 5,
+    "Квиз 1": 0,
+    "Квиз 2": 1,
+    "Квиз 3": 2,
+    "Квиз 4": 3,
+    "Квиз 5": 4,
 }
 
 
@@ -160,7 +160,8 @@ def handle_quiz_start(message):
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton("Да", callback_data=f'start_quiz:{quiz_number}'), InlineKeyboardButton(
         "Нет", callback_data=f'not_start_quiz:'), )
-    bot.send_message(message.chat.id, f"Начать {message.text}?", reply_markup=markup)
+    bot.send_message(
+        message.chat.id, f"Начать {message.text}?", reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("start_quiz:"))
@@ -172,7 +173,7 @@ def start_quiz(call):
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("SELECT name FROM quizzes WHERE id = ?", (quiz_id,))
+    cur.execute("SELECT name FROM quiz_schedule WHERE id = ?", (quiz_id,))
     quiz_info = cur.fetchone()
     conn.close()
 
@@ -249,7 +250,6 @@ def check_answer(call):
         bot.send_message(call.message.chat.id, "❌ Неверно.")
 
     conn.close()
-
 
 
 @bot.callback_query_handler(func=lambda call: call.data == "not_start_quiz")
