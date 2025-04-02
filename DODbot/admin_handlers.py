@@ -173,7 +173,7 @@ def start_quiz(call):
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("SELECT name FROM quiz_schedule WHERE id = ?", (quiz_id,))
+    cur.execute("SELECT quiz_name FROM quiz_schedule WHERE id = ?", (quiz_id,))
     quiz_info = cur.fetchone()
     conn.close()
 

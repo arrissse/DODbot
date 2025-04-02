@@ -80,7 +80,7 @@ def send_quiz(m):
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("SELECT id, name, time, location FROM quiz_schedule ORDER BY time ASC")
+    cur.execute("SELECT id, quiz_name, time, location FROM quiz_schedule ORDER BY time ASC")
     quizzes = cur.fetchall()
 
     current_time = datetime.now().strftime("%H:%M")
