@@ -283,7 +283,7 @@ def check_quiz_points(username, num):
     cursor = conn.cursor()
 
     cursor.execute(
-        f"SELECT quiz_{num} FROM users WHERE username = ?", (username,))
+        f"SELECT quize_{num} FROM users WHERE username = ?", (username,))
     result = cursor.fetchone()
     conn.close()
 
