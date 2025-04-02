@@ -63,10 +63,6 @@ def create_quiz_table():
     conn.commit()
     conn.close()
 
-
-create_quiz_table()
-
-
 def get_db_connection():
     return sqlite3.connect("quiz.db", check_same_thread=False)
 

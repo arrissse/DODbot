@@ -7,7 +7,9 @@ from users import add_user, start_quest, is_quest_started, check_points, check_s
 from admin import get_all_admins, add_admin, get_admin_level
 from telebot.types import BotCommand
 from merch import create_merch_table
+from quiz import create_quiz_table
 
+create_quiz_table()
 create_merch_table()
 create_admins_table()
 create_users_table()
