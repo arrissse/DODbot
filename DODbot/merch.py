@@ -76,7 +76,6 @@ def is_got_any_merch(username):
     cursor.execute("PRAGMA table_info(merch);")
     columns = cursor.fetchall()
 
-    # Проверяем, есть ли столбцы кроме 'username'
     numeric_columns = [col[1] for col in columns if col[1] !=
                        'username' and col[2] and col[2].upper() in ('INTEGER', 'REAL')]
 

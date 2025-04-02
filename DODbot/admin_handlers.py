@@ -307,22 +307,10 @@ def chage_menu(m):
 
 @bot.message_handler(func=lambda message: message.text == "Квест. Текущая статистика")
 def statistics(message):
-    try:
-        user = get_admin_by_username('@' + message.from_user.username)
-    except Exception as e:
-        bot.send_message(
-            message.chat.id, f"get_admin: {e}")
+    user = get_admin_by_username('@' + message.from_user.username)
     if user:
-        try:
-            active_users = count_active_quests()
-        except Exception as e:
-            bot.send_message(
-                message.chat.id, f"active: {e}")
-        try:
-            finished_users = count_finished_quests()
-        except Exception as e:
-            bot.send_message(
-                message.chat.id, f"finished: {e}")
+        active_users = count_active_quests()
+        finished_users = count_finished_quests()
         bot.send_message(
             message.chat.id, f"Количество пользователей, начавших квест: {active_users}\n"
             f"Количество пользователей, завершивших квест: {finished_users}\n")
