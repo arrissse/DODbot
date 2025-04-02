@@ -32,7 +32,7 @@ def create_quiz_table():
     CREATE TABLE IF NOT EXISTS questions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         quiz_id INTEGER NOT NULL,
-        FOREIGN KEY (quiz_id) REFERENCES quizzes(id)
+        FOREIGN KEY (quiz_id) REFERENCES quiz_schedule(id)
     )
     """)
 
@@ -46,7 +46,7 @@ def create_quiz_table():
     )
     """)
 
-    cursor.execute("SELECT id FROM quizzes")
+    cursor.execute("SELECT id FROM quiz_schedule")
     quiz_ids = [row[0] for row in cursor.fetchall()]
 
     for quiz_id in quiz_ids:
@@ -63,7 +63,6 @@ def create_quiz_table():
     conn.commit()
     conn.close()
 
-
 def get_db_connection():
     return sqlite3.connect("quiz.db", check_same_thread=False)
 
@@ -76,13 +75,12 @@ def is_within_range(current_time_str, target_time_str, delta_minutes=10):
         return False
     return diff <= delta_minutes
 
-
 @bot.message_handler(func=lambda message: message.text == "🎓 Квизы")
 def send_quiz(m):
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("SELECT id, name, time, location FROM quizzes ORDER BY time ASC")
+    cur.execute("SELECT id, name, time, location FROM quiz_schedule ORDER BY time ASC")
     quizzes = cur.fetchall()
 
     current_time = datetime.now().strftime("%H:%M")
@@ -119,7 +117,6 @@ def process_quiz_start(message, quiz_id):
     else:
         bot.send_message(message.chat.id, "❌ Неверное кодовое слово.")
 
-
 def start_quiz(message, quiz_id):
     user = message.from_user.username
     if is_finished_quiz(user, quiz_id):
@@ -139,7 +136,6 @@ def start_quiz(message, quiz_id):
 
     conn.close()
 
-
 def send_question(chat_id, user, question_id, question_text):
     conn = get_db_connection()
     cur = conn.cursor()
@@ -155,7 +151,6 @@ def send_question(chat_id, user, question_id, question_text):
 
     bot.send_message(chat_id, question_text, reply_markup=markup)
     conn.close()
-
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("answer:"))
 def check_answer(call):
