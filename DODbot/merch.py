@@ -70,22 +70,30 @@ def is_got_any_merch(username):
     conn = sqlite3.connect("merch.db", check_same_thread=False)
     cursor = conn.cursor()
 
-    cursor.execute("INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
+    cursor.execute(
+        "INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
 
     cursor.execute("PRAGMA table_info(merch);")
     columns = cursor.fetchall()
 
-    numeric_columns = [col[1] for col in columns if col[1] != 'username' and col[2] in ('INTEGER', 'REAL')]
+    # Проверяем, есть ли столбцы кроме 'username'
+    numeric_columns = [col[1] for col in columns if col[1] !=
+                       'username' and col[2] and col[2].upper() in ('INTEGER', 'REAL')]
+
+    if not numeric_columns:
+        conn.close()
+        return False
 
     sum_query = " + ".join([f"COALESCE({col}, 0)" for col in numeric_columns])
 
     query = f"SELECT {sum_query} FROM merch WHERE username = ?"
     cursor.execute(query, (username,))
-    
+
     result = cursor.fetchone()
     conn.close()
-    
-    return result[0] > 0 if result else False
+
+    return result and result[0] > 0
+
 
 def add_column(column_name, column_type="INTEGER DEFAULT 0"):
     conn = sqlite3.connect("merch.db", check_same_thread=False)
