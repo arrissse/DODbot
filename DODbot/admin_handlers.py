@@ -318,7 +318,11 @@ def statistics(message):
         except Exception as e:
             bot.send_message(
                 message.chat.id, f"active: {e}")
-        finished_users = count_finished_quests()
+        try:
+            finished_users = count_finished_quests()
+        except Exception as e:
+            bot.send_message(
+                message.chat.id, f"finished: {e}")
         bot.send_message(
             message.chat.id, f"Количество пользователей, начавших квест: {active_users}\n"
             f"Количество пользователей, завершивших квест: {finished_users}\n")
