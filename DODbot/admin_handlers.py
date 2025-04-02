@@ -9,7 +9,7 @@ from users import count_finished_quests
 from users import check_points, update_merch_points
 from admin import save_admins_to_excel, get_admin_by_username, get_admin_level
 from merch import give_merch, is_got_merch, got_merch, add_column, save_merch_to_excel
-from quiz import get_db_connection
+from quiz import get_db_connection, update_quiz_time
 
 
 '''
@@ -182,6 +182,8 @@ def start_quiz(call):
         return
 
     quiz_name = quiz_info[0]
+    current_time = datetime.now().strftime("%H:%M")
+    update_quiz_time(quiz_id, current_time)
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton("Отправить первый вопрос",
                callback_data=f'next_question:{quiz_id}:1'))
@@ -222,7 +224,6 @@ def send_next_question(call):
 
     bot.send_message(call.message.chat.id, question_text, reply_markup=markup)
 
-    # Добавляем кнопку "Следующий вопрос"
     markup_next = InlineKeyboardMarkup()
     markup_next.add(InlineKeyboardButton("Следующий вопрос",
                     callback_data=f'next_question:{quiz_id}:{question_number + 1}'))

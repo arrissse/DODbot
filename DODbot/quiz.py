@@ -16,16 +16,17 @@ def create_quiz_table():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         quiz_name TEXT NOT NULL,
         start_time TEXT CHECK (LENGTH(start_time) = 5 AND start_time LIKE '__:__'), -- Ограничение формата HH:MM
+        location TEXT NOT NULL,
         is_started INTEGER DEFAULT 0
     )
     """)
     cursor.execute("""
-    INSERT OR IGNORE INTO quiz_schedule (quiz_name, start_time) VALUES 
-        ("Квиз 1", "11:00"),
-        ("Квиз 2", "12:00"),
-        ("Квиз 3", "13:00"),
-        ("Квиз 4", "14:00"),
-        ("Квиз 5", "15:00");
+    INSERT OR IGNORE INTO quiz_schedule (quiz_name, start_time, location) VALUES 
+        ("Квиз 1", "11:00", "113 ГК"),
+        ("Квиз 2", "12:00", "4.16 Цифра"),
+        ("Квиз 3", "13:00", "423 ГК"),
+        ("Квиз 4", "14:00", "4.6 Арктика"),
+        ("Квиз 5", "15:00", "305 ЛК");
     """)
 
     cursor.execute("""
@@ -67,6 +68,18 @@ def get_db_connection():
     return sqlite3.connect("quiz.db", check_same_thread=False)
 
 
+def update_quiz_time(quiz_id, new_time):
+    conn = sqlite3.connect("quiz.db")
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE quiz_schedule SET start_time = ? WHERE id = ?", (new_time, quiz_id))
+
+    conn.commit()
+    conn.close()
+
+
+
 def is_within_range(current_time_str, target_time_str, delta_minutes=10):
     current_dt = datetime.strptime(current_time_str, "%H:%M")
     target_dt = datetime.strptime(target_time_str, "%H:%M")
@@ -80,7 +93,7 @@ def send_quiz(m):
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("SELECT id, quiz_name, time, location FROM quiz_schedule ORDER BY time ASC")
+    cur.execute("SELECT id, quiz_name, start_time, location FROM quiz_schedule ORDER BY start_time ASC")
     quizzes = cur.fetchall()
 
     current_time = datetime.now().strftime("%H:%M")
