@@ -20,7 +20,7 @@ def create_quiz_table():
     )
     """)
     cursor.execute("""
-    INSERT OR IGNORE INTO quize_schedule (quiz_name, start_time) VALUES 
+    INSERT OR IGNORE INTO quiz_schedule (quiz_name, start_time) VALUES 
         ("Квиз 1", "11:00"),
         ("Квиз 2", "12:00"),
         ("Квиз 3", "13:00"),
@@ -63,6 +63,7 @@ def create_quiz_table():
     conn.commit()
     conn.close()
 
+
 def get_db_connection():
     return sqlite3.connect("quiz.db", check_same_thread=False)
 
@@ -74,6 +75,7 @@ def is_within_range(current_time_str, target_time_str, delta_minutes=10):
     if diff < 0:
         return False
     return diff <= delta_minutes
+
 
 @bot.message_handler(func=lambda message: message.text == "🎓 Квизы")
 def send_quiz(m):
@@ -117,6 +119,7 @@ def process_quiz_start(message, quiz_id):
     else:
         bot.send_message(message.chat.id, "❌ Неверное кодовое слово.")
 
+
 def start_quiz(message, quiz_id):
     user = message.from_user.username
     if is_finished_quiz(user, quiz_id):
@@ -136,6 +139,7 @@ def start_quiz(message, quiz_id):
 
     conn.close()
 
+
 def send_question(chat_id, user, question_id, question_text):
     conn = get_db_connection()
     cur = conn.cursor()
@@ -151,6 +155,7 @@ def send_question(chat_id, user, question_id, question_text):
 
     bot.send_message(chat_id, question_text, reply_markup=markup)
     conn.close()
+
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("answer:"))
 def check_answer(call):
