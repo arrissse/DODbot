@@ -123,7 +123,7 @@ def send_quiz(m):
 
 def process_quiz_start(message, quiz_id):
     user_input = message.text.lower().strip()
-    valid_words = ["сосиска", "колбаса", "1", "2", "3"]
+    valid_words = ["сосиска", "колбаса", "1", "2", "3"]  # ----- исправить -------
 
     if user_input in valid_words:
         start_quiz(message, quiz_id)
