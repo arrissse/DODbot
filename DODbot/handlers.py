@@ -163,8 +163,7 @@ def handle_station(message):
 @bot.callback_query_handler(func=lambda call: call.data.startswith("code:"))
 def send_code(call):
     _, username = call.data.split(":")
-    code = get_user_by_username(username[1])
-    bot.send_message(call.message.chat.id, f"Сообщите на станции ваш код: {code}")
+    bot.send_message(call.message.chat.id, f"Сообщите на станции ваш код: {username}")
     
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("points:"))
