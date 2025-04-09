@@ -150,14 +150,17 @@ stations = {
 
 @bot.message_handler(func=lambda message: message.text in stations)
 def handle_station(message):
-    station_number = stations[message.text]
-    username = message.from_user.username
-    markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("Код для участия"),
+    try:
+        station_number = stations[message.text]
+        username = message.from_user.username
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("Код для участия"),
                callback_data=f"code:{username}")
-    markup.add(InlineKeyboardButton("Баллы"),
+        markup.add(InlineKeyboardButton("Баллы"),
                callback_data=f"points:{username}:{station_number}")
-    bot.send_message(message.chat.id, message.text, reply_markup=markup)
+        bot.send_message(message.chat.id, message.text, reply_markup=markup)
+    except Exception as e:
+        bot.send_message(message.chat.id, e)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("code:"))
