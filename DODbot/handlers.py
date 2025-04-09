@@ -15,6 +15,8 @@ create_merch_table()
 create_admins_table()
 create_users_table()
 
+main_keyboard = main_keyboard()
+
 add_admin("@arrisse", 0)
 add_admin("@Nikita_Savel", 0)
 
@@ -129,10 +131,12 @@ def continue_quest(message):
     bot.send_message(message.chat.id, "Выберите станцию:", reply_markup=markup)
 
 
+
+
 @bot.message_handler(func=lambda message: message.text == "⬅️ Назад")
 def back(message):
     bot.send_message(message.chat.id, "Вы снова в главном меню",
-                     reply_markup=main_keyboard())
+                     reply_markup=main_keyboard)
 
 
 def send_quest_points(message, username, station):
