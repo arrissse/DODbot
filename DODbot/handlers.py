@@ -154,10 +154,13 @@ def handle_station(message):
         station_number = stations[message.text]
         username = message.from_user.username
         markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("Код для участия"),
-               callback_data=f"code:{username}")
-        markup.add(InlineKeyboardButton("Баллы"),
-               callback_data=f"points:{username}:{station_number}")
+
+
+        markup.add(InlineKeyboardButton(
+        "Код для участия", callback_data=f'code:{username}'))
+
+        markup.add(InlineKeyboardButton(
+            "Баллы", callback_data=f"points:{username}:{station_number}"))
         bot.send_message(message.chat.id, message.text, reply_markup=markup)
     except Exception as e:
         bot.send_message(message.chat.id, e)
