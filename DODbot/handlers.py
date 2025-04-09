@@ -154,9 +154,9 @@ def handle_station(message):
     username = message.from_user.username
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton("Код для участия"),
-               callback_data=f'code:{username}')
+               callback_data=f"code:{username}")
     markup.add(InlineKeyboardButton("Баллы"),
-               callback_data=f'points:{username}:{station_number}')
+               callback_data=f"points:{username}:{station_number}")
     bot.send_message(message.chat.id, message.text, reply_markup=markup)
 
 
