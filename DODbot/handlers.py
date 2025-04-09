@@ -176,7 +176,7 @@ def send_code(call):
     bot.answer_callback_query(call.id)
     _, username = call.data.split(":")
     bot.send_message(call.message.chat.id,
-                     f"Сообщите на станции ваш код: {username}")
+                     f"Сообщите на станции ваш ник: {username}")
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("points:"))
