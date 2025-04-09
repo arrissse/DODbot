@@ -151,11 +151,12 @@ stations = {
 @bot.message_handler(func=lambda message: message.text in stations)
 def handle_station(message):
     station_number = stations[message.text]
+    username = message.from_user.username
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton("Код для участия"),
-               callback_data=f'code:{message.from_user.username}')
+               callback_data=f'code:{username}')
     markup.add(InlineKeyboardButton("Баллы"),
-               callback_data=f'points:{message.from_user.username}:{station_number}')
+               callback_data=f'points:{username}:{station_number}')
     bot.send_message(message.chat.id, message.text, reply_markup=markup)
 
 
@@ -163,8 +164,7 @@ def handle_station(message):
 def send_code(call):
     _, username = call.data.split(":")
     code = get_user_by_username(username[1])
-    bot.send_message(call.message.chat.id, f"Сообщите на станции ваш код: {code}",
-                     reply_markup=quest_started_keyboard())
+    bot.send_message(call.message.chat.id, f"Сообщите на станции ваш код: {code}")
     
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("points:"))
