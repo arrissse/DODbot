@@ -156,7 +156,7 @@ stations = {
     "станция ПИШ РПИ": 11
 }
 
-station_place = {
+station_place = [
     "Физтех.Цифра 3 этаж",
     "Лабораторный корпус",
     "Физтех.Арктика 2 этаж",
@@ -168,7 +168,7 @@ station_place = {
     "Главный корпус 2 этаж",
     "Главный корпус 1 этаж",
     "Физтех.Арктика 4 этаж"
-}
+]
 
 
 @bot.message_handler(func=lambda message: message.text in stations)
