@@ -1,9 +1,10 @@
 from bot import bot
 from telebot import types
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from users import create_users_table
 from admin import create_admins_table
-from keyboard import main_keyboard, admin_keyboard, pro_admin_keyboard, mipt_admin_keyboard, quest_keyboard, quest_started_keyboard, continue_quest_keyboard
-from users import add_user, start_quest, is_quest_started, check_points, check_st_points
+from keyboard import main_keyboard, admin_keyboard, pro_admin_keyboard, mipt_admin_keyboard, quest_keyboard, quest_started_keyboard, continue_quest_keyboard, activity_keyboard
+from users import add_user, start_quest, is_quest_started, check_points, check_st_points, get_user_by_username
 from admin import get_all_admins, add_admin, get_admin_level
 from telebot.types import BotCommand
 from merch import create_merch_table
@@ -104,6 +105,8 @@ def qwest(message):
         keyboard = quest_started_keyboard()
     else:
         keyboard = quest_keyboard()
+    bot.send_message(message.chat.id, "*Описание квеста*",
+                         reply_markup=keyboard)
     bot.send_message(message.chat.id, "Выберите действие:",
                      reply_markup=keyboard)
 
@@ -148,8 +151,26 @@ stations = {
 @bot.message_handler(func=lambda message: message.text in stations)
 def handle_station(message):
     station_number = stations[message.text]
-    bot.send_message(message.chat.id, message.text, reply_markup=quest_started_keyboard())
-    send_quest_points(message, message.from_user.username, station_number)
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("Код для участия"),
+               callback_data=f'code:{message.from_user.username}')
+    markup.add(InlineKeyboardButton("Баллы"),
+               callback_data=f'points:{message.from_user.username}:{station_number}')
+    bot.send_message(message.chat.id, message.text, reply_markup=markup)
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("code:"))
+def send_code(call):
+    _, username = call.data.split(":")
+    code = get_user_by_username(username[1])
+    bot.send_message(call.message.chat.id, f"Сообщите на станции ваш код: {code}",
+                     reply_markup=quest_started_keyboard())
+    
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("points:"))
+def send_code(call):
+    _, username, station_number = call.data.split(":")
+    send_quest_points(call.message, username, station_number)
 
 '''
 -----------------------
@@ -161,9 +182,61 @@ def handle_station(message):
 
 @bot.message_handler(func=lambda message: message.text == "🗺 Карта")
 def send_map_photo(message):
-    photo_url = "img/schedule.png"
+    photo_url = "img/map.png"
     try:
         with open(photo_url, "rb") as photo:
             bot.send_photo(message.chat.id, photo, caption="🗺 Карта института:")
     except Exception as e:
         bot.send_message(message.chat.id, f"Ошибка при отправке: {e}")
+
+
+'''
+-----------------------
+
+Расположение стендов
+
+-----------------------
+'''
+
+
+@bot.message_handler(func=lambda message: message.text == "📍 Расположение стендов")
+def send_map_photo(message):
+    photo_url = "img/map.png"
+    try:
+        with open(photo_url, "rb") as photo:
+            bot.send_photo(message.chat.id, photo,
+                           caption="📍 Расположение стендов:")
+    except Exception as e:
+        bot.send_message(message.chat.id, f"Ошибка при отправке: {e}")
+
+schools = {
+    "ФРКТ": 1,
+    "ЛФИ": 2,
+    "ФАКТ": 3,
+    "ФЭФМ": 4,
+    "ФПМИ": 5,
+    "ФБМФ": 6,
+    "КНТ": 7,
+    "ФБВТ": 8,
+    "ВШПИ": 9,
+    "ВШМ": 10,
+    "ПИШ РПИ": 11
+}
+
+
+def send_activity(message, school):
+    bot.send_message(
+        message.chat.id, f"Активности {school}", reply_markup=activity_keyboard())
+
+@bot.message_handler(func=lambda message: message.text == "🧩 Активности ФШ")
+def school(message):
+    markup = activity_keyboard()
+    bot.send_message(message.chat.id, "Выберите ФШ:", reply_markup=markup)
+
+
+@bot.message_handler(func=lambda message: message.text in schools)
+def handle_station(message):
+    schools_number = schools[message.text]
+    bot.send_message(message.chat.id, message.text,
+                     reply_markup=activity_keyboard())
+    send_activity(message, schools_number)

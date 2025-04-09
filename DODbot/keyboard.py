@@ -4,9 +4,11 @@ def main_keyboard():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     item1 = types.KeyboardButton("📅 Расписание лекций")
     item2 = types.KeyboardButton("🗺 Карта")
-    item3 = types.KeyboardButton("🎯 Квест")
+    item3 = types.KeyboardButton("🧩 Активности ФШ")
     item4 = types.KeyboardButton("🎓 Квизы")
-    markup.add(item1, item2, item3, item4)
+    item5 = types.KeyboardButton("📍 Расположение стендов")
+    item6 = types.KeyboardButton("🎯 Квест")
+    markup.add(item1, item2, item3, item4, item5, item6)
     return markup
 
 def pro_admin_keyboard():
@@ -90,4 +92,23 @@ def continue_quest_keyboard():
     item11 = types.KeyboardButton("станция ПИШ РПИ")
     item12 = types.KeyboardButton("⬅️ Назад")
     markup.add(item1, item2, item3, item4, item5, item6, item7, item8, item9, item10, item11, item12)
+    return markup
+
+
+def activity_keyboard():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    item1 = types.KeyboardButton("ФРКТ")
+    item2 = types.KeyboardButton("ЛФИ")
+    item3 = types.KeyboardButton("ФАКТ")
+    item4 = types.KeyboardButton("ФЭФМ")
+    item5 = types.KeyboardButton("ФПМИ")
+    item6 = types.KeyboardButton("ФБМФ")
+    item7 = types.KeyboardButton("КНТ")
+    item8 = types.KeyboardButton("ФБВТ")
+    item9 = types.KeyboardButton("ВШПИ")
+    item10 = types.KeyboardButton("ВШМ")
+    item11 = types.KeyboardButton("ПИШ РПИ")
+    item12 = types.KeyboardButton("⬅️ Назад")
+    markup.add(item1, item2, item3, item4, item5, item6,
+               item7, item8, item9, item10, item11, item12)
     return markup
