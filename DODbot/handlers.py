@@ -156,10 +156,25 @@ stations = {
     "станция ПИШ РПИ": 11
 }
 
+station_place = {
+    "Физтех.Цифра 3 этаж",
+    "Лабораторный корпус",
+    "Физтех.Арктика 2 этаж",
+    "Физтех.Арктика 3 этаж",
+    "Главный корпус 1 этаж",
+    "Физтех.Цифра 4 этаж",
+    "Физтех.Цифра 2 этаж",
+    "Главный корпус 1 этаж",
+    "Главный корпус 2 этаж",
+    "Главный корпус 1 этаж",
+    "Физтех.Арктика 4 этаж"
+}
+
 
 @bot.message_handler(func=lambda message: message.text in stations)
 def handle_station(message):
     station_number = stations[message.text]
+    st_place = station_place[station_number - 1]
     username = message.from_user.username
     markup = InlineKeyboardMarkup()
 
@@ -168,7 +183,7 @@ def handle_station(message):
 
     markup.add(InlineKeyboardButton(
         "Баллы", callback_data=f"points:{username}:{station_number}"))
-    bot.send_message(message.chat.id, message.text, reply_markup=markup)
+    bot.send_message(message.chat.id, f"Расположение {message.text}: {st_place}", reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("code:"))
