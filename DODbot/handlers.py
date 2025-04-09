@@ -58,7 +58,7 @@ def start(m):
     parts = m.text.split()
     if len(parts) > 1:
         param = parts[1]
-    
+
         try:
             if int(param[-2:]) >= 10:
                 name = param[-2:]
@@ -66,13 +66,15 @@ def start(m):
                 name = param[-1]
         except ValueError:
             name = param[-1]
-    
+
     photo_url = f"img/{name}.png"
     do_action(m, photo_url)
+
 
 def do_action(message, photo_url):
     with open(photo_url, "rb") as photo:
         bot.send_photo(message.chat.id, photo, caption="Ваше местоположение: ")
+
 
 '''
 -----------------------
@@ -81,6 +83,7 @@ def do_action(message, photo_url):
 
 -----------------------
 '''
+
 
 @bot.message_handler(func=lambda message: message.text == "📅 Расписание лекций")
 def send_schedule_photo(m):
@@ -91,6 +94,7 @@ def send_schedule_photo(m):
     except Exception as e:
         bot.send_message(m.chat.id, f"Ошибка при отправке: {e}")
 
+
 '''
 -----------------------
 
@@ -99,6 +103,7 @@ def send_schedule_photo(m):
 -----------------------
 '''
 
+
 @bot.message_handler(func=lambda message: message.text == "🎯 Квест")
 def qwest(message):
     if is_quest_started(message.from_user.username):
@@ -106,12 +111,12 @@ def qwest(message):
     else:
         keyboard = quest_keyboard()
     bot.send_message(message.chat.id, "*Описание квеста*",
-                         reply_markup=keyboard)
+                     reply_markup=keyboard)
     bot.send_message(message.chat.id, "Выберите действие:",
                      reply_markup=keyboard)
 
-@bot.message_handler(func=lambda message: message.text == "▶️ Начать")
 
+@bot.message_handler(func=lambda message: message.text == "▶️ Начать")
 def start(message):
     start_quest(message.from_user.username)
     markup = continue_quest_keyboard()
@@ -131,8 +136,11 @@ def back(message):
 
 
 def send_quest_points(message, username, station):
-    bot.send_message(message.chat.id, f"Всего баллов: {check_points(username)}", reply_markup=quest_started_keyboard())
-    bot.send_message(message.chat.id, f"Баллы за данную станцию: {check_st_points(username, station)}", reply_markup=quest_started_keyboard())
+    bot.send_message(
+        message.chat.id, f"Всего баллов: {check_points(username)}", reply_markup=quest_started_keyboard())
+    bot.send_message(
+        message.chat.id, f"Баллы за данную станцию: {check_st_points(username, station)}", reply_markup=quest_started_keyboard())
+
 
 stations = {
     "станция ФРКТ": 1,
@@ -148,34 +156,35 @@ stations = {
     "станция ПИШ РПИ": 11
 }
 
+
 @bot.message_handler(func=lambda message: message.text in stations)
 def handle_station(message):
-    try:
-        station_number = stations[message.text]
-        username = message.from_user.username
-        markup = InlineKeyboardMarkup()
+    station_number = stations[message.text]
+    username = message.from_user.username
+    markup = InlineKeyboardMarkup()
 
-
-        markup.add(InlineKeyboardButton(
+    markup.add(InlineKeyboardButton(
         "Код для участия", callback_data=f'code:{username}'))
 
-        markup.add(InlineKeyboardButton(
-            "Баллы", callback_data=f"points:{username}:{station_number}"))
-        bot.send_message(message.chat.id, message.text, reply_markup=markup)
-    except Exception as e:
-        bot.send_message(message.chat.id, e)
+    markup.add(InlineKeyboardButton(
+        "Баллы", callback_data=f"points:{username}:{station_number}"))
+    bot.send_message(message.chat.id, message.text, reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("code:"))
 def send_code(call):
+    bot.answer_callback_query(call.id)
     _, username = call.data.split(":")
-    bot.send_message(call.message.chat.id, f"Сообщите на станции ваш код: {username}")
-    
+    bot.send_message(call.message.chat.id,
+                     f"Сообщите на станции ваш код: {username}")
+
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("points:"))
-def send_code(call):
+def send_pts(call):
+    bot.answer_callback_query(call.id)
     _, username, station_number = call.data.split(":")
     send_quest_points(call.message, username, station_number)
+
 
 '''
 -----------------------
@@ -185,12 +194,14 @@ def send_code(call):
 -----------------------
 '''
 
+
 @bot.message_handler(func=lambda message: message.text == "🗺 Карта")
 def send_map_photo(message):
     photo_url = "img/map.png"
     try:
         with open(photo_url, "rb") as photo:
-            bot.send_photo(message.chat.id, photo, caption="🗺 Карта института:")
+            bot.send_photo(message.chat.id, photo,
+                           caption="🗺 Карта института:")
     except Exception as e:
         bot.send_message(message.chat.id, f"Ошибка при отправке: {e}")
 
@@ -214,6 +225,7 @@ def send_map_photo(message):
     except Exception as e:
         bot.send_message(message.chat.id, f"Ошибка при отправке: {e}")
 
+
 schools = {
     "ФРКТ": 1,
     "ЛФИ": 2,
@@ -232,6 +244,7 @@ schools = {
 def send_activity(message, school):
     bot.send_message(
         message.chat.id, f"Активности {school}", reply_markup=activity_keyboard())
+
 
 @bot.message_handler(func=lambda message: message.text == "🧩 Активности ФШ")
 def school(message):
