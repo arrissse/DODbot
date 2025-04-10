@@ -235,7 +235,7 @@ def send_map_photo(message):
 
 @bot.message_handler(func=lambda message: message.text == "📍 Расположение стендов")
 def send_map_photo(message):
-    photo_url = "img/map.png"
+    photo_url = "img/stand.png"
     try:
         with open(photo_url, "rb") as photo:
             bot.send_photo(message.chat.id, photo,
