@@ -5,10 +5,11 @@ from requests.exceptions import ConnectionError, Timeout, HTTPError
 import time
 from telebot.apihelper import ApiTelegramException
 import logging
-from database import db_lock, logger, db_operation
+from database import logger, db_manager
 
 def init_database():
-    with db_operation() as conn:
+ try:
+    with db_manager.get_connection() as conn:
         logger.info("🚀 Начало инициализации БД")
         from newsletter import create_db
         create_db()
@@ -28,6 +29,12 @@ def init_database():
         from admin import init_admins
         init_admins()
         logger.info("✅ БД успешно инициализирована")
+ except Exception as e:
+        logger.error(f"⛔ Ошибка инициализации: {str(e)}")
+        raise
+ finally:
+        # Принудительный сброс подключения при ошибках
+        db_manager.init_db()
 
 import quiz
 import set_points
