@@ -10,8 +10,7 @@ from users import check_points, update_merch_points
 from admin import save_admins_to_excel, get_admin_by_username, get_admin_level
 from merch import give_merch, is_got_merch, got_merch, add_column, save_merch_to_excel
 from quiz import update_quiz_time
-from database import db_lock, db_operation
-
+from database import db_manager
 
 '''
 -----------------------
@@ -167,37 +166,40 @@ def handle_quiz_start(message):
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("start_quiz:"))
 def start_quiz(call):
+  try:
     bot.answer_callback_query(call.id)
     _, quiz_id = call.data.split(":")
     quiz_id = int(quiz_id)
-    conn = db_operation()
-    cur = conn.cursor()
+    with db_manager.get_connection() as conn:
+        cur = conn.cursor()
 
-    cur.execute("SELECT quiz_name FROM quiz_schedule WHERE id = ?", (quiz_id,))
-    quiz_info = cur.fetchone()
+        cur.execute("SELECT quiz_name FROM quiz_schedule WHERE id = ?", (quiz_id,))
+        quiz_info = cur.fetchone()
     
 
-    if not quiz_info:
-        bot.send_message(call.message.chat.id, "Ошибка: квиз не найден.")
-        return
+        if not quiz_info:
+            bot.send_message(call.message.chat.id, "Ошибка: квиз не найден.")
+            return
 
-    quiz_name = quiz_info[0]
-    current_time = datetime.now().strftime("%H:%M")
-    update_quiz_time(quiz_id, current_time)
-    markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("Отправить первый вопрос",
+        quiz_name = quiz_info[0]
+        current_time = datetime.now().strftime("%H:%M")
+        update_quiz_time(quiz_id, current_time)
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("Отправить первый вопрос",
                callback_data=f'next_question:{quiz_id}:1'))
-    bot.send_message(call.message.chat.id,
-                     f"✅ {quiz_name} начат!", reply_markup=markup)
+        bot.send_message(call.message.chat.id,
+                        f"✅ {quiz_name} начат!", reply_markup=markup)
+  except Exception as e:
+        bot.send_message(call.message.chat.id, f"❌ {e}")
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("next_question:"))
 def send_next_question(call):
-    bot.answer_callback_query(call.id)
-    _, quiz_id, question_number = call.data.split(":")
-    quiz_id, question_number = int(quiz_id), int(question_number)
+   bot.answer_callback_query(call.id)
+   _, quiz_id, question_number = call.data.split(":")
+   quiz_id, question_number = int(quiz_id), int(question_number)
 
-    conn = db_operation()
+   with db_manager.get_connection() as conn:
     cur = conn.cursor()
 
     cur.execute("""
@@ -235,11 +237,12 @@ def send_next_question(call):
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("answer:"))
 def check_answer(call):
-    bot.answer_callback_query(call.id)
-    _, question_id, answer_id = call.data.split(":")
-    question_id, answer_id = int(question_id), int(answer_id)
+  bot.answer_callback_query(call.id)
+  _, question_id, answer_id = call.data.split(":")
+  question_id, answer_id = int(question_id), int(answer_id)
 
-    conn = db_operation()
+
+  with db_manager.get_connection() as conn:
     cur = conn.cursor()
 
     cur.execute("SELECT is_correct FROM answers WHERE id = ?", (answer_id,))
@@ -329,31 +332,26 @@ def statistics(message):
 
 
 def create_price_table():
-    with db_lock:
-        with db_operation() as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-    CREATE TABLE IF NOT EXISTS merch_prices (
-        merch_type TEXT PRIMARY KEY,
-        price INTEGER DEFAULT 0
-    )
-    """)
-            cursor.execute("""
-    INSERT OR IGNORE INTO merch_prices (merch_type, price) VALUES 
-        ("Раскрасить футболку", 7),
-        ("Раскрасить шоппер", 5),
-        ("Футболка", 8),
-        ("Блокнот", 2),
-        ("ПБ", 15);
-    """)
-
-            conn.commit()
-            
+    with db_manager.get_connection() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS merch_prices (
+                merch_type TEXT PRIMARY KEY,
+                price INTEGER DEFAULT 0
+            )
+        """)
+        conn.execute("""
+            INSERT OR IGNORE INTO merch_prices (merch_type, price) VALUES 
+                ("Раскрасить футболку", 7),
+                ("Раскрасить шоппер", 5),
+                ("Футболка", 8),
+                ("Блокнот", 2),
+                ("ПБ", 15)
+        """)
+        conn.commit()
 
 
 def get_merch_types():
-    with db_lock:
-        with db_operation() as conn:
+    with db_manager.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT merch_type FROM merch_prices")
             types = [row[0] for row in cursor.fetchall()]
@@ -362,8 +360,7 @@ def get_merch_types():
 
 
 def get_merch_price(merch_type):
-    with db_lock:
-        with db_operation() as conn:
+    with db_manager.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
                 "SELECT price FROM merch_prices WHERE merch_type = ?", (merch_type,))
@@ -373,8 +370,7 @@ def get_merch_price(merch_type):
 
 
 def update_merch_price(merch_type, new_price):
-    with db_lock:
-        with db_operation() as conn:
+    with db_manager.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("INSERT INTO merch_prices (merch_type, price) VALUES (?, ?) ON CONFLICT(merch_type) DO UPDATE SET price = ?",
                            (merch_type, new_price, new_price))
@@ -384,8 +380,7 @@ def update_merch_price(merch_type, new_price):
 
 @bot.message_handler(func=lambda message: message.text == "Стоимость мерча")
 def merch_prices_menu(message):
-    with db_lock:
-        with db_operation() as conn:
+    with db_manager.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT merch_type FROM merch_prices")
             merch_types = [row[0] for row in cursor.fetchall()]
@@ -543,8 +538,7 @@ def process_type_cost(message, type):
         bot.send_message(
             message.chat.id, "❌ Стоимость должна быть числом. Попробуйте ещё раз.")
         return
-    with db_lock:
-        with db_operation() as conn:
+    with db_manager.get_connection() as conn:
             cursor = conn.cursor()
 
             cursor.execute("""
@@ -588,8 +582,7 @@ def remove_merch_type(message):
 def process_r_type(message):
     merch_type = message.text.strip()
 
-    with db_lock:
-        with db_operation() as conn:
+    with db_manager.get_connection() as conn:
             cursor = conn.cursor()
 
             cursor.execute(
