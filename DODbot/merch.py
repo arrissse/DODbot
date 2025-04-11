@@ -25,7 +25,12 @@ def got_merch(username, merch_type):
     """Проверка наличия мерча"""
     try:
         with db_manager.get_connection() as conn:
-            conn.execute(
+            cursor = conn.execute(
+                f'SELECT "{username}" FROM merch',
+                (username,)
+            )
+            if not cursor:
+                conn.execute(
                 "INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
             cursor = conn.execute(
                 f'SELECT "{merch_type}" FROM merch WHERE username = ?',
@@ -60,8 +65,13 @@ def give_merch(username, merch_type):
 def is_got_merch(username):
     try:
         with db_manager.get_connection() as conn:
-            conn.execute(
-                "INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
+            cursor = conn.execute(
+                f'SELECT "{username}" FROM merch',
+                (username,)
+            )
+            if not cursor:
+                conn.execute(
+                    "INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
 
             cursor = conn.execute("PRAGMA table_info(merch);")
             columns = [col[1] for col in cursor.fetchall()]
@@ -92,7 +102,12 @@ def is_got_any_merch(username):
     """Проверка наличия любого мерча"""
     try:
         with db_manager.get_connection() as conn:
-            conn.execute(
+            cursor = conn.execute(
+                f'SELECT "{username}" FROM merch',
+                (username,)
+            )
+            if not cursor:
+                conn.execute(
                 "INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
 
             cursor = conn.execute("PRAGMA table_info(merch);")
