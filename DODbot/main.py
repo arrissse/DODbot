@@ -9,8 +9,11 @@ from database import logger, db_manager
 
 def init_database():
  try:
+  if not db_manager.is_initialized():
+    logger.info("🔑 Начало эксклюзивной инициализации БД")
     with db_manager.get_connection() as conn:
-        logger.info("🚀 Начало инициализации БД")
+                # Создание всех таблиц в одной транзакции
+        conn.execute("BEGIN EXCLUSIVE")
         from newsletter import create_db
         create_db()
         logger.info("🚀 newsletter")
@@ -30,10 +33,8 @@ def init_database():
         init_admins()
         logger.info("✅ БД успешно инициализирована")
  except Exception as e:
-        logger.error(f"⛔ Ошибка инициализации: {str(e)}")
-        raise
- finally:
-        db_manager.init_db()
+        logger.critical(f"⛔ Критическая ошибка: {str(e)}")
+        raise SystemExit(1)
 
 
 def start_background_threads():

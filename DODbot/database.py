@@ -31,6 +31,7 @@ class DatabaseManager:
             check_same_thread=False,
             timeout=60
         )
+        self.lock = FileLock("database.lock", timeout=30)
         self.conn.execute("PRAGMA journal_mode=WAL")
         self.conn.execute("PRAGMA busy_timeout=5000")
 
