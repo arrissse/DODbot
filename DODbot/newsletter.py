@@ -21,7 +21,7 @@ def create_db():
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     message TEXT NOT NULL,
                     send_time TEXT NOT NULL,
-                    sent BOOLEAN DEFAULT FALSE  # Добавляем статус отправки
+                    sent BOOLEAN DEFAULT FALSE
                 )
             """)
             conn.commit()
