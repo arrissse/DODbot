@@ -129,21 +129,13 @@ def process_quiz_start(message, quiz_id):
     if user_input in valid_words:
         if user_input == "сосиска" and quiz_id == 1:
             start_quiz(message, 1)
-        else:
-            bot.send_message(message.chat.id, "❌ Неверное кодовое слово.")
-        if user_input == "колбаса" and quiz_id == 2:
+        elif user_input == "колбаса" and quiz_id == 2:
             start_quiz(message, 2)
-        else:
-            bot.send_message(message.chat.id, "❌ Неверное кодовое слово.")
-        if user_input == "1" and quiz_id == 3:
+        elif user_input == "1" and quiz_id == 3:
             start_quiz(message, 3)
-        else:
-            bot.send_message(message.chat.id, "❌ Неверное кодовое слово.")
-        if user_input == "2" and quiz_id == 4:
+        elif user_input == "2" and quiz_id == 4:
             start_quiz(message, 4)
-        else:
-            bot.send_message(message.chat.id, "❌ Неверное кодовое слово.")
-        if user_input == "3" and quiz_id == 5:
+        elif user_input == "3" and quiz_id == 5:
             start_quiz(message, 5)
         else:
             bot.send_message(message.chat.id, "❌ Неверное кодовое слово.")
@@ -203,11 +195,15 @@ def check_answer(call):
 
     if result and result[0] == 1:
         update_quize_points(user, question_id)
+    cur.execute("SELECT quiz_id FROM questions WHERE id = ?", (question_id,))
+    quiz_id = cur.fetchone()[0]
 
     cur.execute("""
-        SELECT id, text FROM questions 
-        WHERE quiz_id = ? AND id > ? ORDER BY id ASC LIMIT 1
-    """, (question_id,))
+    SELECT id, text FROM questions 
+    WHERE quiz_id = ? AND id > ? ORDER BY id ASC LIMIT 1
+    """, (quiz_id, question_id))
+
+
     next_question = cur.fetchone()
 
     if next_question:
