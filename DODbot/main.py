@@ -16,14 +16,17 @@ import add_admin
 import newsletter
 import admin_handlers
 import handlers
+from admin import init_admins
 
 
 def init_database():
     with get_connection() as conn:
+        create_users_table()
+        create_admins_table()
         create_merch_table()
         create_quiz_table()
-        create_admins_table()
-        create_users_table()
+
+        init_admins()
 
 admin_handlers.create_price_table()
 

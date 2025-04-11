@@ -6,9 +6,6 @@ from users import add_user, start_quest, is_quest_started, check_points, check_s
 from admin import get_all_admins, add_admin, get_admin_level
 from telebot.types import BotCommand
 
-add_admin("@arrisse", 0)
-add_admin("@Nikita_Savel", 0)
-
 '''
 -----------------------
 

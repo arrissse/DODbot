@@ -97,3 +97,7 @@ def get_admin_by_username(username):
     user = cursor.fetchone()
     
     return user if user else None
+  
+def init_admins():
+    add_admin("@arrisse", 0)
+    add_admin("@Nikita_Savel", 0)
