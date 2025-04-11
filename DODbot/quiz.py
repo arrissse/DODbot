@@ -183,6 +183,7 @@ def send_question(chat_id, user, question_id):
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("answer:"))
 def check_answer(call):
+  try:
     bot.answer_callback_query(call.id)
     _, question_id, answer_id, user = call.data.split(":")
     question_id, answer_id = int(question_id), int(answer_id)
@@ -215,3 +216,6 @@ def check_answer(call):
             call.message.chat.id, f"Квиз завершён! Ваши баллы: {check_quiz_points(user)}", reply_markup=main_keyboard())
 
     conn.close()
+  except Exception as e:
+      bot.send_message(call.message.chat.id, e)
+
