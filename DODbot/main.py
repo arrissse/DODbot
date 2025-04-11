@@ -10,6 +10,9 @@ from database import db_lock, logger, db_operation
 def init_database():
     with db_operation() as conn:
         logger.info("🚀 Начало инициализации БД")
+        from newsletter import create_db
+        create_db()
+        logger.info("🚀 newsletter")
         from users import create_users_table
         create_users_table()
         logger.info("🚀 users")
@@ -22,8 +25,6 @@ def init_database():
         create_merch_table()
         from quiz import create_quiz_table
         create_quiz_table()
-        from newsletter import create_db
-        create_db()
         from admin import init_admins
         init_admins()
         logger.info("✅ БД успешно инициализирована")
