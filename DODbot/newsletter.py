@@ -267,8 +267,3 @@ def send_newsletter_now(text):
     except Exception as e:
         logger.error(f"Критическая ошибка рассылки: {e}")
 
-
-try:
-    start_sending_newsletters()
-except Exception as e:
-    logger.critical(f"Не удалось запустить рассылку: {e}")

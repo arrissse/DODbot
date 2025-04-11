@@ -102,6 +102,11 @@ if __name__ == '__main__':
 
     print(bot.get_webhook_info())
 
+    try:
+        newsletter.start_sending_newsletters()
+    except Exception as e:
+        logger.critical(f"Не удалось запустить рассылку: {e}")
+
     
 
     app.run(host="0.0.0.0", port=10181, debug=True)

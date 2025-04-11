@@ -33,7 +33,7 @@ class DatabaseManager:
     def get_connection(self):
         """Потокобезопасное подключение с таймаутом"""
         start_time = time.time()
-        timeout = 15  # Максимальное время ожидания
+        timeout = 30  # Максимальное время ожидания
 
         while True:
             if self.connection_lock.acquire(blocking=False):
