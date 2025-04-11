@@ -2,12 +2,11 @@ import sqlite3
 import openpyxl
 from openpyxl.styles import Font, PatternFill
 from merch import is_got_any_merch
-from database import db_lock, get_connection
+from database import db_lock, get_connection, db_operation
 
 
 def create_users_table():
-    with db_lock:
-        with get_connection() as conn:
+        with db_operation() as conn:
             cursor = conn.cursor()
 
             cursor.execute("""

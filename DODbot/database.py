@@ -34,3 +34,17 @@ def get_connection():
             if conn:
                 conn.close()
             logger.debug("Блокировка освобождена")
+
+
+@contextmanager
+def db_operation():
+    """Универсальный контекстный менеджер для всех операций с БД"""
+    db_lock.acquire()
+    try:
+        conn = sqlite3.connect(DATABASE, check_same_thread=False, timeout=30)
+        conn.execute("PRAGMA journal_mode=WAL")
+        yield conn
+        conn.commit()
+    finally:
+        conn.close()
+        db_lock.release()
