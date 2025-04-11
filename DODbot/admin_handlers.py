@@ -460,7 +460,7 @@ def process_fusername(m):
             if check_points(username) >= get_merch_price(merch) and not got_merch(username, merch.lower()):
                 price = get_merch_price(merch)
                 markup.add(InlineKeyboardButton(
-                    f"{merch}: {price}", callback_data=f'give_merch:{get_merch_price(merch)}:{merch.lower()}:{username}'))
+                    f"{merch}: {price}", callback_data=f'give_merch:{get_merch_price(merch)}:{merch}:{username}'))
 
         if markup.keyboard:
             bot.send_message(
