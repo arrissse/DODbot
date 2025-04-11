@@ -41,8 +41,13 @@ def got_merch(username, merch_type):
 def give_merch(username, merch_type):
     try:
         with db_manager.get_connection() as conn:
-            conn.execute(
-                "INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
+            cursor = conn.execute(
+                f'SELECT "{username}" FROM merch',
+                (username,)
+            )
+            if not cursor:
+                conn.execute(
+                    "INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
             conn.execute(
                 f'UPDATE merch SET "{merch_type}" = 1 WHERE username = ?',
                 (username,)
