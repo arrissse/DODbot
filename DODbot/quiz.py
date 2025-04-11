@@ -239,7 +239,7 @@ def check_answer(call):
                       next_question_id, quiz_id)
     else:
         bot.send_message(
-            call.message.chat.id, f"Квиз завершён! Ваши баллы: {check_quiz_points(user)}", reply_markup=main_keyboard())
+            call.message.chat.id, f"Квиз завершён! Ваши баллы: {check_quiz_points(user, quiz_id)}", reply_markup=main_keyboard())
 
     conn.close()
   except Exception as e:
