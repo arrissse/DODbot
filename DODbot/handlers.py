@@ -56,8 +56,8 @@ def start(m):
         except ValueError:
             name = param[-1]
 
-    photo_url = f"img/{name}.png"
-    do_action(m, photo_url)
+        photo_url = f"img/{name}.png"
+        do_action(m, photo_url)
  except Exception as e:
      bot.send_message(m.chat.id, e)
 
