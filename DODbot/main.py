@@ -4,18 +4,18 @@ import requests
 from requests.exceptions import ConnectionError, Timeout, HTTPError
 import time
 from telebot.apihelper import ApiTelegramException
-import quiz
-import set_points
-import add_admin
-import newsletter
-import admin_handlers
-import handlers
 import logging
 from database import db_lock, get_connection
 from users import create_users_table
 from admin import create_admins_table
 from merch import create_merch_table
 from quiz import create_quiz_table
+import quiz
+import set_points
+import add_admin
+import newsletter
+import admin_handlers
+import handlers
 
 
 def init_database():
