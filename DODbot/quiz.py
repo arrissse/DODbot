@@ -318,7 +318,7 @@ def handle_answer(call):
             """, (answer_id,))
 
             if (result := cursor.fetchone()) and result[0] == 1:
-                update_quize_points(user, quiz_id)
+                update_quize_points(user, quiz_id, 1)
                 logger.info(f"Пользователь {user} дал правильный ответ")
 
             # Поиск следующего вопроса
