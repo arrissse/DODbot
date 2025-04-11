@@ -26,10 +26,10 @@ def create_db():
             """)
             conn.commit()
             print("✅ Таблица newsletter создана/проверена")
-    except Exception as e:
-        print(f"❌ Ошибка создания таблицы: {e}")
+        logger.info("✅ Таблица newsletter создана/проверена")
+    except sqlite3.Error as e:
+        logger.error(f"❌ Ошибка создания таблицы: {str(e)}")
         raise
-
 
 def add_newsletter(message, send_time):
     """Добавление рассылки с обработкой ошибок"""
