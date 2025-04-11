@@ -177,7 +177,7 @@ def send_question(chat_id, user, question_id):
         markup.add(InlineKeyboardButton(
             ans_text, callback_data=f"answer:{question_id}:{ans_id}:{user}"))
 
-    bot.send_message(chat_id, question_id, reply_markup=markup)
+    bot.send_message(chat_id, f"❔ Вопрос {question_id}", reply_markup=markup)
     conn.close()
 
 
@@ -208,9 +208,9 @@ def check_answer(call):
     next_question = cur.fetchone()
 
     if next_question:
-        next_question_id, next_question_text = next_question
+        next_question_id = next_question
         send_question(call.message.chat.id, user,
-                      next_question_id, next_question_text)
+                      next_question_id)
     else:
         bot.send_message(
             call.message.chat.id, f"Квиз завершён! Ваши баллы: {check_quiz_points(user)}", reply_markup=main_keyboard())
