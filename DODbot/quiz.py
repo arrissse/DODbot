@@ -11,6 +11,7 @@ def create_quiz_table():
     conn = sqlite3.connect("quiz.db", check_same_thread=False)
     cursor = conn.cursor()
 
+    # Создание таблицы расписания квизов
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS quiz_schedule (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,6 +21,7 @@ def create_quiz_table():
         is_started INTEGER DEFAULT 0
     )
     """)
+
     cursor.execute("""
     INSERT OR IGNORE INTO quiz_schedule (quiz_name, start_time, location) VALUES 
         ("Квиз 1", "11:00", "113 ГК"),
@@ -29,40 +31,64 @@ def create_quiz_table():
         ("Квиз 5", "15:00", "305 ЛК");
     """)
 
+    # Создание таблицы вопросов с полем question_number и уникальным ограничением для (quiz_id, question_number)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS questions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        quiz_id INTEGER NOT NULL,
-        FOREIGN KEY (quiz_id) REFERENCES quiz_schedule(id)
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            quiz_id INTEGER NOT NULL,
+            question_number INTEGER NOT NULL,
+            text TEXT DEFAULT 'Вопрос без текста', 
+            UNIQUE(quiz_id, question_number),
+            FOREIGN KEY (quiz_id) REFERENCES quiz_schedule(id)
         )
     """)
 
+    # Создание таблицы вариантов ответов
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS answers(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        question_id INTEGER NOT NULL,
-        answer_text TEXT NOT NULL,
-        is_correct INTEGER DEFAULT 0,
-        FOREIGN KEY(question_id) REFERENCES questions(id)
-    )
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            question_id INTEGER NOT NULL,
+            answer_text TEXT NOT NULL,
+            is_correct INTEGER DEFAULT 0,
+            FOREIGN KEY(question_id) REFERENCES questions(id)
+        )
     """)
 
     cursor.execute("SELECT id FROM quiz_schedule")
     quiz_ids = [row[0] for row in cursor.fetchall()]
 
+    # Для каждого квиза вставляем ровно 25 вопросов, используя question_number для уникальности
     for quiz_id in quiz_ids:
-        for _ in range(25):
-            cursor.execute(
-                "INSERT INTO questions (quiz_id) VALUES (?)", (quiz_id,))
-            question_id = cursor.lastrowid
+        for question_number in range(1, 26):
+            # Пытаемся вставить вопрос; если такой уже есть – пропускаем его (INSERT OR IGNORE)
+            cursor.execute("""
+                INSERT OR IGNORE INTO questions (quiz_id, question_number, text)
+                VALUES (?, ?, ?)
+            """, (quiz_id, question_number, f"Вопрос {question_number} для квиза {quiz_id}"))
+            # Получаем id вопроса только что вставленной или уже существующей записи
+            cursor.execute("""
+                SELECT id FROM questions WHERE quiz_id = ? AND question_number = ?
+            """, (quiz_id, question_number))
+            question_row = cursor.fetchone()
+            if question_row:
+                question_id = question_row[0]
+                # Удаляем (или обновляем) варианты ответов для данного вопроса, если они уже существуют
+                cursor.execute(
+                    "DELETE FROM answers WHERE question_id = ?", (question_id,))
 
-            correct_answer = random.randint(1, 4)
-            for i in range(1, 5):
-                cursor.execute("INSERT INTO answers (question_id, answer_text, is_correct) VALUES (?, ?, ?)",
-                               (question_id, f"Вариант {i}", 1 if i == correct_answer else 0))
+                correct_answer = random.randint(1, 4)
+                for i in range(1, 5):
+                    cursor.execute("""
+                        INSERT INTO answers (question_id, answer_text, is_correct)
+                        VALUES (?, ?, ?)
+                    """, (question_id, f"Вариант {i}", 1 if i == correct_answer else 0))
+            else:
+                print(
+                    f"Не удалось получить вопрос для quiz_id {quiz_id} и question_number {question_number}")
 
     conn.commit()
     conn.close()
+
 
 def get_db_connection():
     return sqlite3.connect("quiz.db", check_same_thread=False)
