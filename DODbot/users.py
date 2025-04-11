@@ -138,7 +138,7 @@ class UserManager:
             return False
 
     @staticmethod
-    def update_quiz_points(username: str, quiz_num: int, points: int) -> bool:
+    def update_quize_points(username: str, quiz_num: int, points: int) -> bool:
         """Обновление баллов за квиз"""
         if not 1 <= quiz_num <= 5:
             logger.error(f"Некорректный номер квиза: {quiz_num}")
