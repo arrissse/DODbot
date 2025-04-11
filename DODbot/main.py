@@ -11,9 +11,6 @@ import newsletter
 import admin_handlers
 import handlers
 import logging
-from threading import Lock
-
-db_lock = Lock()
 
 admin_handlers.create_price_table()
 
