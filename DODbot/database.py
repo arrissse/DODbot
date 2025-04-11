@@ -1,49 +1,56 @@
 import sqlite3
-from threading import Lock
-from contextlib import contextmanager
+import threading
+import time
 import logging
+from contextlib import contextmanager
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-db_lock = Lock()
-DATABASE = "base.db"
 
-'''
-@contextmanager
-def get_connection():
-    """Потокобезопасный контекстный менеджер для подключений"""
-    logger.debug("Ожидание блокировки БД...")
-    with db_lock:
-        logger.debug("Блокировка получена")
-        conn = None
-        try:
-            conn = sqlite3.connect(
-                DATABASE,
-                check_same_thread=False,
-                timeout=30
-            )
-            conn.execute("PRAGMA journal_mode=WAL")
-            conn.execute("PRAGMA busy_timeout = 5000")
-            yield conn
-            conn.commit()
-        except Exception as e:
-            logger.error(f"Ошибка подключения: {str(e)}")
-            raise
-        finally:
-            if conn:
-                conn.close()
-            logger.debug("Блокировка освобождена")
-'''
-@contextmanager
-def db_operation():
-    """Универсальный контекстный менеджер для всех операций с БД"""
-    db_lock.acquire()
-    try:
-        conn = sqlite3.connect(DATABASE, check_same_thread=False, timeout=30)
-        conn.execute("PRAGMA journal_mode=WAL")
-        yield conn
-        conn.commit()
-    finally:
-        conn.close()
-        db_lock.release()
+class DatabaseManager:
+    _instance = None
+    _lock = threading.Lock()
+
+    def __new__(cls):
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super().__new__(cls)
+                cls._instance.connection_lock = threading.Lock()
+                cls._instance.init_db()
+            return cls._instance
+
+    def init_db(self):
+        self.conn = sqlite3.connect(
+            "base.db",
+            check_same_thread=False,
+            timeout=30
+        )
+        self.conn.execute("PRAGMA journal_mode=WAL")
+        self.conn.execute("PRAGMA busy_timeout=5000")
+
+    @contextmanager
+    def get_connection(self):
+        """Потокобезопасное подключение с таймаутом"""
+        start_time = time.time()
+        timeout = 15  # Максимальное время ожидания
+
+        while True:
+            if self.connection_lock.acquire(blocking=False):
+                try:
+                    logger.debug("🔒 Блокировка БД получена")
+                    yield self.conn
+                    self.conn.commit()
+                    break
+                finally:
+                    self.connection_lock.release()
+                    logger.debug("🔓 Блокировка БД освобождена")
+            else:
+                if time.time() - start_time > timeout:
+                    raise TimeoutError("Не удалось получить блокировку БД")
+                logger.debug("⌛ Ожидание блокировки...")
+                time.sleep(0.1)
+
+
+# Глобальный экземпляр менеджера
+db_manager = DatabaseManager()
