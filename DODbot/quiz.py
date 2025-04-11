@@ -200,7 +200,7 @@ def check_answer(call):
     quiz_id = cur.fetchone()[0]
 
     cur.execute("""
-    SELECT id, text FROM questions 
+    SELECT id FROM questions 
     WHERE quiz_id = ? AND id > ? ORDER BY id ASC LIMIT 1
     """, (quiz_id, question_id))
 
