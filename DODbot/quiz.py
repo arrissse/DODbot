@@ -210,7 +210,7 @@ def check_answer(call):
     if next_question:
         next_question_id = next_question[0]
         send_question(call.message.chat.id, user,
-                      next_question_id)
+                      next_question_id, quiz_id)
     else:
         bot.send_message(
             call.message.chat.id, f"Квиз завершён! Ваши баллы: {check_quiz_points(user)}", reply_markup=main_keyboard())
