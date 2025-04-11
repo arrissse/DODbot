@@ -5,10 +5,11 @@ from requests.exceptions import ConnectionError, Timeout, HTTPError
 import time
 from telebot.apihelper import ApiTelegramException
 import logging
-from database import db_lock, get_connection
+from database import db_lock, get_connection, logger
 
 def init_database():
-    with get_connection() as conn:
+    try:
+        logger.info("🚀 Начало инициализации БД")
         from users import create_users_table
         create_users_table()
         from admin import create_admins_table
@@ -23,6 +24,13 @@ def init_database():
         create_db()
         from admin import init_admins
         init_admins()
+        logger.info("✅ БД успешно инициализирована")
+
+    except TimeoutError as e:
+        logger.error(f"⛔ Ошибка инициализации: {str(e)}")
+        logger.debug("Состояние блокировок:")
+        logger.debug(f"Блокировка захвачена: {db_lock.locked()}")
+        raise
 
 import quiz
 import set_points
