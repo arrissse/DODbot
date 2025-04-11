@@ -30,11 +30,11 @@ def create_quiz_table():
     """)
 
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS questions (
+        CREATE TABLE IF NOT EXISTS questions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         quiz_id INTEGER NOT NULL,
         FOREIGN KEY (quiz_id) REFERENCES quiz_schedule(id)
-    )
+        )
     """)
 
     cursor.execute("""
@@ -164,11 +164,10 @@ def start_quiz(message, quiz_id):
 
     conn.close()
 
+
 def send_question(chat_id, user, question_id):
     conn = get_db_connection()
     cur = conn.cursor()
-
-
     cur.execute(
         "SELECT id, answer_text FROM answers WHERE question_id = ?", (question_id,))
     answers = cur.fetchall()
@@ -178,8 +177,9 @@ def send_question(chat_id, user, question_id):
         markup.add(InlineKeyboardButton(
             ans_text, callback_data=f"answer:{question_id}:{ans_id}:{user}"))
 
-    bot.send_message(chat_id, reply_markup=markup)
+    bot.send_message(chat_id, question_id, reply_markup=markup)
     conn.close()
+
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("answer:"))
 def check_answer(call):
