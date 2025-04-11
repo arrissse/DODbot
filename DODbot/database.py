@@ -23,6 +23,9 @@ class DatabaseManager:
                 self.conn.execute("PRAGMA journal_mode=WAL")
                 self.conn.execute("PRAGMA busy_timeout=10000")
                 yield self.conn
+                if self.conn is None:
+                    logger.error("Соединение не установлено!")
+                    return
                 self.conn.commit()
         except Exception as e:
             logger.critical(f"Ошибка подключения: {str(e)}")
