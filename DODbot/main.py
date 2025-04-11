@@ -33,8 +33,16 @@ def init_database():
         logger.error(f"⛔ Ошибка инициализации: {str(e)}")
         raise
  finally:
-        # Принудительный сброс подключения при ошибках
         db_manager.init_db()
+
+
+def start_background_threads():
+    init_database()  # Блокирующий вызов, гарантирует инициализацию
+    try:
+        newsletter.start_sending_newsletters()
+    except Exception as e:
+        logger.critical(f"Не удалось запустить рассылку: {e}")
+
 
 import quiz
 import set_points
@@ -90,7 +98,6 @@ def set_webhook_with_retry():
 
 
 if __name__ == '__main__':
-    init_database()
     try:
         bot.set_webhook(url="https://fest.mipt.ru/your-webhook-path")
     except ApiTelegramException as e:
@@ -101,12 +108,6 @@ if __name__ == '__main__':
             bot.set_webhook(url="https://fest.mipt.ru/your-webhook-path")
 
     print(bot.get_webhook_info())
-
-    try:
-        newsletter.start_sending_newsletters()
-    except Exception as e:
-        logger.critical(f"Не удалось запустить рассылку: {e}")
-
-    
-
+    init_database()
+    start_background_threads()
     app.run(host="0.0.0.0", port=10181, debug=True)
