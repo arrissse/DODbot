@@ -8,10 +8,7 @@ from database import db_manager  # Используем новый менедж�
 # Настройка логгера
 logger = logging.getLogger(__name__)
 
-
-class UserManager:
-    @staticmethod
-    def create_users_table():
+def create_users_table():
         """Создание таблицы пользователей с улучшенной структурой"""
         try:
             with db_manager.get_connection() as conn:
@@ -47,8 +44,8 @@ class UserManager:
             logger.error(f"Ошибка создания таблицы users: {e}")
             raise
 
-    @staticmethod
-    def add_user(user_id: int, username: str) -> bool:
+
+def add_user(user_id: int, username: str) -> bool:
         """Добавление нового пользователя"""
         try:
             with db_manager.get_connection() as conn:
@@ -61,8 +58,8 @@ class UserManager:
             logger.error(f"Ошибка добавления пользователя {username}: {e}")
             return False
 
-    @staticmethod
-    def get_user_by_username(username: str) -> Optional[Tuple]:
+
+def get_user_by_username(username: str) -> Optional[Tuple]:
         """Получение пользователя по username"""
         try:
             with db_manager.get_connection() as conn:
@@ -73,8 +70,8 @@ class UserManager:
             logger.error(f"Ошибка получения пользователя {username}: {e}")
             return None
 
-    @staticmethod
-    def get_all_users() -> List[Tuple]:
+
+def get_all_users() -> List[Tuple]:
         """Получение списка всех пользователей"""
         try:
             with db_manager.get_connection() as conn:
@@ -84,8 +81,8 @@ class UserManager:
             logger.error(f"Ошибка получения списка пользователей: {e}")
             return []
 
-    @staticmethod
-    def update_quest_status(username: str, started: bool = True) -> bool:
+
+def update_quest_status(username: str, started: bool = True) -> bool:
         """Обновление статуса квеста"""
         try:
             with db_manager.get_connection() as conn:
@@ -99,8 +96,8 @@ class UserManager:
                 f"Ошибка обновления статуса квеста для {username}: {e}")
             return False
 
-    @staticmethod
-    def update_quest_points(username: str, station: int, points: int) -> bool:
+
+def update_quest_points(username: str, station: int, points: int) -> bool:
         """Обновление баллов за станцию квеста"""
         if not 1 <= station <= 11:
             logger.error(f"Некорректный номер станции: {station}")
@@ -137,8 +134,8 @@ class UserManager:
             logger.error(f"Ошибка обновления баллов для {username}: {e}")
             return False
 
-    @staticmethod
-    def update_quize_points(username: str, quiz_num: int, points: int) -> bool:
+
+def update_quize_points(username: str, quiz_num: int, points: int) -> bool:
         """Обновление баллов за квиз"""
         if not 1 <= quiz_num <= 5:
             logger.error(f"Некорректный номер квиза: {quiz_num}")
@@ -162,11 +159,11 @@ class UserManager:
             logger.error(f"Ошибка обновления баллов квиза для {username}: {e}")
             return False
 
-    @staticmethod
-    def save_users_to_excel(filename: str = "users.xlsx") -> Optional[str]:
+
+def save_users_to_excel(filename: str = "users.xlsx") -> Optional[str]:
         """Экспорт пользователей в Excel с улучшенным форматированием"""
         try:
-            users = UserManager.get_all_users()
+            users = get_all_users()
             if not users:
                 logger.warning("Нет данных для экспорта")
                 return None
@@ -218,8 +215,8 @@ class UserManager:
             logger.error(f"Ошибка экспорта в Excel: {e}")
             return None
 
-    @staticmethod
-    def get_quest_progress(username: str) -> dict:
+
+def get_quest_progress(username: str) -> dict:
         """Получение прогресса по квесту"""
         try:
             with db_manager.get_connection() as conn:
@@ -248,8 +245,8 @@ class UserManager:
             logger.error(f"Ошибка получения прогресса для {username}: {e}")
             return {}
 
-    @staticmethod
-    def get_quiz_progress(username: str) -> dict:
+
+def get_quiz_progress(username: str) -> dict:
         """Получение прогресса по квизам"""
         try:
             with db_manager.get_connection() as conn:
