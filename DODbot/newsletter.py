@@ -29,9 +29,6 @@ def create_db():
             print("✅ База данных создана!")
 
 
-create_db()
-
-
 def add_newsletter(message, send_time):
     with db_lock:
         with get_connection() as conn:

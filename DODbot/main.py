@@ -10,6 +10,7 @@ from users import create_users_table
 from admin import create_admins_table
 from merch import create_merch_table
 from quiz import create_quiz_table
+from newsletter import create_db
 import quiz
 import set_points
 import add_admin
@@ -25,6 +26,7 @@ def init_database():
         create_admins_table()
         create_merch_table()
         create_quiz_table()
+        create_db()
 
         init_admins()
 
