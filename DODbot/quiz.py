@@ -166,12 +166,12 @@ def start_quiz(message, quiz_id):
     question = cur.fetchone()
 
     if question:
-        question_id, question_text = question
-        send_question(message.chat.id, user, question_id, question_text)
+        question_id = question
+        send_question(message.chat.id, user, question_id)
 
     conn.close()
 
-def send_question(chat_id, user, question_id, question_text):
+def send_question(chat_id, user, question_id):
     conn = get_db_connection()
     cur = conn.cursor()
 
@@ -184,7 +184,7 @@ def send_question(chat_id, user, question_id, question_text):
         markup.add(InlineKeyboardButton(
             ans_text, callback_data=f"answer:{question_id}:{ans_id}:{user}"))
 
-    bot.send_message(chat_id, question_text, reply_markup=markup)
+    bot.send_message(chat_id, reply_markup=markup)
     conn.close()
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("answer:"))
