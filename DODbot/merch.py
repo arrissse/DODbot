@@ -1,9 +1,7 @@
 import sqlite3
 import openpyxl
 from bot import bot
-from threading import Lock
-
-db_lock = Lock()
+from main import db_lock
 
 
 def get_connection():

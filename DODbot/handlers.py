@@ -10,8 +10,8 @@ from telebot.types import BotCommand
 from merch import create_merch_table
 from quiz import create_quiz_table
 
-create_quiz_table()
 create_merch_table()
+create_quiz_table()
 create_admins_table()
 create_users_table()
 

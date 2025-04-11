@@ -11,6 +11,9 @@ import newsletter
 import admin_handlers
 import handlers
 import logging
+from threading import Lock
+
+db_lock = Lock()
 
 admin_handlers.create_price_table()
 
@@ -59,20 +62,6 @@ def set_webhook_with_retry():
             time.sleep(10)
     print("Не удалось установить webhook после нескольких попыток.")
 
-
-def robust_request(url, max_retries=3, timeout=10):
-    for attempt in range(max_retries):
-        try:
-            response = requests.get(url, timeout=timeout)
-            response.raise_for_status()
-            return response
-        except (ConnectionError, Timeout) as e:
-            print(f"Попытка {attempt+1} из {max_retries} не удалась: {e}")
-            time.sleep(1)
-        except HTTPError as http_err:
-            print(f"HTTP ошибка: {http_err}")
-            break
-    raise Exception("Все попытки выполнены, но запрос не удался.")
 
 if __name__ == '__main__':
     #bot.remove_webhook()
