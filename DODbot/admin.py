@@ -1,10 +1,10 @@
 import sqlite3
 import openpyxl
-from database import db_lock, get_connection
+from database import db_lock, db_operation
 
 def create_admins_table():
- with db_lock:
-  with get_connection() as conn:
+ 
+  with db_operation() as conn:
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -19,8 +19,8 @@ def create_admins_table():
     
 
 def add_admin(adminname, adminlevel):
- with db_lock:
-  with get_connection() as conn:
+ 
+  with db_operation() as conn:
     cursor = conn.cursor()
 
     cursor.execute("SELECT COUNT(*) FROM admins WHERE adminname = ?", (adminname,))
@@ -38,8 +38,8 @@ def add_admin(adminname, adminlevel):
     return True
 
 def get_all_admins():
- with db_lock:
-  with get_connection() as conn:
+ 
+  with db_operation() as conn:
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM admins")
     admins = cursor.fetchall()
@@ -47,8 +47,8 @@ def get_all_admins():
     return [(admin) for admin in admins]
 
 def get_admin_level(username):
- with db_lock:
-  with get_connection() as conn:
+ 
+  with db_operation() as conn:
     cursor = conn.cursor()
     try:
         cursor.execute("SELECT adminlevel FROM admins WHERE adminname = ?", (username,))
@@ -60,8 +60,8 @@ def get_admin_level(username):
     return result[0] if result is not None else 0
 
 def update_admin_questnum(username, new_value):
- with db_lock:
-  with get_connection() as conn:
+ 
+  with db_operation() as conn:
     cursor = conn.cursor()
 
     cursor.execute(f"UPDATE admins SET questnum = ? WHERE adminname = ?", (new_value, username))
@@ -89,8 +89,8 @@ def save_admins_to_excel():
     return filename
 
 def get_admin_by_username(username):
- with db_lock:
-  with get_connection() as conn:
+ 
+  with db_operation() as conn:
     cursor = conn.cursor()
 
     cursor.execute("SELECT * FROM admins WHERE adminname = ?", (username,))
