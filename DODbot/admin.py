@@ -14,7 +14,7 @@ def create_admins_table():
                     questnum INTEGER DEFAULT 0 CHECK(questnum BETWEEN 0 AND 11)
                 )
             """)
-            conn.commit()
+            
     except Exception as e:
         print(f"Ошибка создания таблицы админов: {e}")
 
@@ -36,7 +36,7 @@ def add_admin(adminname: str, adminlevel: int) -> bool:
                 "INSERT INTO admins (adminname, adminlevel) VALUES (?, ?)",
                 (adminname, adminlevel)
             )
-            conn.commit()
+            
             return True
     except Exception as e:
         print(f"Ошибка добавления администратора: {e}")
@@ -78,7 +78,7 @@ def update_admin_questnum(username: str, new_value: int) -> bool:
                 "UPDATE admins SET questnum = ? WHERE adminname = ?",
                 (new_value, username)
             )
-            conn.commit()
+            
             return True
     except Exception as e:
         print(f"Ошибка обновления станции админа: {e}")

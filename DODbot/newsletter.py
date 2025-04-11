@@ -40,7 +40,7 @@ def add_newsletter(message, send_time):
             conn.execute(
                 "INSERT INTO newsletter (message, send_time) VALUES (?, ?)",
                 (message, formatted_time))
-            conn.commit()
+            
 
     except ValueError as e:
         bot.send_message(message.chat.id, f"❌ Ошибка формата времени: {e}")
@@ -74,7 +74,7 @@ def send_newsletter():
                             "UPDATE newsletter SET sent = TRUE WHERE id = ?",
                             (newsletter_id,)
                         )
-                        conn.commit()
+                        
 
             time.sleep(60)
 
@@ -228,7 +228,7 @@ def schedule_newsletter(message, text):
                 "INSERT INTO newsletter (message, send_time) VALUES (?, ?)",
                 (text, dt.isoformat())
             )
-            conn.commit()
+            
 
         bot.send_message(
             chat_id,

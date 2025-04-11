@@ -347,7 +347,7 @@ def create_price_table():
                 ("Блокнот", 2),
                 ("ПБ", 15)
         """)
-        conn.commit()
+        
 
 
 def get_merch_types():
@@ -374,7 +374,7 @@ def update_merch_price(merch_type, new_price):
             cursor = conn.cursor()
             cursor.execute("INSERT INTO merch_prices (merch_type, price) VALUES (?, ?) ON CONFLICT(merch_type) DO UPDATE SET price = ?",
                            (merch_type, new_price, new_price))
-            conn.commit()
+            
             
 
 
@@ -545,7 +545,7 @@ def process_type_cost(message, type):
                 INSERT OR IGNORE INTO merch_prices (merch_type, price) VALUES (?, ?)
             """, (type, cost))
 
-            conn.commit()
+            
             
 
     try:
@@ -614,7 +614,7 @@ def process_r_type(message):
                 cursor.execute("DROP TABLE merch;")
                 cursor.execute("ALTER TABLE merch_temp RENAME TO merch;")
 
-            conn.commit()
+            
             
 
     bot.send_message(message.chat.id, f"✅ Позиция '{merch_type}' удалена.")

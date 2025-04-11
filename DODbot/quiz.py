@@ -70,7 +70,7 @@ def create_quiz_table():
             for quiz_id, in cursor.fetchall():
                 generate_quiz_questions(conn, quiz_id)
 
-            conn.commit()
+            
             logger.info("Таблицы квизов успешно инициализированы")
 
     except Exception as e:
@@ -127,7 +127,7 @@ def update_quiz_time(quiz_id: int, new_time: str):
             conn.execute(
                 "UPDATE quiz_schedule SET start_time = ? WHERE id = ?",
                 (new_time, quiz_id))
-            conn.commit()
+            
             logger.info(f"Обновлено время квиза {quiz_id} на {new_time}")
 
     except ValueError:

@@ -34,7 +34,7 @@ def create_users_table():
                     quize_5 INTEGER DEFAULT 0
                 )
             """)
-            conn.commit()
+            
     except Exception as e:
         print(f"Error creating users table: {e}")
 
@@ -47,7 +47,7 @@ def add_user(user_id, username):
                 "INSERT OR IGNORE INTO users (id, username) VALUES (?, ?)",
                 (user_id, username)
             )
-            conn.commit()
+            
     except Exception as e:
         print(f"Error adding user: {e}")
 
@@ -137,7 +137,7 @@ def start_quest(username):
                 "UPDATE users SET quest_started = 1 WHERE username = ?",
                 (username,)
             )
-            conn.commit()
+            
     except Exception as e:
         print(f"Error starting quest: {e}")
 
@@ -150,7 +150,7 @@ def finish_quest(username):
                 "UPDATE users SET quest_station = 11 WHERE username = ?",
                 (username,)
             )
-            conn.commit()
+            
     except Exception as e:
         print(f"Error finishing quest: {e}")
 
@@ -193,7 +193,7 @@ def update_merch_points(username, points):
                 "UPDATE users SET quest_points = quest_points - ? WHERE username = ?",
                 (points, username)
             )
-            conn.commit()
+            
     except Exception as e:
         print(f"Error updating merch points: {e}")
 
@@ -242,7 +242,7 @@ def update_user_queststation(username):
                     (quest11_points > 0)
                 ) WHERE username = ?
             """, (username,))
-            conn.commit()
+            
     except Exception as e:
         print(f"Error updating quest station: {e}")
 
@@ -302,7 +302,7 @@ def update_user_points(username, admin_num, points):
                 "UPDATE users SET quest_points = quest_points + ? WHERE username = ?",
                 (points, username)
             )
-            conn.commit()
+            
     except Exception as e:
         print(f"Error updating user points: {e}")
 
@@ -319,7 +319,7 @@ def update_quize_points(username, num):
                 "UPDATE users SET quize_points = quize_points + 1 WHERE username = ?",
                 (username,)
             )
-            conn.commit()
+            
     except Exception as e:
         print(f"Error updating quiz points: {e}")
 

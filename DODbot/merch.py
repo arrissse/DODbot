@@ -16,7 +16,7 @@ def create_merch_table():
                     "ПБ" INTEGER DEFAULT 0
                 )
             """)
-            conn.commit()
+            
     except Exception as e:
         print(f"Error creating merch table: {e}")
 
@@ -48,7 +48,7 @@ def give_merch(username, merch_type):
                 f'UPDATE merch SET "{merch_type}" = 1 WHERE username = ?',
                 (username,)
             )
-            conn.commit()
+            
     except Exception as e:
         print(f"Error giving merch: {e}")
 
@@ -134,7 +134,7 @@ def add_column(column_name):
             if column_name not in existing_columns:
                 conn.execute(
                     f"ALTER TABLE merch ADD COLUMN '{column_name}' INTEGER DEFAULT 0")
-                conn.commit()
+                
                 print(f"Column '{column_name}' added")
             else:
                 print(f"Column '{column_name}' already exists")
