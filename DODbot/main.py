@@ -10,8 +10,8 @@ from database import logger, db_manager
 
 def init_database():
  try:
-  if not db_manager.is_initialized():
-        logger.info("🔑 Начало эксклюзивной инициализации БД")
+    logger.info("🔑 Начало эксклюзивной инициализации БД")
+    with db_manager.get_connection() as conn:
         if os.path.exists("database.lock"):
             os.remove("database.lock")
         from newsletter import create_db
