@@ -24,7 +24,6 @@ def create_db():
                     sent BOOLEAN DEFAULT FALSE
                 )
             """)
-            conn.commit()
             print("✅ Таблица newsletter создана/проверена")
         logger.info("✅ Таблица newsletter создана/проверена")
     except sqlite3.Error as e:
