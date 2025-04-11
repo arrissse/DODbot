@@ -208,7 +208,7 @@ def check_answer(call):
     next_question = cur.fetchone()
 
     if next_question:
-        next_question_id = next_question
+        next_question_id = next_question[0]
         send_question(call.message.chat.id, user,
                       next_question_id)
     else:
