@@ -5,7 +5,7 @@ from requests.exceptions import ConnectionError, Timeout, HTTPError
 import time
 from telebot.apihelper import ApiTelegramException
 import logging
-from database import db_lock, get_connection, logger, db_operation
+from database import db_lock, logger, db_operation
 
 def init_database():
     with db_operation() as conn:
