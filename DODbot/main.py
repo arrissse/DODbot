@@ -6,31 +6,30 @@ import time
 from telebot.apihelper import ApiTelegramException
 import logging
 from database import db_lock, get_connection
-from users import create_users_table
-from admin import create_admins_table
-from merch import create_merch_table
-from quiz import create_quiz_table
-from newsletter import create_db
+
+def init_database():
+    with get_connection() as conn:
+        from users import create_users_table
+        create_users_table()
+        from admin import create_admins_table
+        create_admins_table()
+        from admin_handlers import create_price_table
+        create_price_table()
+        from merch import create_merch_table
+        create_merch_table()
+        from quiz import create_quiz_table
+        create_quiz_table()
+        from newsletter import create_db
+        create_db()
+        from admin import init_admins
+        init_admins()
+
 import quiz
 import set_points
 import add_admin
 import newsletter
 import admin_handlers
 import handlers
-from admin import init_admins
-
-
-def init_database():
-    with get_connection() as conn:
-        create_users_table()
-        create_admins_table()
-        admin_handlers.create_price_table()
-        create_merch_table()
-        create_quiz_table()
-        create_db()
-
-        init_admins()
-
 
 app = Flask(__name__)
 app.logger.setLevel(logging.DEBUG)
