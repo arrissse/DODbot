@@ -9,7 +9,8 @@ from users import count_finished_quests
 from users import check_points, update_merch_points
 from admin import save_admins_to_excel, get_admin_by_username, get_admin_level
 from merch import give_merch, is_got_merch, got_merch, add_column, save_merch_to_excel
-from quiz import get_db_connection, update_quiz_time
+from quiz import update_quiz_time
+from database import db_lock, get_connection
 
 
 '''
@@ -170,7 +171,7 @@ def start_quiz(call):
     _, quiz_id = call.data.split(":")
     quiz_id = int(quiz_id)
 
-    conn = get_db_connection()
+    conn = get_connection()
     cur = conn.cursor()
 
     cur.execute("SELECT quiz_name FROM quiz_schedule WHERE id = ?", (quiz_id,))
@@ -197,7 +198,7 @@ def send_next_question(call):
     _, quiz_id, question_number = call.data.split(":")
     quiz_id, question_number = int(quiz_id), int(question_number)
 
-    conn = get_db_connection()
+    conn = get_connection()
     cur = conn.cursor()
 
     cur.execute("""
@@ -239,7 +240,7 @@ def check_answer(call):
     _, question_id, answer_id = call.data.split(":")
     question_id, answer_id = int(question_id), int(answer_id)
 
-    conn = get_db_connection()
+    conn = get_connection()
     cur = conn.cursor()
 
     cur.execute("SELECT is_correct FROM answers WHERE id = ?", (answer_id,))
@@ -329,15 +330,16 @@ def statistics(message):
 
 
 def create_price_table():
-    conn = sqlite3.connect("merch.db", check_same_thread=False)
-    cursor = conn.cursor()
-    cursor.execute("""
+    with db_lock:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
     CREATE TABLE IF NOT EXISTS merch_prices (
         merch_type TEXT PRIMARY KEY,
         price INTEGER DEFAULT 0
     )
     """)
-    cursor.execute("""
+            cursor.execute("""
     INSERT OR IGNORE INTO merch_prices (merch_type, price) VALUES 
         ("Раскрасить футболку", 7),
         ("Раскрасить шоппер", 5),
@@ -346,53 +348,57 @@ def create_price_table():
         ("ПБ", 15);
     """)
 
-    conn.commit()
-    conn.close()
+            conn.commit()
+            conn.close()
 
 
 def get_merch_types():
-    conn = sqlite3.connect("merch.db", check_same_thread=False)
-    cursor = conn.cursor()
-    cursor.execute("SELECT merch_type FROM merch_prices")
-    types = [row[0] for row in cursor.fetchall()]
-    conn.close()
-    return types
+    with db_lock:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT merch_type FROM merch_prices")
+            types = [row[0] for row in cursor.fetchall()]
+            conn.close()
+            return types
 
 
 def get_merch_price(merch_type):
-    conn = sqlite3.connect("merch.db", check_same_thread=False)
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT price FROM merch_prices WHERE merch_type = ?", (merch_type,))
-    result = cursor.fetchone()
-    conn.close()
-    return result[0] if result else 0
+    with db_lock:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT price FROM merch_prices WHERE merch_type = ?", (merch_type,))
+            result = cursor.fetchone()
+            conn.close()
+            return result[0] if result else 0
 
 
 def update_merch_price(merch_type, new_price):
-    conn = sqlite3.connect("merch.db", check_same_thread=False)
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO merch_prices (merch_type, price) VALUES (?, ?) ON CONFLICT(merch_type) DO UPDATE SET price = ?",
-                   (merch_type, new_price, new_price))
-    conn.commit()
-    conn.close()
+    with db_lock:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO merch_prices (merch_type, price) VALUES (?, ?) ON CONFLICT(merch_type) DO UPDATE SET price = ?",
+                           (merch_type, new_price, new_price))
+            conn.commit()
+            conn.close()
 
 
 @bot.message_handler(func=lambda message: message.text == "Стоимость мерча")
 def merch_prices_menu(message):
-    conn = sqlite3.connect("merch.db", check_same_thread=False)
-    cursor = conn.cursor()
-    cursor.execute("SELECT merch_type FROM merch_prices")
-    merch_types = [row[0] for row in cursor.fetchall()]
-    conn.close()
+    with db_lock:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT merch_type FROM merch_prices")
+            merch_types = [row[0] for row in cursor.fetchall()]
+            conn.close()
 
-    markup = types.InlineKeyboardMarkup()
-    for merch in merch_types:
-        markup.add(types.InlineKeyboardButton(
-            merch, callback_data=f"edit_price:{merch}"))
+            markup = types.InlineKeyboardMarkup()
+            for merch in merch_types:
+                markup.add(types.InlineKeyboardButton(
+                    merch, callback_data=f"edit_price:{merch}"))
 
-    bot.send_message(
-        message.chat.id, "Выберите товар для изменения стоимости:", reply_markup=markup)
+            bot.send_message(
+                message.chat.id, "Выберите товар для изменения стоимости:", reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_price"))
@@ -538,15 +544,16 @@ def process_type_cost(message, type):
         bot.send_message(
             message.chat.id, "❌ Стоимость должна быть числом. Попробуйте ещё раз.")
         return
-    conn = sqlite3.connect("merch.db", check_same_thread=False)
-    cursor = conn.cursor()
+    with db_lock:
+        with get_connection() as conn:
+            cursor = conn.cursor()
 
-    cursor.execute("""
-        INSERT OR IGNORE INTO merch_prices (merch_type, price) VALUES (?, ?)
-    """, (type, cost))
+            cursor.execute("""
+                INSERT OR IGNORE INTO merch_prices (merch_type, price) VALUES (?, ?)
+            """, (type, cost))
 
-    conn.commit()
-    conn.close()
+            conn.commit()
+            conn.close()
 
     try:
         add_column(type)
@@ -582,39 +589,40 @@ def remove_merch_type(message):
 def process_r_type(message):
     merch_type = message.text.strip()
 
-    conn = sqlite3.connect("merch.db", check_same_thread=False)
-    cursor = conn.cursor()
+    with db_lock:
+        with get_connection() as conn:
+            cursor = conn.cursor()
 
-    cursor.execute(
-        "SELECT COUNT(*) FROM merch_prices WHERE merch_type = ?", (merch_type,))
-    if cursor.fetchone()[0] == 0:
-        bot.send_message(
-            message.chat.id, f"❌ Позиция '{merch_type}' не найдена.")
-        conn.close()
-        return
+            cursor.execute(
+                "SELECT COUNT(*) FROM merch_prices WHERE merch_type = ?", (merch_type,))
+            if cursor.fetchone()[0] == 0:
+                bot.send_message(
+                    message.chat.id, f"❌ Позиция '{merch_type}' не найдена.")
+                conn.close()
+                return
 
-    cursor.execute(
-        "DELETE FROM merch_prices WHERE merch_type = ?", (merch_type,))
+            cursor.execute(
+                "DELETE FROM merch_prices WHERE merch_type = ?", (merch_type,))
 
-    cursor.execute("PRAGMA table_info(merch);")
-    columns = [row[1] for row in cursor.fetchall()]
+            cursor.execute("PRAGMA table_info(merch);")
+            columns = [row[1] for row in cursor.fetchall()]
 
-    if merch_type in columns:
-        new_columns = [col for col in columns if col != merch_type]
-        if not new_columns:
-            bot.send_message(
-                message.chat.id, "❌ Ошибка: нельзя удалить последнюю колонку.")
+            if merch_type in columns:
+                new_columns = [col for col in columns if col != merch_type]
+                if not new_columns:
+                    bot.send_message(
+                        message.chat.id, "❌ Ошибка: нельзя удалить последнюю колонку.")
+                    conn.close()
+                    return
+
+                columns_str = ", ".join(f'"{col}"' for col in new_columns)
+
+                cursor.execute(
+                    f"CREATE TABLE merch_temp AS SELECT {columns_str} FROM merch;")
+                cursor.execute("DROP TABLE merch;")
+                cursor.execute("ALTER TABLE merch_temp RENAME TO merch;")
+
+            conn.commit()
             conn.close()
-            return
-
-        columns_str = ", ".join(f'"{col}"' for col in new_columns)
-
-        cursor.execute(
-            f"CREATE TABLE merch_temp AS SELECT {columns_str} FROM merch;")
-        cursor.execute("DROP TABLE merch;")
-        cursor.execute("ALTER TABLE merch_temp RENAME TO merch;")
-
-    conn.commit()
-    conn.close()
 
     bot.send_message(message.chat.id, f"✅ Позиция '{merch_type}' удалена.")

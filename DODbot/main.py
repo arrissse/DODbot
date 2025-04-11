@@ -11,6 +11,7 @@ import newsletter
 import admin_handlers
 import handlers
 import logging
+from database import db_lock
 
 admin_handlers.create_price_table()
 

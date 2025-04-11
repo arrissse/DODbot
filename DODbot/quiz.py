@@ -5,13 +5,15 @@ from keyboard import main_keyboard
 from users import update_quize_points, is_finished_quiz, check_quiz_points
 from datetime import datetime
 import random
+from database import db_lock, get_connection
 
 
 def create_quiz_table():
-    conn = sqlite3.connect("quiz.db", check_same_thread=False)
-    cursor = conn.cursor()
+    with db_lock:
+        with get_connection() as conn:
+            cursor = conn.cursor()
 
-    cursor.execute("""
+            cursor.execute("""
     CREATE TABLE IF NOT EXISTS quiz_schedule (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         quiz_name TEXT NOT NULL,
@@ -21,7 +23,7 @@ def create_quiz_table():
     )
     """)
 
-    cursor.execute("""
+            cursor.execute("""
     INSERT OR IGNORE INTO quiz_schedule (quiz_name, start_time, location) VALUES 
         ("Квиз 1", "11:00", "113 ГК"),
         ("Квиз 2", "12:00", "4.16 Цифра"),
@@ -30,7 +32,7 @@ def create_quiz_table():
         ("Квиз 5", "15:00", "305 ЛК");
     """)
 
-    cursor.execute("""
+            cursor.execute("""
         CREATE TABLE IF NOT EXISTS questions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             quiz_id INTEGER NOT NULL,
@@ -41,7 +43,7 @@ def create_quiz_table():
         )
     """)
 
-    cursor.execute("""
+            cursor.execute("""
         CREATE TABLE IF NOT EXISTS answers(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             question_id INTEGER NOT NULL,
@@ -51,52 +53,48 @@ def create_quiz_table():
         )
     """)
 
-    cursor.execute("SELECT id FROM quiz_schedule")
-    quiz_ids = [row[0] for row in cursor.fetchall()]
+            cursor.execute("SELECT id FROM quiz_schedule")
+            quiz_ids = [row[0] for row in cursor.fetchall()]
 
-    for quiz_id in quiz_ids:
-        for question_number in range(1, 26):
-            cursor.execute("""
+            for quiz_id in quiz_ids:
+                for question_number in range(1, 26):
+                    cursor.execute("""
                 INSERT OR IGNORE INTO questions (quiz_id, question_number, text)
                 VALUES (?, ?, ?)
             """, (quiz_id, question_number, f"Вопрос {question_number} для квиза {quiz_id}"))
-            cursor.execute("""
+                    cursor.execute("""
                 SELECT id FROM questions WHERE quiz_id = ? AND question_number = ?
             """, (quiz_id, question_number))
-            question_row = cursor.fetchone()
-            if question_row:
-                question_id = question_row[0]
-                cursor.execute(
-                    "DELETE FROM answers WHERE question_id = ?", (question_id,))
+                    question_row = cursor.fetchone()
+                    if question_row:
+                        question_id = question_row[0]
+                        cursor.execute(
+                            "DELETE FROM answers WHERE question_id = ?", (question_id,))
 
-                correct_answer = random.randint(1, 4)
-                for i in range(1, 5):
-                    cursor.execute("""
+                        correct_answer = random.randint(1, 4)
+                        for i in range(1, 5):
+                            cursor.execute("""
                         INSERT INTO answers (question_id, answer_text, is_correct)
                         VALUES (?, ?, ?)
                     """, (question_id, f"Вариант {i}", 1 if i == correct_answer else 0))
-            else:
-                print(
-                    f"Не удалось получить вопрос для quiz_id {quiz_id} и question_number {question_number}")
+                    else:
+                        print(
+                            f"Не удалось получить вопрос для quiz_id {quiz_id} и question_number {question_number}")
 
-    conn.commit()
-    conn.close()
-
-
-def get_db_connection():
-    return sqlite3.connect("quiz.db", check_same_thread=False)
+            conn.commit()
+            conn.close()
 
 
 def update_quiz_time(quiz_id, new_time):
-    conn = sqlite3.connect("quiz.db")
-    cursor = conn.cursor()
+    with db_lock:
+        with get_connection() as conn:
+            cursor = conn.cursor()
 
-    cursor.execute(
-        "UPDATE quiz_schedule SET start_time = ? WHERE id = ?", (new_time, quiz_id))
+            cursor.execute(
+                "UPDATE quiz_schedule SET start_time = ? WHERE id = ?", (new_time, quiz_id))
 
-    conn.commit()
-    conn.close()
-
+            conn.commit()
+            conn.close()
 
 
 def is_within_range(current_time_str, target_time_str, delta_minutes=10):
@@ -107,137 +105,147 @@ def is_within_range(current_time_str, target_time_str, delta_minutes=10):
         return False
     return diff <= delta_minutes
 
+
 @bot.message_handler(func=lambda message: message.text == "🎓 Квизы")
 def send_quiz(m):
-    conn = get_db_connection()
-    cur = conn.cursor()
+    with db_lock:
+        with get_connection() as conn:
+            conn = get_connection()
+            cur = conn.cursor()
 
-    cur.execute("SELECT id, quiz_name, start_time, location FROM quiz_schedule ORDER BY start_time ASC")
-    quizzes = cur.fetchall()
+            cur.execute(
+                "SELECT id, quiz_name, start_time, location FROM quiz_schedule ORDER BY start_time ASC")
+            quizzes = cur.fetchall()
 
-    current_time = datetime.now().strftime("%H:%M")
-    selected_quiz = None
+            current_time = datetime.now().strftime("%H:%M")
+            selected_quiz = None
 
-    for quiz_id, name, time, location in quizzes:
-        if is_within_range(current_time, time):
-            selected_quiz = (quiz_id, name, time, location)
-            break
+            for quiz_id, name, time, location in quizzes:
+                if is_within_range(current_time, time):
+                    selected_quiz = (quiz_id, name, time, location)
+                    break
 
-    if selected_quiz:
-        quiz_id, quiz_name, quiz_time, location = selected_quiz
-        bot.send_message(m.chat.id, "Введите кодовое слово:")
-        bot.register_next_step_handler(
-            m, lambda message: process_quiz_start(message, quiz_id))
-    else:
-        upcoming = next(
-            (quiz for quiz in quizzes if quiz[2] > current_time), None)
-        if upcoming:
-            bot.send_message(
-                m.chat.id, f"Ближайший квиз: {upcoming[1]} в {upcoming[2]} ({upcoming[3]})")
-        else:
-            bot.send_message(m.chat.id, "На сегодня квизов больше нет.")
+            if selected_quiz:
+                quiz_id, quiz_name, quiz_time, location = selected_quiz
+                bot.send_message(m.chat.id, "Введите кодовое слово:")
+                bot.register_next_step_handler(
+                    m, lambda message: process_quiz_start(message, quiz_id))
+            else:
+                upcoming = next(
+                    (quiz for quiz in quizzes if quiz[2] > current_time), None)
+                if upcoming:
+                    bot.send_message(
+                        m.chat.id, f"Ближайший квиз: {upcoming[1]} в {upcoming[2]} ({upcoming[3]})")
+                else:
+                    bot.send_message(
+                        m.chat.id, "На сегодня квизов больше нет.")
 
-    conn.close()
+            conn.close()
 
 
 def process_quiz_start(message, quiz_id):
-  try:
-    user_input = message.text.lower().strip()
-    valid_words = ["сосиска", "колбаса", "1", "2", "3"]
+    try:
+        user_input = message.text.lower().strip()
+        valid_words = ["сосиска", "колбаса", "1", "2", "3"]
 
-    if user_input in valid_words:
-        if user_input == "сосиска" and quiz_id == 1:
-            start_quiz(message, 1)
-        elif user_input == "колбаса" and quiz_id == 2:
-            start_quiz(message, 2)
-        elif user_input == "1" and quiz_id == 3:
-            start_quiz(message, 3)
-        elif user_input == "2" and quiz_id == 4:
-            start_quiz(message, 4)
-        elif user_input == "3" and quiz_id == 5:
-            start_quiz(message, 5)
+        if user_input in valid_words:
+            if user_input == "сосиска" and quiz_id == 1:
+                start_quiz(message, 1)
+            elif user_input == "колбаса" and quiz_id == 2:
+                start_quiz(message, 2)
+            elif user_input == "1" and quiz_id == 3:
+                start_quiz(message, 3)
+            elif user_input == "2" and quiz_id == 4:
+                start_quiz(message, 4)
+            elif user_input == "3" and quiz_id == 5:
+                start_quiz(message, 5)
+            else:
+                bot.send_message(message.chat.id, "❌ Неверное кодовое слово.")
         else:
             bot.send_message(message.chat.id, "❌ Неверное кодовое слово.")
-    else:
-        bot.send_message(message.chat.id, "❌ Неверное кодовое слово.")
-  except Exception as e:
-      bot.send_message(message.chat.id, e)
+    except Exception as e:
+        bot.send_message(message.chat.id, e)
+
 
 def start_quiz(message, quiz_id):
     user = message.from_user.username
     if is_finished_quiz(user, quiz_id):
         bot.send_message(message.chat.id, "Вы уже участвовали в этом квизе.")
         return
+    with db_lock:
+        with get_connection() as conn:
+            conn = get_connection()
+            cur = conn.cursor()
 
-    conn = get_db_connection()
-    cur = conn.cursor()
+            cur.execute(
+                "SELECT id FROM questions WHERE quiz_id = ? ORDER BY id ASC LIMIT 1", (quiz_id,))
+            question = cur.fetchone()
 
-    cur.execute(
-        "SELECT id FROM questions WHERE quiz_id = ? ORDER BY id ASC LIMIT 1", (quiz_id,))
-    question = cur.fetchone()
+            if question:
+                question_id = question[0]
+                send_question(message.chat.id, user, question_id, quiz_id)
 
-
-    if question:
-        question_id = question[0]
-        send_question(message.chat.id, user, question_id, quiz_id)
-
-    conn.close()
+            conn.close()
 
 
 def send_question(chat_id, user, question_id, quize_id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute(
-        "SELECT id, answer_text FROM answers WHERE question_id = ? ORDER BY id ASC", (question_id,))
-    answers = cur.fetchall()
+    with db_lock:
+        with get_connection() as conn:
+            conn = get_connection()
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT id, answer_text FROM answers WHERE question_id = ? ORDER BY id ASC", (question_id,))
+            answers = cur.fetchall()
 
-    letters = ["А", "Б", "В", "Г"]
+            letters = ["А", "Б", "В", "Г"]
 
-    markup = InlineKeyboardMarkup(row_width=1)
-    for idx, (ans_id, ans_text) in enumerate(answers):
-        letter = letters[idx] if idx < len(letters) else ans_text
-        markup.add(InlineKeyboardButton(
-            letter, callback_data=f"answer:{question_id}:{ans_id}:{user}:{quize_id}"))
+            markup = InlineKeyboardMarkup(row_width=1)
+            for idx, (ans_id, ans_text) in enumerate(answers):
+                letter = letters[idx] if idx < len(letters) else ans_text
+                markup.add(InlineKeyboardButton(
+                    letter, callback_data=f"answer:{question_id}:{ans_id}:{user}:{quize_id}"))
 
-    bot.send_message(chat_id, f"❔ Вопрос {question_id}", reply_markup=markup)
-    conn.close()
+            bot.send_message(
+                chat_id, f"❔ Вопрос {question_id}", reply_markup=markup)
+            conn.close()
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("answer:"))
 def check_answer(call):
-  try:
-    bot.answer_callback_query(call.id)
-    _, question_id, answer_id, user, quiz_id = call.data.split(":")
-    question_id, answer_id = int(question_id), int(answer_id)
+    try:
+        bot.answer_callback_query(call.id)
+        _, question_id, answer_id, user, quiz_id = call.data.split(":")
+        question_id, answer_id = int(question_id), int(answer_id)
+        with db_lock:
+            with get_connection() as conn:
+                conn = get_connection()
+                cur = conn.cursor()
 
-    conn = get_db_connection()
-    cur = conn.cursor()
+                cur.execute(
+                    "SELECT is_correct FROM answers WHERE id = ?", (answer_id,))
+                result = cur.fetchone()
 
-    cur.execute("SELECT is_correct FROM answers WHERE id = ?", (answer_id,))
-    result = cur.fetchone()
+                if result and result[0] == 1:
+                    update_quize_points(user, quiz_id)
+                cur.execute(
+                    "SELECT quiz_id FROM questions WHERE id = ?", (question_id,))
+                quiz_id = cur.fetchone()[0]
 
-    if result and result[0] == 1:
-        update_quize_points(user, quiz_id)
-    cur.execute("SELECT quiz_id FROM questions WHERE id = ?", (question_id,))
-    quiz_id = cur.fetchone()[0]
+                cur.execute("""
+            SELECT id FROM questions 
+            WHERE quiz_id = ? AND id > ? ORDER BY id ASC LIMIT 1
+            """, (quiz_id, question_id))
 
-    cur.execute("""
-    SELECT id FROM questions 
-    WHERE quiz_id = ? AND id > ? ORDER BY id ASC LIMIT 1
-    """, (quiz_id, question_id))
+                next_question = cur.fetchone()
 
+                if next_question:
+                    next_question_id = next_question[0]
+                    send_question(call.message.chat.id, user,
+                                  next_question_id, quiz_id)
+                else:
+                    bot.send_message(
+                        call.message.chat.id, f"Квиз завершён! Ваши баллы: {check_quiz_points(user, quiz_id)}", reply_markup=main_keyboard())
 
-    next_question = cur.fetchone()
-
-    if next_question:
-        next_question_id = next_question[0]
-        send_question(call.message.chat.id, user,
-                      next_question_id, quiz_id)
-    else:
-        bot.send_message(
-            call.message.chat.id, f"Квиз завершён! Ваши баллы: {check_quiz_points(user, quiz_id)}", reply_markup=main_keyboard())
-
-    conn.close()
-  except Exception as e:
-      bot.send_message(call.message.chat.id, e)
-
+                conn.close()
+    except Exception as e:
+        bot.send_message(call.message.chat.id, e)

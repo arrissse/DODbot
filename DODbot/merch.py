@@ -1,16 +1,7 @@
 import sqlite3
 import openpyxl
 from bot import bot
-from threading import Lock
-
-db_lock = Lock()
-
-
-def get_connection():
-    """Создает подключение к БД с таймаутом и WAL режимом."""
-    conn = sqlite3.connect("merch.db", check_same_thread=False, timeout=10)
-    conn.execute("PRAGMA journal_mode=WAL")  # Включаем WAL режим
-    return conn
+from database import db_lock, get_connection
 
 
 def create_merch_table():
