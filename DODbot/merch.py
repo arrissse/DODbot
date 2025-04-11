@@ -1,5 +1,5 @@
 import openpyxl
-from database import db_manager  # Изменённый импорт
+from database import db_manager
 
 
 def create_merch_table():
@@ -39,7 +39,6 @@ def got_merch(username, merch_type):
 
 
 def give_merch(username, merch_type):
-    """Выдача мерча"""
     try:
         with db_manager.get_connection() as conn:
             conn.execute(
@@ -54,17 +53,14 @@ def give_merch(username, merch_type):
 
 
 def is_got_merch(username):
-    """Проверка получения всего мерча"""
     try:
         with db_manager.get_connection() as conn:
             conn.execute(
                 "INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
 
-            # Получение списка колонок
             cursor = conn.execute("PRAGMA table_info(merch);")
             columns = [col[1] for col in cursor.fetchall()]
 
-            # Фильтрация числовых колонок
             numeric_columns = [
                 col for col in columns
                 if col != 'username'
@@ -74,7 +70,6 @@ def is_got_merch(username):
             if not numeric_columns:
                 return False
 
-            # Формирование запроса
             sum_query = " + ".join([f'"{col}"' for col in numeric_columns])
             cursor = conn.execute(
                 f"SELECT {sum_query} FROM merch WHERE username = ?",
@@ -95,11 +90,9 @@ def is_got_any_merch(username):
             conn.execute(
                 "INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
 
-            # Получение информации о колонках
             cursor = conn.execute("PRAGMA table_info(merch);")
             columns = [col[1] for col in cursor.fetchall()]
 
-            # Фильтрация числовых колонок
             numeric_columns = [
                 col for col in columns
                 if col != 'username'
@@ -109,7 +102,6 @@ def is_got_any_merch(username):
             if not numeric_columns:
                 return False
 
-            # Формирование запроса
             sum_query = " + ".join([f'"{col}"' for col in numeric_columns])
             cursor = conn.execute(
                 f"SELECT {sum_query} FROM merch WHERE username = ?",
@@ -127,7 +119,6 @@ def add_column(column_name):
     """Добавление новой колонки"""
     try:
         with db_manager.get_connection() as conn:
-            # Проверка существования колонки
             cursor = conn.execute("PRAGMA table_info(merch);")
             existing_columns = [row[1] for row in cursor.fetchall()]
 

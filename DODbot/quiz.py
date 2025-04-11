@@ -1,348 +1,239 @@
 from bot import bot
+import sqlite3
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-from users import update_quize_points, is_finished_quiz, check_quiz_points
-from datetime import datetime, time as dt_time
-import random
-import logging
-from database import db_manager
 from keyboard import main_keyboard
-
-# Настройка логгера
-logger = logging.getLogger(__name__)
-
-# Константы
-LETTERS = ["А", "Б", "В", "Г"]
-CODE_WORDS = {
-    1: "сосиска",
-    2: "колбаса",
-    3: "1",
-    4: "2",
-    5: "3"
-}
+from users import update_quize_points, is_finished_quiz, check_quiz_points
+from datetime import datetime
+import random
+from database import db_manager
 
 
 def create_quiz_table():
-    """Инициализация структуры БД для квизов"""
-    try:
-        with db_manager.get_connection() as conn:
-            cursor = conn.cursor()
-
-            # Создание таблиц
-            cursor.executescript("""
-                CREATE TABLE IF NOT EXISTS quiz_schedule (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    quiz_name TEXT NOT NULL,
-                    start_time TEXT CHECK(length(start_time) = 5 AND start_time GLOB '[0-9][0-9]:[0-9][0-9]'),
-                    location TEXT NOT NULL,
-                    is_started INTEGER DEFAULT 0
-                );
-
-                CREATE TABLE IF NOT EXISTS questions (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    quiz_id INTEGER NOT NULL,
-                    question_number INTEGER NOT NULL,
-                    text TEXT DEFAULT 'Вопрос без текста',
-                    UNIQUE(quiz_id, question_number),
-                    FOREIGN KEY (quiz_id) REFERENCES quiz_schedule(id) ON DELETE CASCADE
-                );
-
-                CREATE TABLE IF NOT EXISTS answers (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    question_id INTEGER NOT NULL,
-                    answer_text TEXT NOT NULL,
-                    is_correct INTEGER DEFAULT 0 CHECK(is_correct IN (0, 1)),
-                    FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
-                );
-            """)
-
-            # Инициализация тестовых данных
-            cursor.execute("""
-                INSERT OR IGNORE INTO quiz_schedule (quiz_name, start_time, location) VALUES
-                    ("Квиз 1", "11:00", "113 ГК"),
-                    ("Квиз 2", "12:00", "4.16 Цифра"),
-                    ("Квиз 3", "13:00", "423 ГК"),
-                    ("Квиз 4", "14:00", "4.6 Арктика"),
-                    ("Квиз 5", "15:00", "305 ЛК");
-            """)
-
-            # Генерация вопросов и ответов
-            cursor.execute("SELECT id FROM quiz_schedule")
-            for quiz_id, in cursor.fetchall():
-                generate_quiz_questions(conn, quiz_id)
-
-            
-            logger.info("Таблицы квизов успешно инициализированы")
-
-    except Exception as e:
-        logger.error(f"Ошибка инициализации квизов: {e}")
-        raise
-
-
-def generate_quiz_questions(conn, quiz_id):
-    """Генерация вопросов и ответов для квиза"""
-    try:
+    with db_manager.get_connection() as conn:
         cursor = conn.cursor()
 
-        # Создание 25 вопросов
-        for q_num in range(1, 26):
-            cursor.execute("""
+        cursor.execute("""
+    CREATE TABLE IF NOT EXISTS quiz_schedule (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        quiz_name TEXT NOT NULL,
+        start_time TEXT CHECK (LENGTH(start_time) = 5 AND start_time LIKE '__:__'), -- Ограничение формата HH:MM
+        location TEXT NOT NULL,
+        is_started INTEGER DEFAULT 0
+    )
+    """)
+
+        cursor.execute("""
+    INSERT OR IGNORE INTO quiz_schedule (quiz_name, start_time, location) VALUES 
+        ("Квиз 1", "11:00", "113 ГК"),
+        ("Квиз 2", "12:00", "4.16 Цифра"),
+        ("Квиз 3", "13:00", "423 ГК"),
+        ("Квиз 4", "14:00", "4.6 Арктика"),
+        ("Квиз 5", "15:00", "305 ЛК");
+    """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS questions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            quiz_id INTEGER NOT NULL,
+            question_number INTEGER NOT NULL,
+            text TEXT DEFAULT 'Вопрос без текста', 
+            UNIQUE(quiz_id, question_number),
+            FOREIGN KEY (quiz_id) REFERENCES quiz_schedule(id)
+        )
+    """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS answers(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            question_id INTEGER NOT NULL,
+            answer_text TEXT NOT NULL,
+            is_correct INTEGER DEFAULT 0,
+            FOREIGN KEY(question_id) REFERENCES questions(id)
+        )
+    """)
+
+        cursor.execute("SELECT id FROM quiz_schedule")
+        quiz_ids = [row[0] for row in cursor.fetchall()]
+
+        # Для каждого квиза вставляем ровно 25 вопросов, используя question_number для уникальности
+        for quiz_id in quiz_ids:
+            for question_number in range(1, 26):
+                # Пытаемся вставить вопрос; если такой уже есть – пропускаем его (INSERT OR IGNORE)
+                cursor.execute("""
                 INSERT OR IGNORE INTO questions (quiz_id, question_number, text)
                 VALUES (?, ?, ?)
-            """, (quiz_id, q_num, f"Вопрос {q_num} для квиза {quiz_id}"))
+            """, (quiz_id, question_number, f"Вопрос {question_number} для квиза {quiz_id}"))
+                # Получаем id вопроса только что вставленной или уже существующей записи
+                cursor.execute("""
+                SELECT id FROM questions WHERE quiz_id = ? AND question_number = ?
+            """, (quiz_id, question_number))
+                question_row = cursor.fetchone()
+                if question_row:
+                    question_id = question_row[0]
+                    # Удаляем (или обновляем) варианты ответов для данного вопроса, если они уже существуют
+                    cursor.execute(
+                        "DELETE FROM answers WHERE question_id = ?", (question_id,))
 
-            # Получение ID созданного вопроса
-            cursor.execute("""
-                SELECT id FROM questions
-                WHERE quiz_id = ? AND question_number = ?
-            """, (quiz_id, q_num))
-
-            if question_row := cursor.fetchone():
-                question_id = question_row[0]
-                # Удаление старых ответов
-                cursor.execute(
-                    "DELETE FROM answers WHERE question_id = ?", (question_id,))
-
-                # Генерация новых ответов
-                correct_answer = random.randint(1, 4)
-                for ans_num in range(1, 5):
-                    cursor.execute("""
+                    correct_answer = random.randint(1, 4)
+                    for i in range(1, 5):
+                        cursor.execute("""
                         INSERT INTO answers (question_id, answer_text, is_correct)
                         VALUES (?, ?, ?)
-                    """, (question_id, f"Вариант {ans_num}", 1 if ans_num == correct_answer else 0))
-
-        logger.debug(f"Сгенерированы вопросы для квиза {quiz_id}")
-
-    except Exception as e:
-        logger.error(f"Ошибка генерации вопросов: {e}")
-        raise
-
-
-def update_quiz_time(quiz_id: int, new_time: str):
-    """Обновление времени начала квиза"""
-    try:
-        # Валидация формата времени
-        datetime.strptime(new_time, "%H:%M")
-
-        with db_manager.get_connection() as conn:
-            conn.execute(
-                "UPDATE quiz_schedule SET start_time = ? WHERE id = ?",
-                (new_time, quiz_id))
-            
-            logger.info(f"Обновлено время квиза {quiz_id} на {new_time}")
-
-    except ValueError:
-         logger.error(f"Некорректный формат времени: {new_time}")
-         raise
-    except Exception as e:
-        logger.error(f"Ошибка обновления времени: {e}")
-        raise
-
-
-def is_within_range(current_time_str: str, target_time_str: str, delta_minutes=10) -> bool:
-    """Проверка попадания времени в допустимый диапазон"""
-    try:
-        current = datetime.strptime(current_time_str, "%H:%M").time()
-        target = datetime.strptime(target_time_str, "%H:%M").time()
-
-        current_sec = current.hour * 3600 + current.minute * 60
-        target_sec = target.hour * 3600 + target.minute * 60
-
-        return 0 <= (current_sec - target_sec) <= delta_minutes * 60
-
-    except ValueError as e:
-        logger.error(f"Ошибка парсинга времени: {e}")
-        return False
-
-
-@bot.message_handler(func=lambda m: m.text == "🎓 Квизы")
-def handle_quiz_command(message):
-    """Обработчик команды 'Квизы'"""
-    try:
-        with db_manager.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT id, quiz_name, start_time, location 
-                FROM quiz_schedule 
-                ORDER BY start_time ASC
-            """)
-
-            current_time = datetime.now().strftime("%H:%M")
-            quizzes = cursor.fetchall()
-
-            # Поиск активного квиза
-            active_quiz = next(
-                (q for q in quizzes if is_within_range(current_time, q[2])),
-                None
-            )
-
-            if active_quiz:
-                quiz_id, name, time, location = active_quiz
-                bot.send_message(
-                    message.chat.id,
-                    f"🕒 Сейчас проходит {name} ({time})!\n"
-                    f"📍 Место: {location}\n"
-                    "🔢 Введите кодовое слово:"
-                )
-                bot.register_next_step_handler(
-                    message,
-                    lambda m: process_quiz_start(m, quiz_id)
-                )
-            else:
-                # Поиск ближайшего квиза
-                upcoming = next(
-                    (q for q in quizzes if q[2] > current_time),
-                    None
-                )
-
-                if upcoming:
-                    msg = (f"⏳ Ближайший квиз:\n"
-                           f"📌 {upcoming[1]}\n"
-                           f"🕒 {upcoming[2]}\n"
-                           f"📍 {upcoming[3]}")
+                    """, (question_id, f"Вариант {i}", 1 if i == correct_answer else 0))
                 else:
-                    msg = "📭 На сегодня квизов больше нет."
-
-                bot.send_message(message.chat.id, msg)
-
-    except Exception as e:
-        logger.error(f"Ошибка обработки команды квиза: {e}")
-        bot.send_message(
-            message.chat.id, "⚠️ Произошла ошибка, попробуйте позже")
+                    print(
+                        f"Не удалось получить вопрос для quiz_id {quiz_id} и question_number {question_number}")
 
 
-def process_quiz_start(message, quiz_id: int):
-    """Обработка кодового слова"""
-    try:
-        user_input = message.text.strip().lower()
-        expected_word = CODE_WORDS.get(quiz_id)
+def update_quiz_time(quiz_id, new_time):
+    with db_manager.get_connection() as conn:
+        cursor = conn.cursor()
 
-        if user_input == expected_word:
-            start_quiz(message, quiz_id)
+        cursor.execute(
+            "UPDATE quiz_schedule SET start_time = ? WHERE id = ?", (new_time, quiz_id))
+
+        conn.commit()
+
+
+def is_within_range(current_time_str, target_time_str, delta_minutes=10):
+    current_dt = datetime.strptime(current_time_str, "%H:%M")
+    target_dt = datetime.strptime(target_time_str, "%H:%M")
+    diff = (current_dt - target_dt).total_seconds() / 60.0
+    if diff < 0:
+        return False
+    return diff <= delta_minutes
+
+
+@bot.message_handler(func=lambda message: message.text == "🎓 Квизы")
+def send_quiz(m):
+    with db_manager.get_connection() as conn:
+        cur = conn.cursor()
+
+        cur.execute(
+            "SELECT id, quiz_name, start_time, location FROM quiz_schedule ORDER BY start_time ASC")
+        quizzes = cur.fetchall()
+
+        current_time = datetime.now().strftime("%H:%M")
+        selected_quiz = None
+
+        for quiz_id, name, time, location in quizzes:
+            if is_within_range(current_time, time):
+                selected_quiz = (quiz_id, name, time, location)
+                break
+
+        if selected_quiz:
+            quiz_id, quiz_name, quiz_time, location = selected_quiz
+            bot.send_message(m.chat.id, "Введите кодовое слово:")
+            bot.register_next_step_handler(
+                m, lambda message: process_quiz_start(message, quiz_id))
         else:
-            bot.send_message(message.chat.id, "❌ Неверное кодовое слово")
-
-    except Exception as e:
-        logger.error(f"Ошибка старта квиза: {e}")
-        bot.send_message(message.chat.id, "⚠️ Ошибка запуска квиза")
-
-
-def start_quiz(message, quiz_id: int):
-    """Запуск квиза для пользователя"""
-    try:
-        user = message.from_user.username
-        if not user:
-            raise ValueError("Не удалось получить username")
-
-        if is_finished_quiz(user, quiz_id):
-            bot.send_message(message.chat.id, "✋ Вы уже прошли этот квиз")
-            return
-
-        with db_manager.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT id FROM questions 
-                WHERE quiz_id = ? 
-                ORDER BY question_number ASC 
-                LIMIT 1
-            """, (quiz_id,))
-
-            if first_question := cursor.fetchone():
-                send_question(message.chat.id, user,
-                              first_question[0], quiz_id)
-            else:
+            upcoming = next(
+                (quiz for quiz in quizzes if quiz[2] > current_time), None)
+            if upcoming:
                 bot.send_message(
-                    message.chat.id, "⚠️ В этом квизе пока нет вопросов")
-
-    except Exception as e:
-        logger.error(f"Ошибка запуска квиза: {e}")
-        bot.send_message(message.chat.id, "⚠️ Ошибка запуска квиза")
+                    m.chat.id, f"Ближайший квиз: {upcoming[1]} в {upcoming[2]} ({upcoming[3]})")
+            else:
+                bot.send_message(m.chat.id, "На сегодня квизов больше нет.")
 
 
-def send_question(chat_id: int, user: str, question_id: int, quiz_id: int):
-    """Отправка вопроса пользователю"""
+def process_quiz_start(message, quiz_id):
     try:
-        with db_manager.get_connection() as conn:
-            cursor = conn.cursor()
+        user_input = message.text.lower().strip()
+        valid_words = ["сосиска", "колбаса", "1", "2", "3"]
 
-            # Получение вариантов ответов
-            cursor.execute("""
-                SELECT id, answer_text 
-                FROM answers 
-                WHERE question_id = ? 
-                ORDER BY id ASC
-            """, (question_id,))
-            answers = cursor.fetchall()
-
-            # Создание клавиатуры
-            markup = InlineKeyboardMarkup(row_width=2)
-            for idx, (ans_id, text) in enumerate(answers):
-                markup.add(InlineKeyboardButton(
-                    text=f"{LETTERS[idx]} {text}",
-                    callback_data=f"answer_{question_id}_{ans_id}_{user}_{quiz_id}"
-                ))
-
-            # Отправка вопроса
-            bot.send_message(
-                chat_id,
-                f"❓ Вопрос #{question_id}",
-                reply_markup=markup
-            )
-
+        if user_input in valid_words:
+            if user_input == "сосиска" and quiz_id == 1:
+                start_quiz(message, 1)
+            elif user_input == "колбаса" and quiz_id == 2:
+                start_quiz(message, 2)
+            elif user_input == "1" and quiz_id == 3:
+                start_quiz(message, 3)
+            elif user_input == "2" and quiz_id == 4:
+                start_quiz(message, 4)
+            elif user_input == "3" and quiz_id == 5:
+                start_quiz(message, 5)
+            else:
+                bot.send_message(message.chat.id, "❌ Неверное кодовое слово.")
+        else:
+            bot.send_message(message.chat.id, "❌ Неверное кодовое слово.")
     except Exception as e:
-        logger.error(f"Ошибка отправки вопроса: {e}")
-        bot.send_message(chat_id, "⚠️ Ошибка загрузки вопроса")
+        bot.send_message(message.chat.id, e)
 
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("answer_"))
-def handle_answer(call):
-    """Обработка ответа пользователя"""
+def start_quiz(message, quiz_id):
+    user = message.from_user.username
+    if is_finished_quiz(user, quiz_id):
+        bot.send_message(message.chat.id, "Вы уже участвовали в этом квизе.")
+        return
+
+    with db_manager.get_connection() as conn:
+        cur = conn.cursor()
+
+        cur.execute(
+            "SELECT id FROM questions WHERE quiz_id = ? ORDER BY id ASC LIMIT 1", (quiz_id,))
+        question = cur.fetchone()
+
+        if question:
+            question_id = question[0]
+            send_question(message.chat.id, user, question_id, quiz_id)
+
+
+def send_question(chat_id, user, question_id, quize_id):
+    with db_manager.get_connection() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT id, answer_text FROM answers WHERE question_id = ? ORDER BY id ASC", (question_id,))
+        answers = cur.fetchall()
+
+        # Массив с нужными буквами для отображения
+        letters = ["А", "Б", "В", "Г"]
+
+        markup = InlineKeyboardMarkup(row_width=1)
+        # Для каждого варианта ответа назначаем букву в зависимости от порядкового номера
+        for idx, (ans_id, ans_text) in enumerate(answers):
+            # на случай, если больше 4 вариантов
+            letter = letters[idx] if idx < len(letters) else ans_text
+            markup.add(InlineKeyboardButton(
+                letter, callback_data=f"answer:{question_id}:{ans_id}:{user}:{quize_id}"))
+
+        # Здесь можно указать текст вопроса, если он есть (или заменить на нужный)
+        bot.send_message(
+            chat_id, f"❔ Вопрос {question_id}", reply_markup=markup)
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("answer:"))
+def check_answer(call):
     try:
         bot.answer_callback_query(call.id)
-        parts = call.data.split('_')
-        if len(parts) != 5:
-            raise ValueError("Неверный формат callback данных")
-
-        _, question_id, answer_id, user, quiz_id = parts
-        question_id = int(question_id)
-        answer_id = int(answer_id)
-        quiz_id = int(quiz_id)
+        _, question_id, answer_id, user, quiz_id = call.data.split(":")
+        question_id, answer_id = int(question_id), int(answer_id)
 
         with db_manager.get_connection() as conn:
-            cursor = conn.cursor()
+            cur = conn.cursor()
 
-            # Проверка правильности ответа
-            cursor.execute("""
-                SELECT is_correct 
-                FROM answers 
-                WHERE id = ?
-            """, (answer_id,))
+            cur.execute(
+                "SELECT is_correct FROM answers WHERE id = ?", (answer_id,))
+            result = cur.fetchone()
 
-            if (result := cursor.fetchone()) and result[0] == 1:
-                update_quize_points(user, quiz_id, 1)
-                logger.info(f"Пользователь {user} дал правильный ответ")
+            if result and result[0] == 1:
+                update_quize_points(user, quiz_id)
+            cur.execute(
+                "SELECT quiz_id FROM questions WHERE id = ?", (question_id,))
+            quiz_id = cur.fetchone()[0]
 
-            # Поиск следующего вопроса
-            cursor.execute("""
-                SELECT id FROM questions 
-                WHERE quiz_id = ? AND id > ? 
-                ORDER BY id ASC 
-                LIMIT 1
-            """, (quiz_id, question_id))
+            cur.execute("""
+    SELECT id FROM questions 
+    WHERE quiz_id = ? AND id > ? ORDER BY id ASC LIMIT 1
+    """, (quiz_id, question_id))
 
-            if next_question := cursor.fetchone():
+            next_question = cur.fetchone()
+
+            if next_question:
+                next_question_id = next_question[0]
                 send_question(call.message.chat.id, user,
-                              next_question[0], quiz_id)
+                              next_question_id, quiz_id)
             else:
-                score = check_quiz_points(user, quiz_id)
                 bot.send_message(
-                    call.message.chat.id,
-                    f"🏁 Квиз завершен!\n"
-                    f"🎉 Ваш результат: {score} баллов",
-                    reply_markup=main_keyboard()
-                )
-                logger.info(
-                    f"Пользователь {user} завершил квиз {quiz_id} с результатом {score}")
+                    call.message.chat.id, f"Квиз завершён! Ваши баллы: {check_quiz_points(user, quiz_id)}", reply_markup=main_keyboard())
 
     except Exception as e:
-        logger.error(f"Ошибка обработки ответа: {e}")
-        bot.send_message(call.message.chat.id, "⚠️ Ошибка обработки ответа")
+        bot.send_message(call.message.chat.id, e)
