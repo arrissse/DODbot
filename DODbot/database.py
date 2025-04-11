@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 db_lock = Lock()
 DATABASE = "base.db"
 
-
+'''
 @contextmanager
 def get_connection():
     """Потокобезопасный контекстный менеджер для подключений"""
@@ -34,8 +34,7 @@ def get_connection():
             if conn:
                 conn.close()
             logger.debug("Блокировка освобождена")
-
-
+'''
 @contextmanager
 def db_operation():
     """Универсальный контекстный менеджер для всех операций с БД"""
