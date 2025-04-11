@@ -123,10 +123,29 @@ def send_quiz(m):
 
 def process_quiz_start(message, quiz_id):
     user_input = message.text.lower().strip()
-    valid_words = ["сосиска", "колбаса", "1", "2", "3"]  # ----- исправить -------
+    valid_words = ["сосиска", "колбаса", "1", "2", "3"]
 
     if user_input in valid_words:
-        start_quiz(message, quiz_id)
+        if user_input == "сосиска" and quiz_id == 1:
+            start_quiz(message, 1)
+        else:
+            bot.send_message(message.chat.id, "❌ Неверное кодовое слово.")
+        if user_input == "колбаса" and quiz_id == 2:
+            start_quiz(message, 2)
+        else:
+            bot.send_message(message.chat.id, "❌ Неверное кодовое слово.")
+        if user_input == "1" and quiz_id == 3:
+            start_quiz(message, 3)
+        else:
+            bot.send_message(message.chat.id, "❌ Неверное кодовое слово.")
+        if user_input == "2" and quiz_id == 4:
+            start_quiz(message, 4)
+        else:
+            bot.send_message(message.chat.id, "❌ Неверное кодовое слово.")
+        if user_input == "3" and quiz_id == 5:
+            start_quiz(message, 5)
+        else:
+            bot.send_message(message.chat.id, "❌ Неверное кодовое слово.")
     else:
         bot.send_message(message.chat.id, "❌ Неверное кодовое слово.")
 
@@ -154,7 +173,7 @@ def send_question(chat_id, user, question_id, question_text):
     cur = conn.cursor()
 
     cur.execute(
-        "SELECT id, text FROM answers WHERE question_id = ?", (question_id,))
+        "SELECT id FROM answers WHERE question_id = ?", (question_id,))
     answers = cur.fetchall()
 
     markup = InlineKeyboardMarkup(row_width=1)
@@ -182,7 +201,7 @@ def check_answer(call):
 
     cur.execute("""
         SELECT id, text FROM questions 
-        WHERE id > ? ORDER BY id ASC LIMIT 1
+        WHERE quiz_id = ? AND id > ? ORDER BY id ASC LIMIT 1
     """, (question_id,))
     next_question = cur.fetchone()
 
