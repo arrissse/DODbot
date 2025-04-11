@@ -195,14 +195,21 @@ def send_question(chat_id, user, question_id, quize_id):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
-        "SELECT id, answer_text FROM answers WHERE question_id = ?", (question_id,))
+        "SELECT id, answer_text FROM answers WHERE question_id = ? ORDER BY id ASC", (question_id,))
     answers = cur.fetchall()
 
-    markup = InlineKeyboardMarkup(row_width=1)
-    for ans_id, ans_text in answers:
-        markup.add(InlineKeyboardButton(
-            ans_text, callback_data=f"answer:{question_id}:{ans_id}:{user}:{quize_id}"))
+    # Массив с нужными буквами для отображения
+    letters = ["А", "Б", "В", "Г"]
 
+    markup = InlineKeyboardMarkup(row_width=1)
+    # Для каждого варианта ответа назначаем букву в зависимости от порядкового номера
+    for idx, (ans_id, ans_text) in enumerate(answers):
+        # на случай, если больше 4 вариантов
+        letter = letters[idx] if idx < len(letters) else ans_text
+        markup.add(InlineKeyboardButton(
+            letter, callback_data=f"answer:{question_id}:{ans_id}:{user}:{quize_id}"))
+
+    # Здесь можно указать текст вопроса, если он есть (или заменить на нужный)
     bot.send_message(chat_id, f"❔ Вопрос {question_id}", reply_markup=markup)
     conn.close()
 
