@@ -22,7 +22,8 @@ class DatabaseManager:
             return cls._instance
 
     def __init__(self):
-        self.lock = FileLock("database.lock", timeout=60)
+        self.lock = FileLock("database.lock", timeout=30)
+        self.conn = None
 
     def init_db(self):
         self.conn = sqlite3.connect(
@@ -33,27 +34,19 @@ class DatabaseManager:
         self.conn.execute("PRAGMA journal_mode=WAL")
         self.conn.execute("PRAGMA busy_timeout=5000")
 
-    @contextmanager
     def get_connection(self):
-        """Потокобезопасное подключение с таймаутом"""
-        start_time = time.time()
-        timeout = 30  # Максимальное время ожидания
-
-        while True:
-            if self.connection_lock.acquire(blocking=False):
-                try:
-                    logger.debug("🔒 Блокировка БД получена")
-                    yield self.conn
-                    self.conn.commit()
-                    break
-                finally:
-                    self.connection_lock.release()
-                    logger.debug("🔓 Блокировка БД освобождена")
-            else:
-                if time.time() - start_time > timeout:
-                    raise TimeoutError("Не удалось получить блокировку БД")
-                logger.debug("⌛ Ожидание блокировки...")
-                time.sleep(1)
+        try:
+            with self.lock:
+                self.conn = sqlite3.connect('database.db', timeout=20)
+                # Включить режим WAL
+                self.conn.execute("PRAGMA journal_mode=WAL")
+                yield self.conn
+        except Timeout:
+            logger.error("Превышено время ожидания блокировки")
+            raise
+        finally:
+            if self.conn:
+                self.conn.close()
 
     def is_initialized(self):
       try:
