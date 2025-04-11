@@ -80,8 +80,7 @@ def send_newsletter():
             time.sleep(60)
 
         except Exception as e:
-            bot.send_message(
-                message.chat.id, f"❌ Ошибка в цикле рассылки: {e}")
+            logger.error(f"❌ Ошибка в цикле рассылки: {e}")
             time.sleep(10)
 
 
