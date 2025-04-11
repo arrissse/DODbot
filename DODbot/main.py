@@ -11,7 +11,19 @@ import newsletter
 import admin_handlers
 import handlers
 import logging
-from database import db_lock
+from database import db_lock, get_connection
+from users import create_users_table
+from admin import create_admins_table
+from merch import create_merch_table
+from quiz import create_quiz_table
+
+
+def init_database():
+    with get_connection() as conn:
+        create_merch_table()
+        create_quiz_table()
+        create_admins_table()
+        create_users_table()
 
 admin_handlers.create_price_table()
 
@@ -62,7 +74,7 @@ def set_webhook_with_retry():
 
 
 if __name__ == '__main__':
-    #bot.remove_webhook()
+    init_database()
     try:
         bot.set_webhook(url="https://fest.mipt.ru/your-webhook-path")
     except ApiTelegramException as e:
