@@ -1,6 +1,7 @@
 from bot import bot, telebot
 from flask import Flask, request, abort
 import requests
+import os
 from requests.exceptions import ConnectionError, Timeout, HTTPError
 import time
 from telebot.apihelper import ApiTelegramException
@@ -12,7 +13,8 @@ def init_database():
   if not db_manager.is_initialized():
     logger.info("🔑 Начало эксклюзивной инициализации БД")
     with db_manager.get_connection() as conn:
-                # Создание всех таблиц в одной транзакции
+        if os.path.exists("database.lock"):
+            os.remove("database.lock")
         conn.execute("BEGIN EXCLUSIVE")
         from newsletter import create_db
         create_db()
