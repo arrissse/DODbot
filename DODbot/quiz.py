@@ -162,7 +162,7 @@ def start_quiz(message, quiz_id):
     cur = conn.cursor()
 
     cur.execute(
-        "SELECT id, text FROM questions WHERE quiz_id = ? ORDER BY id ASC LIMIT 1", (quiz_id,))
+        "SELECT id FROM questions WHERE quiz_id = ? ORDER BY id ASC LIMIT 1", (quiz_id,))
     question = cur.fetchone()
 
     if question:
