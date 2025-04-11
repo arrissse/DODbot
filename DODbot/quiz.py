@@ -122,6 +122,7 @@ def send_quiz(m):
 
 
 def process_quiz_start(message, quiz_id):
+  try:
     user_input = message.text.lower().strip()
     valid_words = ["сосиска", "колбаса", "1", "2", "3"]
 
@@ -148,6 +149,8 @@ def process_quiz_start(message, quiz_id):
             bot.send_message(message.chat.id, "❌ Неверное кодовое слово.")
     else:
         bot.send_message(message.chat.id, "❌ Неверное кодовое слово.")
+  except Exception as e:
+      bot.send_message(message.chat.id, e)
 
 def start_quiz(message, quiz_id):
     user = message.from_user.username
