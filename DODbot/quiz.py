@@ -160,12 +160,12 @@ def start_quiz(message, quiz_id):
 
     if question:
         question_id = question[0]
-        send_question(message.chat.id, user, question_id)
+        send_question(message.chat.id, user, question_id, quiz_id)
 
     conn.close()
 
 
-def send_question(chat_id, user, question_id):
+def send_question(chat_id, user, question_id, quize_id):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
@@ -175,7 +175,7 @@ def send_question(chat_id, user, question_id):
     markup = InlineKeyboardMarkup(row_width=1)
     for ans_id, ans_text in answers:
         markup.add(InlineKeyboardButton(
-            ans_text, callback_data=f"answer:{question_id}:{ans_id}:{user}"))
+            ans_text, callback_data=f"answer:{question_id}:{ans_id}:{user}:{quize_id}"))
 
     bot.send_message(chat_id, f"❔ Вопрос {question_id}", reply_markup=markup)
     conn.close()
@@ -185,7 +185,7 @@ def send_question(chat_id, user, question_id):
 def check_answer(call):
   try:
     bot.answer_callback_query(call.id)
-    _, question_id, answer_id, user = call.data.split(":")
+    _, question_id, answer_id, user, quiz_id = call.data.split(":")
     question_id, answer_id = int(question_id), int(answer_id)
 
     conn = get_db_connection()
@@ -195,7 +195,7 @@ def check_answer(call):
     result = cur.fetchone()
 
     if result and result[0] == 1:
-        update_quize_points(user, question_id)
+        update_quize_points(user, quiz_id)
     cur.execute("SELECT quiz_id FROM questions WHERE id = ?", (question_id,))
     quiz_id = cur.fetchone()[0]
 
