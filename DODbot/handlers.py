@@ -20,6 +20,7 @@ add_admin("@Nikita_Savel", 0)
 
 @bot.message_handler(commands=["start"])
 def start(m):
+ try:
     add_user(m.chat.id, m.from_user.username)
     current_username = '@' + m.from_user.username
     admins = get_all_admins()
@@ -60,6 +61,8 @@ def start(m):
 
     photo_url = f"img/{name}.png"
     do_action(m, photo_url)
+ except Exception as e:
+     bot.send_message(m.chat.id, e)
 
 
 def do_action(message, photo_url):
