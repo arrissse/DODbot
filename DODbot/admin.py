@@ -1,8 +1,10 @@
 import sqlite3
 import openpyxl
+from database import db_lock, get_connection
 
 def create_admins_table():
-    conn = sqlite3.connect("admins.db", check_same_thread=False)
+ with db_lock:
+  with get_connection() as conn:
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -14,11 +16,11 @@ def create_admins_table():
     """)
     
     conn.commit()
-    conn.close()
+    
 
 def add_admin(adminname, adminlevel):
-    
-    conn = sqlite3.connect("admins.db", check_same_thread=False)
+ with db_lock:
+  with get_connection() as conn:
     cursor = conn.cursor()
 
     cursor.execute("SELECT COUNT(*) FROM admins WHERE adminname = ?", (adminname,))
@@ -26,25 +28,27 @@ def add_admin(adminname, adminlevel):
 
     if exists:
         print(f"⚠️ {adminname} уже является админом.")
-        conn.close()
+        
         return False 
     cursor.execute("INSERT OR IGNORE INTO admins (adminname, adminlevel) VALUES (?, ?)",
                    (adminname, adminlevel))
     conn.commit()
     
-    conn.close()
+    
     return True
 
 def get_all_admins():
-    conn = sqlite3.connect("admins.db", check_same_thread=False)
+ with db_lock:
+  with get_connection() as conn:
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM admins")
     admins = cursor.fetchall()
-    conn.close()
+    
     return [(admin) for admin in admins]
 
 def get_admin_level(username):
-    conn = sqlite3.connect("admins.db", check_same_thread=False)
+ with db_lock:
+  with get_connection() as conn:
     cursor = conn.cursor()
     try:
         cursor.execute("SELECT adminlevel FROM admins WHERE adminname = ?", (username,))
@@ -52,17 +56,18 @@ def get_admin_level(username):
     except Exception as e:
         print("Ошибка при выполнении запроса:", e)
         result = None
-    conn.close()
+    
     return result[0] if result is not None else 0
 
 def update_admin_questnum(username, new_value):
-    conn = sqlite3.connect("admins.db", check_same_thread=False)
+ with db_lock:
+  with get_connection() as conn:
     cursor = conn.cursor()
 
     cursor.execute(f"UPDATE admins SET questnum = ? WHERE adminname = ?", (new_value, username))
 
     conn.commit()
-    conn.close()
+    
 
 def save_admins_to_excel():
     users = get_all_admins()
@@ -84,10 +89,11 @@ def save_admins_to_excel():
     return filename
 
 def get_admin_by_username(username):
-    conn = sqlite3.connect("admins.db", check_same_thread=False)
+ with db_lock:
+  with get_connection() as conn:
     cursor = conn.cursor()
 
     cursor.execute("SELECT * FROM admins WHERE adminname = ?", (username,))
     user = cursor.fetchone()
-    conn.close()
+    
     return user if user else None

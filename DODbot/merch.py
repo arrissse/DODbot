@@ -59,7 +59,7 @@ def is_got_merch(username):
                                != 'username' and col[2] in ('INTEGER', 'REAL')]
 
             if not numeric_columns:
-                conn.close()
+                
                 return False
 
             sum_query = " + ".join(
@@ -69,7 +69,7 @@ def is_got_merch(username):
             cursor.execute(query, (username,))
 
             result = cursor.fetchone()
-            conn.close()
+            
 
             return result[0] == len(numeric_columns)
 
@@ -88,7 +88,7 @@ def is_got_any_merch(username):
                        'username' and col[2] and col[2].upper() in ('INTEGER', 'REAL')]
 
     if not numeric_columns:
-        conn.close()
+        
         return False
 
     sum_query = " + ".join([f"COALESCE({col}, 0)" for col in numeric_columns])
@@ -97,7 +97,7 @@ def is_got_any_merch(username):
     cursor.execute(query, (username,))
 
     result = cursor.fetchone()
-    conn.close()
+    
 
     return result and result[0] > 0
 
@@ -121,7 +121,7 @@ def get_all_merch():
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM merch")
             merch = cursor.fetchall()
-            conn.close()
+            
             return [(merch_) for merch_ in merch]
 
 
@@ -131,7 +131,7 @@ def get_table_columns(table_name):
             cursor = conn.cursor()
             cursor.execute(f"PRAGMA table_info({table_name});")
             columns = [column[1] for column in cursor.fetchall()]
-            conn.close()
+            
             return columns
 
 

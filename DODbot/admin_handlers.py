@@ -176,7 +176,7 @@ def start_quiz(call):
 
     cur.execute("SELECT quiz_name FROM quiz_schedule WHERE id = ?", (quiz_id,))
     quiz_info = cur.fetchone()
-    conn.close()
+    
 
     if not quiz_info:
         bot.send_message(call.message.chat.id, "Ошибка: квиз не найден.")
@@ -209,7 +209,7 @@ def send_next_question(call):
 
     if not question:
         bot.send_message(call.message.chat.id, "Квиз завершён!")
-        conn.close()
+        
         return
 
     question_id, question_text = question
@@ -231,7 +231,7 @@ def send_next_question(call):
     bot.send_message(call.message.chat.id,
                      "Готовы к следующему вопросу?", reply_markup=markup_next)
 
-    conn.close()
+    
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("answer:"))
@@ -251,7 +251,7 @@ def check_answer(call):
     else:
         bot.send_message(call.message.chat.id, "❌ Неверно.")
 
-    conn.close()
+    
 
 
 @bot.callback_query_handler(func=lambda call: call.data == "not_start_quiz")
@@ -349,7 +349,7 @@ def create_price_table():
     """)
 
             conn.commit()
-            conn.close()
+            
 
 
 def get_merch_types():
@@ -358,7 +358,7 @@ def get_merch_types():
             cursor = conn.cursor()
             cursor.execute("SELECT merch_type FROM merch_prices")
             types = [row[0] for row in cursor.fetchall()]
-            conn.close()
+            
             return types
 
 
@@ -369,7 +369,7 @@ def get_merch_price(merch_type):
             cursor.execute(
                 "SELECT price FROM merch_prices WHERE merch_type = ?", (merch_type,))
             result = cursor.fetchone()
-            conn.close()
+            
             return result[0] if result else 0
 
 
@@ -380,7 +380,7 @@ def update_merch_price(merch_type, new_price):
             cursor.execute("INSERT INTO merch_prices (merch_type, price) VALUES (?, ?) ON CONFLICT(merch_type) DO UPDATE SET price = ?",
                            (merch_type, new_price, new_price))
             conn.commit()
-            conn.close()
+            
 
 
 @bot.message_handler(func=lambda message: message.text == "Стоимость мерча")
@@ -390,7 +390,7 @@ def merch_prices_menu(message):
             cursor = conn.cursor()
             cursor.execute("SELECT merch_type FROM merch_prices")
             merch_types = [row[0] for row in cursor.fetchall()]
-            conn.close()
+            
 
             markup = types.InlineKeyboardMarkup()
             for merch in merch_types:
@@ -553,7 +553,7 @@ def process_type_cost(message, type):
             """, (type, cost))
 
             conn.commit()
-            conn.close()
+            
 
     try:
         add_column(type)
@@ -598,7 +598,7 @@ def process_r_type(message):
             if cursor.fetchone()[0] == 0:
                 bot.send_message(
                     message.chat.id, f"❌ Позиция '{merch_type}' не найдена.")
-                conn.close()
+                
                 return
 
             cursor.execute(
@@ -612,7 +612,7 @@ def process_r_type(message):
                 if not new_columns:
                     bot.send_message(
                         message.chat.id, "❌ Ошибка: нельзя удалить последнюю колонку.")
-                    conn.close()
+                    
                     return
 
                 columns_str = ", ".join(f'"{col}"' for col in new_columns)
@@ -623,6 +623,6 @@ def process_r_type(message):
                 cursor.execute("ALTER TABLE merch_temp RENAME TO merch;")
 
             conn.commit()
-            conn.close()
+            
 
     bot.send_message(message.chat.id, f"✅ Позиция '{merch_type}' удалена.")

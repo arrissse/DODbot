@@ -25,7 +25,7 @@ def create_db():
     """)
 
             conn.commit()
-            conn.close()
+            
             print("✅ База данных создана!")
 
 
@@ -47,7 +47,7 @@ def add_newsletter(message, send_time):
                 print(
                     f"Ошибка: некорректный формат даты и времени: {send_time}")
 
-            conn.close()
+            
 
 
 def send_newsletter():
@@ -76,7 +76,7 @@ def send_newsletter():
                             "DELETE FROM newsletter WHERE id = ?", (newsletter[0],))
 
                 conn.commit()
-                conn.close()
+                
         time.sleep(60)
 
 

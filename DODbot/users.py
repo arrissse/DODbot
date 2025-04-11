@@ -37,7 +37,7 @@ def create_users_table():
     )
     """)
             conn.commit()
-            conn.close()
+            
 
 
 '''
@@ -56,7 +56,7 @@ def add_user(user_id, username):
             cursor.execute("INSERT OR IGNORE INTO users (id, username) VALUES (?, ?)",
                            (user_id, username))
             conn.commit()
-            conn.close()
+            
 
 
 '''
@@ -76,7 +76,7 @@ def get_user_by_username(username):
             cursor.execute(
                 "SELECT * FROM users WHERE username = ?", (username,))
             user = cursor.fetchone()
-            conn.close()
+            
             return user if user else None
 
 
@@ -153,7 +153,7 @@ def get_all_users():
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM users")
             users = cursor.fetchall()
-            conn.close()
+            
             return users
 
 
@@ -174,7 +174,7 @@ def start_quest(username):
             cursor.execute(
                 "UPDATE users SET quest_started = 1 WHERE username = ?", (username,))
             conn.commit()
-            conn.close()
+            
 
 
 '''
@@ -194,7 +194,7 @@ def finish_quest(username):
             cursor.execute(
                 "UPDATE users SET quest_station = 11 WHERE username = ?", (username,))
             conn.commit()
-            conn.close()
+            
 
 
 '''
@@ -214,7 +214,7 @@ def is_quest_started(username):
             cursor.execute(
                 "SELECT quest_started FROM users WHERE username = ?", (username,))
             result = cursor.fetchone()
-            conn.close()
+            
 
             return result[0] == 1
 
@@ -236,7 +236,7 @@ def check_points(username):
             cursor.execute(
                 "SELECT quest_points FROM users WHERE username = ?", (username,))
             result = cursor.fetchone()
-            conn.close()
+            
 
             return result[0]
 
@@ -259,7 +259,7 @@ def update_merch_points(username, points):
                 "SELECT COUNT(*) FROM users WHERE username = ?", (username,))
             if cursor.fetchone()[0] == 0:
                 print(f"❌ Пользователь {username} не найден в users.db!")
-                conn.close()
+                
                 return
 
             cursor.execute(
@@ -279,7 +279,7 @@ def update_merch_points(username, points):
                 print(
                     f"❌ Не удалось получить баллы для пользователя {username}")
 
-            conn.close()
+            
 
 
 '''
@@ -300,7 +300,7 @@ def check_st_points(username, station):
             cursor.execute(
                 f"SELECT {s} FROM users WHERE username = ?", (username,))
             result = cursor.fetchone()
-            conn.close()
+            
 
             return result[0]
 
@@ -322,7 +322,7 @@ def check_quiz_points(username, num):
             cursor.execute(
                 f"SELECT quize_{num} FROM users WHERE username = ?", (username,))
             result = cursor.fetchone()
-            conn.close()
+            
 
             return result[0]
 
@@ -360,7 +360,7 @@ def update_user_queststation(username):
     """, (username,))
 
             conn.commit()
-            conn.close()
+            
 
 
 '''
@@ -396,7 +396,7 @@ def is_quiz_finished(username):
     """, (username,))
 
             result = cursor.fetchone()
-            conn.close()
+            
 
             return result is not None and all(score > 0 for score in result)
 
@@ -418,7 +418,7 @@ def count_active_quests():
             cursor.execute(
                 "SELECT COUNT(*) FROM users WHERE quest_started = 1")
             result = cursor.fetchone()[0]
-            conn.close()
+            
 
             return result
 
@@ -462,7 +462,7 @@ def update_user_points(username, admin_num, points):
             cursor.execute(query, (points, username))
 
             conn.commit()
-            conn.close()
+            
 
 
 '''
@@ -490,7 +490,7 @@ def update_quize_points(username, num):
             print(f"Баллы обновлены для {username}")
 
             conn.commit()
-            conn.close()
+            
 
 
 '''
@@ -512,7 +512,7 @@ def check_quiz_points(username, num):
             cursor.execute(
                 f"SELECT {quize} FROM users WHERE username = ?", (username,))
             result = cursor.fetchone()
-            conn.close()
+            
 
             if result is None:
                 return False
@@ -539,7 +539,7 @@ def is_finished_quiz(username, num):
             cursor.execute(
                 f"SELECT {quize} FROM users WHERE username = ?", (username,))
             result = cursor.fetchone()
-            conn.close()
+            
 
             if result is None:
                 return False
