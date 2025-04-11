@@ -82,7 +82,6 @@ def create_quiz_table():
                             f"Не удалось получить вопрос для quiz_id {quiz_id} и question_number {question_number}")
 
             conn.commit()
-            conn.close()
 
 
 def update_quiz_time(quiz_id, new_time):
@@ -94,7 +93,7 @@ def update_quiz_time(quiz_id, new_time):
                 "UPDATE quiz_schedule SET start_time = ? WHERE id = ?", (new_time, quiz_id))
 
             conn.commit()
-            conn.close()
+
 
 
 def is_within_range(current_time_str, target_time_str, delta_minutes=10):
@@ -140,7 +139,7 @@ def send_quiz(m):
                     bot.send_message(
                         m.chat.id, "На сегодня квизов больше нет.")
 
-            conn.close()
+            
 
 
 def process_quiz_start(message, quiz_id):
@@ -185,7 +184,7 @@ def start_quiz(message, quiz_id):
                 question_id = question[0]
                 send_question(message.chat.id, user, question_id, quiz_id)
 
-            conn.close()
+            
 
 
 def send_question(chat_id, user, question_id, quize_id):
@@ -207,7 +206,7 @@ def send_question(chat_id, user, question_id, quize_id):
 
             bot.send_message(
                 chat_id, f"❔ Вопрос {question_id}", reply_markup=markup)
-            conn.close()
+            
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("answer:"))
@@ -246,6 +245,6 @@ def check_answer(call):
                     bot.send_message(
                         call.message.chat.id, f"Квиз завершён! Ваши баллы: {check_quiz_points(user, quiz_id)}", reply_markup=main_keyboard())
 
-                conn.close()
+                
     except Exception as e:
         bot.send_message(call.message.chat.id, e)
