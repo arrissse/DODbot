@@ -165,8 +165,9 @@ def start_quiz(message, quiz_id):
         "SELECT id FROM questions WHERE quiz_id = ? ORDER BY id ASC LIMIT 1", (quiz_id,))
     question = cur.fetchone()
 
+
     if question:
-        question_id = question
+        question_id = question[0]
         send_question(message.chat.id, user, question_id)
 
     conn.close()
@@ -175,8 +176,9 @@ def send_question(chat_id, user, question_id):
     conn = get_db_connection()
     cur = conn.cursor()
 
+
     cur.execute(
-        "SELECT id FROM answers WHERE question_id = ?", (question_id,))
+        "SELECT id, answer_text FROM answers WHERE question_id = ?", (question_id,))
     answers = cur.fetchall()
 
     markup = InlineKeyboardMarkup(row_width=1)
