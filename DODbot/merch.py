@@ -1,12 +1,12 @@
 import sqlite3
 import openpyxl
 from bot import bot
-from database import db_lock, get_connection
+from database import db_lock, db_operation
 
 
 def create_merch_table():
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS merch (
@@ -22,8 +22,8 @@ def create_merch_table():
 
 
 def got_merch(username, type):
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
             cursor.execute(
                 "INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
@@ -34,8 +34,8 @@ def got_merch(username, type):
 
 
 def give_merch(username, type):
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
             cursor.execute(
                 "INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
@@ -45,8 +45,8 @@ def give_merch(username, type):
 
 
 def is_got_merch(username):
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
 
             cursor.execute(
@@ -103,8 +103,8 @@ def is_got_any_merch(username):
 
 
 def add_column(column_name):
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
             cursor.execute("PRAGMA table_info(merch);")
             existing_columns = [row[1] for row in cursor.fetchall()]
@@ -116,8 +116,8 @@ def add_column(column_name):
 
 
 def get_all_merch():
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM merch")
             merch = cursor.fetchall()
@@ -126,8 +126,8 @@ def get_all_merch():
 
 
 def get_table_columns(table_name):
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
             cursor.execute(f"PRAGMA table_info({table_name});")
             columns = [column[1] for column in cursor.fetchall()]

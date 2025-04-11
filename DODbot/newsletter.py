@@ -6,14 +6,14 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from users import get_all_users
 from admin import get_admin_by_username
 import threading
-from database import db_lock, get_connection
+from database import db_lock, db_operation
 
 pending_newsletters = {}
 
 
 def create_db():
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
 
             cursor.execute("""
@@ -30,8 +30,8 @@ def create_db():
 
 
 def add_newsletter(message, send_time):
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
 
             try:
@@ -51,8 +51,8 @@ def send_newsletter():
     while True:
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
 
-        with db_lock:
-            with get_connection() as conn:
+        
+        with db_operation() as conn:
                 cursor = conn.cursor()
 
                 cursor.execute(

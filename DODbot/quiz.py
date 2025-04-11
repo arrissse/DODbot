@@ -5,12 +5,12 @@ from keyboard import main_keyboard
 from users import update_quize_points, is_finished_quiz, check_quiz_points
 from datetime import datetime
 import random
-from database import db_lock, get_connection
+from database import db_lock, db_operation
 
 
 def create_quiz_table():
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
 
             cursor.execute("""
@@ -85,8 +85,8 @@ def create_quiz_table():
 
 
 def update_quiz_time(quiz_id, new_time):
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
 
             cursor.execute(
@@ -107,9 +107,9 @@ def is_within_range(current_time_str, target_time_str, delta_minutes=10):
 
 @bot.message_handler(func=lambda message: message.text == "🎓 Квизы")
 def send_quiz(m):
-    with db_lock:
-        with get_connection() as conn:
-            conn = get_connection()
+    
+        with db_operation() as conn:
+            conn = db_operation()
             cur = conn.cursor()
 
             cur.execute(
@@ -171,9 +171,9 @@ def start_quiz(message, quiz_id):
     if is_finished_quiz(user, quiz_id):
         bot.send_message(message.chat.id, "Вы уже участвовали в этом квизе.")
         return
-    with db_lock:
-        with get_connection() as conn:
-            conn = get_connection()
+    
+        with db_operation() as conn:
+            conn = db_operation()
             cur = conn.cursor()
 
             cur.execute(
@@ -188,9 +188,9 @@ def start_quiz(message, quiz_id):
 
 
 def send_question(chat_id, user, question_id, quize_id):
-    with db_lock:
-        with get_connection() as conn:
-            conn = get_connection()
+    
+        with db_operation() as conn:
+            conn = db_operation()
             cur = conn.cursor()
             cur.execute(
                 "SELECT id, answer_text FROM answers WHERE question_id = ? ORDER BY id ASC", (question_id,))
@@ -215,9 +215,9 @@ def check_answer(call):
         bot.answer_callback_query(call.id)
         _, question_id, answer_id, user, quiz_id = call.data.split(":")
         question_id, answer_id = int(question_id), int(answer_id)
-        with db_lock:
-            with get_connection() as conn:
-                conn = get_connection()
+        
+        with db_operation() as conn:
+                conn = db_operation()
                 cur = conn.cursor()
 
                 cur.execute(
