@@ -10,7 +10,7 @@ from users import check_points, update_merch_points
 from admin import save_admins_to_excel, get_admin_by_username, get_admin_level
 from merch import give_merch, is_got_merch, got_merch, add_column, save_merch_to_excel
 from quiz import update_quiz_time
-from database import db_lock, get_connection, db_operation
+from database import db_lock, db_operation
 
 
 '''
@@ -170,7 +170,6 @@ def start_quiz(call):
     bot.answer_callback_query(call.id)
     _, quiz_id = call.data.split(":")
     quiz_id = int(quiz_id)
-
     conn = db_operation()
     cur = conn.cursor()
 
