@@ -11,7 +11,6 @@ def create_quiz_table():
     conn = sqlite3.connect("quiz.db", check_same_thread=False)
     cursor = conn.cursor()
 
-    # Создание таблицы расписания квизов
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS quiz_schedule (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -31,7 +30,6 @@ def create_quiz_table():
         ("Квиз 5", "15:00", "305 ЛК");
     """)
 
-    # Создание таблицы вопросов с полем question_number и уникальным ограничением для (quiz_id, question_number)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS questions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,7 +41,6 @@ def create_quiz_table():
         )
     """)
 
-    # Создание таблицы вариантов ответов
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS answers(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -57,22 +54,18 @@ def create_quiz_table():
     cursor.execute("SELECT id FROM quiz_schedule")
     quiz_ids = [row[0] for row in cursor.fetchall()]
 
-    # Для каждого квиза вставляем ровно 25 вопросов, используя question_number для уникальности
     for quiz_id in quiz_ids:
         for question_number in range(1, 26):
-            # Пытаемся вставить вопрос; если такой уже есть – пропускаем его (INSERT OR IGNORE)
             cursor.execute("""
                 INSERT OR IGNORE INTO questions (quiz_id, question_number, text)
                 VALUES (?, ?, ?)
             """, (quiz_id, question_number, f"Вопрос {question_number} для квиза {quiz_id}"))
-            # Получаем id вопроса только что вставленной или уже существующей записи
             cursor.execute("""
                 SELECT id FROM questions WHERE quiz_id = ? AND question_number = ?
             """, (quiz_id, question_number))
             question_row = cursor.fetchone()
             if question_row:
                 question_id = question_row[0]
-                # Удаляем (или обновляем) варианты ответов для данного вопроса, если они уже существуют
                 cursor.execute(
                     "DELETE FROM answers WHERE question_id = ?", (question_id,))
 
@@ -198,18 +191,14 @@ def send_question(chat_id, user, question_id, quize_id):
         "SELECT id, answer_text FROM answers WHERE question_id = ? ORDER BY id ASC", (question_id,))
     answers = cur.fetchall()
 
-    # Массив с нужными буквами для отображения
     letters = ["А", "Б", "В", "Г"]
 
     markup = InlineKeyboardMarkup(row_width=1)
-    # Для каждого варианта ответа назначаем букву в зависимости от порядкового номера
     for idx, (ans_id, ans_text) in enumerate(answers):
-        # на случай, если больше 4 вариантов
         letter = letters[idx] if idx < len(letters) else ans_text
         markup.add(InlineKeyboardButton(
             letter, callback_data=f"answer:{question_id}:{ans_id}:{user}:{quize_id}"))
 
-    # Здесь можно указать текст вопроса, если он есть (или заменить на нужный)
     bot.send_message(chat_id, f"❔ Вопрос {question_id}", reply_markup=markup)
     conn.close()
 
