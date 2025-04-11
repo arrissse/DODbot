@@ -24,13 +24,13 @@ def init_database():
     with get_connection() as conn:
         create_users_table()
         create_admins_table()
+        admin_handlers.create_price_table()
         create_merch_table()
         create_quiz_table()
         create_db()
 
         init_admins()
 
-admin_handlers.create_price_table()
 
 app = Flask(__name__)
 app.logger.setLevel(logging.DEBUG)
