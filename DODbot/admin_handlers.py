@@ -10,7 +10,7 @@ from users import check_points, update_merch_points
 from admin import save_admins_to_excel, get_admin_by_username, get_admin_level
 from merch import give_merch, is_got_merch, got_merch, add_column, save_merch_to_excel
 from quiz import update_quiz_time
-from database import db_lock, get_connection
+from database import db_lock, get_connection, db_operation
 
 
 '''
@@ -171,7 +171,7 @@ def start_quiz(call):
     _, quiz_id = call.data.split(":")
     quiz_id = int(quiz_id)
 
-    conn = get_connection()
+    conn = db_operation()
     cur = conn.cursor()
 
     cur.execute("SELECT quiz_name FROM quiz_schedule WHERE id = ?", (quiz_id,))
@@ -198,7 +198,7 @@ def send_next_question(call):
     _, quiz_id, question_number = call.data.split(":")
     quiz_id, question_number = int(quiz_id), int(question_number)
 
-    conn = get_connection()
+    conn = db_operation()
     cur = conn.cursor()
 
     cur.execute("""
@@ -240,7 +240,7 @@ def check_answer(call):
     _, question_id, answer_id = call.data.split(":")
     question_id, answer_id = int(question_id), int(answer_id)
 
-    conn = get_connection()
+    conn = db_operation()
     cur = conn.cursor()
 
     cur.execute("SELECT is_correct FROM answers WHERE id = ?", (answer_id,))
@@ -331,7 +331,7 @@ def statistics(message):
 
 def create_price_table():
     with db_lock:
-        with get_connection() as conn:
+        with db_operation() as conn:
             cursor = conn.cursor()
             cursor.execute("""
     CREATE TABLE IF NOT EXISTS merch_prices (
@@ -354,7 +354,7 @@ def create_price_table():
 
 def get_merch_types():
     with db_lock:
-        with get_connection() as conn:
+        with db_operation() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT merch_type FROM merch_prices")
             types = [row[0] for row in cursor.fetchall()]
@@ -364,7 +364,7 @@ def get_merch_types():
 
 def get_merch_price(merch_type):
     with db_lock:
-        with get_connection() as conn:
+        with db_operation() as conn:
             cursor = conn.cursor()
             cursor.execute(
                 "SELECT price FROM merch_prices WHERE merch_type = ?", (merch_type,))
@@ -375,7 +375,7 @@ def get_merch_price(merch_type):
 
 def update_merch_price(merch_type, new_price):
     with db_lock:
-        with get_connection() as conn:
+        with db_operation() as conn:
             cursor = conn.cursor()
             cursor.execute("INSERT INTO merch_prices (merch_type, price) VALUES (?, ?) ON CONFLICT(merch_type) DO UPDATE SET price = ?",
                            (merch_type, new_price, new_price))
@@ -386,7 +386,7 @@ def update_merch_price(merch_type, new_price):
 @bot.message_handler(func=lambda message: message.text == "Стоимость мерча")
 def merch_prices_menu(message):
     with db_lock:
-        with get_connection() as conn:
+        with db_operation() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT merch_type FROM merch_prices")
             merch_types = [row[0] for row in cursor.fetchall()]
@@ -545,7 +545,7 @@ def process_type_cost(message, type):
             message.chat.id, "❌ Стоимость должна быть числом. Попробуйте ещё раз.")
         return
     with db_lock:
-        with get_connection() as conn:
+        with db_operation() as conn:
             cursor = conn.cursor()
 
             cursor.execute("""
@@ -590,7 +590,7 @@ def process_r_type(message):
     merch_type = message.text.strip()
 
     with db_lock:
-        with get_connection() as conn:
+        with db_operation() as conn:
             cursor = conn.cursor()
 
             cursor.execute(

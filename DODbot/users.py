@@ -49,8 +49,8 @@ def create_users_table():
 
 
 def add_user(user_id, username):
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
             cursor.execute("INSERT OR IGNORE INTO users (id, username) VALUES (?, ?)",
                            (user_id, username))
@@ -68,8 +68,8 @@ def add_user(user_id, username):
 
 
 def get_user_by_username(username):
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
 
             cursor.execute(
@@ -147,8 +147,8 @@ def save_users_to_excel():
 
 
 def get_all_users():
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM users")
             users = cursor.fetchall()
@@ -166,8 +166,8 @@ def get_all_users():
 
 
 def start_quest(username):
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
 
             cursor.execute(
@@ -186,8 +186,8 @@ def start_quest(username):
 
 
 def finish_quest(username):
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
 
             cursor.execute(
@@ -206,8 +206,8 @@ def finish_quest(username):
 
 
 def is_quest_started(username):
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
 
             cursor.execute(
@@ -228,8 +228,8 @@ def is_quest_started(username):
 
 
 def check_points(username):
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
 
             cursor.execute(
@@ -250,8 +250,8 @@ def check_points(username):
 
 
 def update_merch_points(username, points):
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
 
             cursor.execute(
@@ -291,8 +291,8 @@ def update_merch_points(username, points):
 
 
 def check_st_points(username, station):
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
 
             s = f"quest{station}_points"
@@ -314,8 +314,8 @@ def check_st_points(username, station):
 
 
 def check_quiz_points(username, num):
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
 
             cursor.execute(
@@ -336,8 +336,8 @@ def check_quiz_points(username, num):
 
 
 def update_user_queststation(username):
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
 
             cursor.execute("""
@@ -385,8 +385,8 @@ def is_quest_finished(username):
 
 
 def is_quiz_finished(username):
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
 
             cursor.execute("""
@@ -410,8 +410,8 @@ def is_quiz_finished(username):
 
 
 def count_active_quests():
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
 
             cursor.execute(
@@ -449,8 +449,8 @@ def count_finished_quests():
 
 
 def update_user_points(username, admin_num, points):
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
 
             column_name = f"quest{admin_num}_points"
@@ -474,8 +474,8 @@ def update_user_points(username, admin_num, points):
 
 
 def update_quize_points(username, num):
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
             cursor.execute(
                 "SELECT quize_points FROM users WHERE username = ?", (username,))
@@ -502,8 +502,8 @@ def update_quize_points(username, num):
 
 
 def check_quiz_points(username, num):
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
 
             quize = f"quize_{num}"
@@ -529,8 +529,8 @@ def check_quiz_points(username, num):
 
 
 def is_finished_quiz(username, num):
-    with db_lock:
-        with get_connection() as conn:
+    
+        with db_operation() as conn:
             cursor = conn.cursor()
 
             quize = f"quize_{num}"

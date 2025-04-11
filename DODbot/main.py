@@ -12,8 +12,10 @@ def init_database():
         logger.info("🚀 Начало инициализации БД")
         from users import create_users_table
         create_users_table()
+        logger.info("🚀 users")
         from admin import create_admins_table
         create_admins_table()
+        logger.info("🚀 admins")
         from admin_handlers import create_price_table
         create_price_table()
         from merch import create_merch_table
