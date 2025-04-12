@@ -23,7 +23,7 @@ class NewsletterStates(StatesGroup):
 
 async def init_db():
     try:
-        async with db_manager.get_async_connection() as conn:
+        async with db_manager.get_connection() as conn:  # Замена get_async_connection() на get_connection()
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS newsletter (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,7 +41,7 @@ async def add_newsletter(newsletter_text: str, send_time: str):
     try:
         dt = datetime.strptime(send_time, '%Y-%m-%d %H:%M')
         formatted_time = dt.strftime('%Y-%m-%d %H:%M')
-        async with db_manager.get_async_connection() as db:
+        async with db_manager.get_connection() as db:  # Замена метода подключения
             await db.execute(
                 "INSERT INTO newsletter (message, send_time) VALUES (?, ?)",
                 (newsletter_text, formatted_time)
@@ -56,7 +56,7 @@ async def newsletter_scheduler():
     """Проверка и отправка запланированных рассылок каждую минуту."""
     while True:
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
-        async with db_manager.get_async_connection() as db:
+        async with db_manager.get_connection() as db:
             async with db.execute(
                 "SELECT id, message FROM newsletter WHERE send_time = ?",
                 (current_time,)
@@ -77,7 +77,7 @@ async def newsletter_scheduler():
                                 f"Ошибка отправки сообщения пользователю {user.username}: {e}")
 
                     # Удаляем отправленную рассылку
-                    async with db_manager.get_async_connection() as db:
+                    async with db_manager.get_connection() as db:
                         await db.execute(
                             "DELETE FROM newsletter WHERE id = ?",
                             (newsletter_id,)
