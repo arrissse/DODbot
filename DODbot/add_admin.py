@@ -27,6 +27,7 @@ def process_name(m):
     admin_names = [admin[0].lstrip('@') for admin in admins]
     if username.lstrip('@') in admin_names:
         bot.send_message(m.chat.id, f"❌ Пользователь {username} уже является админом.")
+        return
     else:
         bot.send_message(m.chat.id, f"Пользователь {username} пока не является админом.")
 
