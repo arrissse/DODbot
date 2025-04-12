@@ -19,6 +19,8 @@ def init_database():
         from newsletter import create_db
         create_db()
         logger.info("🚀 newsletter")
+        from merch import create_merch_table
+        create_merch_table()
         from users import create_users_table
         create_users_table()
         logger.info("🚀 users")
@@ -27,8 +29,6 @@ def init_database():
         logger.info("🚀 admins")
         from admin_handlers import create_price_table
         create_price_table()
-        from merch import create_merch_table
-        create_merch_table()
         from quiz import create_quiz_table
         create_quiz_table()
         from admin import init_admins
