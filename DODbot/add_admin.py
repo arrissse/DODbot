@@ -2,7 +2,7 @@ from bot import bot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from handlers import stations
 from users import get_all_users
-from admin import add_admin, get_all_admins, update_admin_questnum, get_admin_by_username
+from admin import add_admin, get_all_admins, update_admin_questnum, get_admin_by_username, update_admin_info
 
 
 @bot.message_handler(func=lambda message: message.text == "Добавить админа")
@@ -26,10 +26,8 @@ def process_name(m):
         return
     admin_names = [admin[0].lstrip('@') for admin in admins]
     if username.lstrip('@') in admin_names:
-        bot.send_message(m.chat.id, f"❌ Пользователь {username} уже является админом.")
-        return
-    else:
-        bot.send_message(m.chat.id, f"Пользователь {username} пока не является админом.")
+        bot.send_message(
+            m.chat.id, f"Пользователь {username} уже является админом.")
 
     bot.send_message(m.chat.id, "Введите уровень админства (0 - pro-admin, 1 - выдача мерча, 2 - админ фш):")
     bot.register_next_step_handler(m, process_level, username)
@@ -51,13 +49,21 @@ def process_level(m, username):
         bot.send_message(m.chat.id, "Выберите номер станции админа:",
                          reply_markup=markup)
     else:
-        add_admin_to_db(m, username, admin_level)
+        admin_names = [admin[0].lstrip('@') for admin in get_all_admins()]
+        if username.lstrip('@') in admin_names:
+            update_admin_info(username, admin_level)
+        else:
+            add_admin_to_db(m, username, admin_level)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("select_station_&"))
 def process_number(call):
     _, username, questnum, admin_level = call.data.split("&")
     try:
-        add_admin_to_db(call.message, username, admin_level)
+        admin_names = [admin[0].lstrip('@') for admin in get_all_admins()]
+        if username.lstrip('@') in admin_names:
+            update_admin_info(username, admin_level)
+        else:
+            add_admin_to_db(call.message, username, admin_level)
         update_admin_questnum(username, questnum)
         bot.send_message(
                 call.message.chat.id, f"✅ Админу {username} назначена станция №{questnum}.")

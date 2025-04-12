@@ -43,6 +43,13 @@ def add_admin(adminname, adminlevel):
     return True
 
 
+def update_admin_info(adminname, admin_level):
+    with db_manager.get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE admins SET adminlevel = ? WHERE adminname = ?",
+                       (admin_level, adminname))
+        conn.commit()
+
 def get_all_admins():
   with db_manager.get_connection() as conn:
     cursor = conn.cursor()
