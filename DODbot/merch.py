@@ -16,7 +16,7 @@ def create_merch_table():
                     "ПБ" INTEGER DEFAULT 0
                 )
             """)
-            
+            conn.commit()
     except Exception as e:
         print(f"Error creating merch table: {e}")
 
@@ -25,13 +25,9 @@ def got_merch(username, merch_type):
     """Проверка наличия мерча"""
     try:
         with db_manager.get_connection() as conn:
-            cursor = conn.execute(
-                f'SELECT "{username}" FROM merch',
-                (username,)
-            )
-            if not cursor:
-                conn.execute(
+            conn.execute(
                 "INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
+            conn.commit()
             cursor = conn.execute(
                 f'SELECT "{merch_type}" FROM merch WHERE username = ?',
                 (username,)
@@ -46,18 +42,14 @@ def got_merch(username, merch_type):
 def give_merch(username, merch_type):
     try:
         with db_manager.get_connection() as conn:
-            cursor = conn.execute(
-                f'SELECT "{username}" FROM merch',
-                (username,)
-            )
-            if not cursor:
-                conn.execute(
-                    "INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
+            conn.execute(
+                "INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
+            conn.commit()
             conn.execute(
                 f'UPDATE merch SET "{merch_type}" = 1 WHERE username = ?',
                 (username,)
             )
-            
+            conn.commit()
     except Exception as e:
         print(f"Error giving merch: {e}")
 
@@ -65,21 +57,15 @@ def give_merch(username, merch_type):
 def is_got_merch(username):
     try:
         with db_manager.get_connection() as conn:
-            cursor = conn.execute(
-                f'SELECT "{username}" FROM merch',
-                (username,)
-            )
-            if not cursor:
-                conn.execute(
-                    "INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
-
+            conn.execute(
+                "INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
+            conn.commit()
             cursor = conn.execute("PRAGMA table_info(merch);")
             columns = [col[1] for col in cursor.fetchall()]
 
             numeric_columns = [
                 col for col in columns
                 if col != 'username'
-                and any(t in col for t in ['INTEGER', 'REAL'])
             ]
 
             if not numeric_columns:
@@ -91,32 +77,24 @@ def is_got_merch(username):
                 (username,)
             )
             result = cursor.fetchone()
-
-            return result[0] == len(numeric_columns) if result else False
+            return (result[0] == len(numeric_columns)) if result else False
     except Exception as e:
         print(f"Error checking full merch: {e}")
         return False
 
 
 def is_got_any_merch(username):
-    """Проверка наличия любого мерча"""
     try:
         with db_manager.get_connection() as conn:
-            cursor = conn.execute(
-                f'SELECT "{username}" FROM merch',
-                (username,)
-            )
-            if not cursor:
-                conn.execute(
+            conn.execute(
                 "INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
-
+            conn.commit()
             cursor = conn.execute("PRAGMA table_info(merch);")
             columns = [col[1] for col in cursor.fetchall()]
 
             numeric_columns = [
                 col for col in columns
                 if col != 'username'
-                and any(t in col for t in ['INTEGER', 'REAL'])
             ]
 
             if not numeric_columns:
@@ -128,15 +106,13 @@ def is_got_any_merch(username):
                 (username,)
             )
             result = cursor.fetchone()
-
-            return result[0] > 0 if result else False
+            return (result[0] > 0) if result else False
     except Exception as e:
         print(f"Error checking any merch: {e}")
         return False
 
 
 def add_column(column_name):
-    """Добавление новой колонки"""
     try:
         with db_manager.get_connection() as conn:
             cursor = conn.execute("PRAGMA table_info(merch);")
@@ -144,8 +120,8 @@ def add_column(column_name):
 
             if column_name not in existing_columns:
                 conn.execute(
-                    f"ALTER TABLE merch ADD COLUMN '{column_name}' INTEGER DEFAULT 0")
-                
+                    f"ALTER TABLE merch ADD COLUMN \"{column_name}\" INTEGER DEFAULT 0")
+                conn.commit()
                 print(f"Column '{column_name}' added")
             else:
                 print(f"Column '{column_name}' already exists")
@@ -154,7 +130,6 @@ def add_column(column_name):
 
 
 def get_all_merch():
-    """Получение всех записей мерча"""
     try:
         with db_manager.get_connection() as conn:
             cursor = conn.execute("SELECT * FROM merch")
@@ -165,7 +140,6 @@ def get_all_merch():
 
 
 def get_table_columns(table_name):
-    """Получение списка колонок таблицы"""
     try:
         with db_manager.get_connection() as conn:
             cursor = conn.execute(f"PRAGMA table_info({table_name});")
@@ -176,7 +150,6 @@ def get_table_columns(table_name):
 
 
 def save_merch_to_excel():
-    """Экспорт в Excel"""
     try:
         merch_data = get_all_merch()
         columns = get_table_columns('merch')
