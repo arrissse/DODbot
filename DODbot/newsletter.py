@@ -1,10 +1,10 @@
-# предполагается, что bot и router уже настроены для aiogram
-from bot import bot, router
+from bot import bot, router  # Предполагается, что bot и router уже настроены
 from aiogram import F
 import logging
 from datetime import datetime
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
 import asyncio
 
 from database import db_manager
@@ -12,6 +12,13 @@ from users import get_all_users
 from admin import get_admin_by_username
 
 logger = logging.getLogger(__name__)
+
+
+# Определяем состояния рассылки
+class NewsletterStates(StatesGroup):
+    waiting_newsletter_text = State()
+    waiting_send_time = State()
+    waiting_custom_time = State()
 
 
 async def init_db():
@@ -63,7 +70,7 @@ async def newsletter_scheduler():
                     newsletter_id, message_text = newsletter
                     for user in users:
                         try:
-                            # Предполагается, что у объекта user есть атрибут id
+                            # Предполагаем, что у объекта user есть атрибут id и username
                             await bot.send_message(user.id, message_text)
                         except Exception as e:
                             logger.error(
@@ -87,12 +94,12 @@ async def handle_newsletter(message: Message, state: FSMContext):
     user = await get_admin_by_username(f"@{message.from_user.username}")
     if user and user.level == 0:
         await message.answer("📝 Введите текст рассылки:")
-        await state.set_state("waiting_newsletter_text")
+        await state.set_state(NewsletterStates.waiting_newsletter_text)
     else:
         await message.answer("❌ Нет доступа!")
 
 
-@router.message(F.text, state="waiting_newsletter_text")
+@router.message(NewsletterStates.waiting_newsletter_text, F.text)
 async def process_newsletter_text(message: Message, state: FSMContext):
     await state.update_data(text=message.text)
 
@@ -105,10 +112,10 @@ async def process_newsletter_text(message: Message, state: FSMContext):
     ])
 
     await message.answer("⏰ Выберите время отправки:", reply_markup=markup)
-    await state.set_state("waiting_send_time")
+    await state.set_state(NewsletterStates.waiting_send_time)
 
 
-@router.callback_query(F.data.in_(["send_now", "schedule_later"]))
+@router.callback_query(NewsletterStates.waiting_send_time, F.data.in_(["send_now", "schedule_later"]))
 async def handle_send_option(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     newsletter_text = data.get('text')
@@ -120,7 +127,7 @@ async def handle_send_option(callback: CallbackQuery, state: FSMContext):
         await callback.message.answer(
             "📅 Введите дату и время в формате:\nYYYY-MM-DD HH:MM"
         )
-        await state.set_state("waiting_custom_time")
+        await state.set_state(NewsletterStates.waiting_custom_time)
 
     await state.clear()
 
@@ -146,7 +153,7 @@ async def send_newsletter(text: str):
         raise
 
 
-@router.message(F.text, state="waiting_custom_time")
+@router.message(NewsletterStates.waiting_custom_time, F.text)
 async def process_custom_time(message: Message, state: FSMContext):
     data = await state.get_data()
     newsletter_text = data.get('text')
@@ -159,6 +166,3 @@ async def process_custom_time(message: Message, state: FSMContext):
         await message.answer(f"❌ Ошибка: {str(e)}")
     finally:
         await state.clear()
-
-
-
