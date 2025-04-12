@@ -548,6 +548,7 @@ def process_type_cost(message, type):
             cursor.execute("""
                 INSERT OR IGNORE INTO merch_prices (merch_type, price) VALUES (?, ?)
             """, (type, cost))
+
             try:
                 add_column(type)
             except Exception as e:
