@@ -40,6 +40,7 @@ def add_admin(adminname, adminlevel):
         return False
     cursor.execute("INSERT OR IGNORE INTO admins (adminname, adminlevel) VALUES (?, ?)",
                    (adminname, adminlevel))
+    conn.commit()
     return True
 
 
