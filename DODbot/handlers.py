@@ -67,9 +67,9 @@ async def start_handler(m: types.Message):
  try:
     user = m.from_user
     user_list = await get_all_users()
-    logging.info(user_list)
     if not user in user_list: 
         await add_user(m.chat.id, user.username)
+    logging.info(user_list)
     current_username = f"@{user.username}"
     admins = await get_all_admins()
     admin_usernames = [admin[0] for admin in admins]
