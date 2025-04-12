@@ -5,7 +5,15 @@ from database import db_manager
 import asyncio
 import logging
 import newsletter
-import users, admin, handlers, admin_handlers, newsletter, add_admin, merch, quiz, set_points
+import users
+import admin
+import handlers
+import admin_handlers
+import newsletter
+import add_admin
+import merch
+import quiz
+import set_points
 
 
 logging.basicConfig(level=logging.INFO)
@@ -36,9 +44,7 @@ async def webhook():
 
 async def on_startup():
     await bot.set_webhook(WEBHOOK_URL)
-    await newsletter.start_sending_newsletters()
-
-    
+    await newsletter.start_immediate_newsletter()
 
 
 async def on_shutdown(dispatcher):
