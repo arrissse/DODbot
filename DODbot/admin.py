@@ -36,7 +36,6 @@ def add_admin(adminname, adminlevel):
 
     if exists:
         print(f"⚠️ {adminname} уже является админом.")
-        conn.close()
         return False
     cursor.execute("INSERT OR IGNORE INTO admins (adminname, adminlevel) VALUES (?, ?)",
                    (adminname, adminlevel))
