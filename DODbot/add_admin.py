@@ -40,7 +40,7 @@ def process_level(m, username):
         bot.send_message(
             m.chat.id, "❌ Уровень админства должен быть целым числом. Попробуйте еще раз.")
         return
-
+    
     if admin_level == 2:
         markup = InlineKeyboardMarkup()
         for name, number in stations.items():
@@ -51,7 +51,7 @@ def process_level(m, username):
     else:
         admin_names = [admin[0].lstrip('@') for admin in get_all_admins()]
         if username.lstrip('@') in admin_names:
-            update_admin_info(username, admin_level)
+            update_admin(m, username, admin_level)
         else:
             add_admin_to_db(m, username, admin_level)
 
@@ -61,7 +61,7 @@ def process_number(call):
     try:
         admin_names = [admin[0].lstrip('@') for admin in get_all_admins()]
         if username.lstrip('@') in admin_names:
-            update_admin_info(username, admin_level)
+            update_admin(call.message, username, admin_level)
         else:
             add_admin_to_db(call.message, username, admin_level)
         update_admin_questnum(username, questnum)
@@ -71,6 +71,16 @@ def process_number(call):
                 bot.send_message(
                 call.message.chat.id, f"{e}")
 
+
+def update_admin(m, username, admin_level):
+    try:
+        update_admin_info(username, admin_level)
+        bot.send_message(
+            m.chat.id, f"✅ Пользователь {username} теперь является админом с уровнем {admin_level}!")
+    except Exception as e:
+        bot.send_message(
+            m.chat.id, f"❌ Не удалось обновить информацию администратора. {e}")
+        print(e)
 
 def add_admin_to_db(m, username, admin_level):
     try:

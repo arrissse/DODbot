@@ -42,7 +42,6 @@ def add_admin(adminname, adminlevel):
     conn.commit()
     return True
 
-
 def update_admin_info(adminname, admin_level):
     with db_manager.get_connection() as conn:
         cursor = conn.cursor()
