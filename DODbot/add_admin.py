@@ -30,7 +30,6 @@ def process_name(m):
     else:
         bot.send_message(
             m.chat.id, f" Пользователь {username} пока не является админом.")
-        return
     bot.send_message(
         m.chat.id, "Введите уровень админства (0 - pro-admin, 1 - выдача мерча, 2 - админ фш):")
     bot.register_next_step_handler(m, process_level, username)
