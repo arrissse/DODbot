@@ -96,6 +96,9 @@ async def process_number(callback: types.CallbackQuery, state: FSMContext):
 async def process_admin_creation(message: types.Message, username: str, admin_level: int):
     try:
         await add_admin(username, admin_level)
+        await message.answer(
+            f"✅ Админ {username} уровня {admin_level} добавлен."
+        )
         user = await get_user_by_username(username.lstrip('@'))
         if user:
             await message.bot.send_message(
