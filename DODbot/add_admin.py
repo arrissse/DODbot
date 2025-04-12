@@ -27,7 +27,7 @@ async def new_admin(message: types.Message, state: FSMContext):
 
 @router.message(AdminStates.waiting_username)
 async def process_name(message: types.Message, state: FSMContext):
-    username = message.text.strip('@')
+    username = message.text.lstrip('@')
     users = await get_all_users()
     admins = await get_all_admins()
 
@@ -36,7 +36,7 @@ async def process_name(message: types.Message, state: FSMContext):
         await message.answer(f"❌ Пользователь @{username} не найден в списке.")
         return await state.clear()
 
-    admin_exists = any(admin['username'] == username for admin in admins)
+    admin_exists = any(admin['adminname'] == username for admin in admins)
     if admin_exists:
         await message.answer(f"Пользователь @{username} уже является админом.")
         return await state.clear()
