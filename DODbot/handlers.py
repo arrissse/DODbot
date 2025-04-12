@@ -251,8 +251,7 @@ schools = {
 
 
 def send_activity(message, school):
-    school_number = stations[school]
-    photo_url = f"img/activities/{school_number}.png"
+    photo_url = f"img/activities/{school}.png"
     try:
         with open(photo_url, "rb") as photo:
             bot.send_photo(message.chat.id, photo,
@@ -268,7 +267,7 @@ def school(message):
 
 
 @bot.message_handler(func=lambda message: message.text in schools)
-def handle_station(message):
+def handle_activity(message):
     schools_number = schools[message.text]
     bot.send_message(message.chat.id, message.text,
                      reply_markup=activity_keyboard())
