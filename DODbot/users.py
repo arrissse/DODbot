@@ -57,7 +57,7 @@ async def get_user_by_username(username: str) -> asyncpg.Record:
     try:
         async with db_manager.get_connection() as conn:
             return await conn.fetchrow(
-                "SELECT * FROM users WHERE username = ?", username
+                "SELECT * FROM users WHERE username = ?", (username, )
             )
     except Exception as e:
         print(f"Error getting user: {e}")

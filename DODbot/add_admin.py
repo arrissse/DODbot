@@ -31,7 +31,7 @@ async def process_name(message: types.Message, state: FSMContext):
     users = await get_all_users()
     admins = await get_all_admins()
 
-    user_exists = any(user.username == username for user in users)
+    user_exists = any(user['username'] == username for user in users)
     if not user_exists:
         await message.answer(f"❌ Пользователь @{username} не найден в списке.")
         return await state.clear()
