@@ -70,6 +70,7 @@ def update_admin_questnum(username, new_value):
 
     cursor.execute(
         f"UPDATE admins SET questnum = ? WHERE adminname = ?", (new_value, username))
+    conn.commit()
 
 
 def save_admins_to_excel():
