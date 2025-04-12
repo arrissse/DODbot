@@ -44,16 +44,13 @@ async def add_user(user_id: int, username: str):
     """Добавление пользователя (асинхронная версия)"""
     try:
         async with db_manager.get_connection() as conn:
-            # Выполняем запрос на вставку
             await conn.execute(
                 "INSERT INTO users (id, username) VALUES (?, ?) "
                 "ON CONFLICT (id) DO NOTHING",
                 (user_id, username)
             )
-            # Важно: явное подтверждение изменений для SQLite
             await conn.commit()
 
-            # Логируем успешное добавление
             logging.info(
                 f"Пользователь {username} (id: {user_id}) добавлен/обновлен")
 
@@ -121,8 +118,9 @@ async def save_users_to_excel() -> str:
 async def get_all_users() -> list:
     try:
         async with db_manager.get_connection() as conn:
-            async with conn.execute("SELECT * FROM users") as cursor:
-                return await cursor.fetchall()
+            cursor = await conn.execute("SELECT * FROM users")
+            logging.info(f"get_all_users: {await cursor.fetchall()}")
+            return await cursor.fetchall()
     except Exception as e:
         logging.info(f"Error getting all users: {e}")
         return []
