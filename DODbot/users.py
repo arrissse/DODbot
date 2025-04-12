@@ -53,7 +53,7 @@ async def add_user(user_id: int, username: str):
                 return False
             
             await conn.execute(
-                    "INSERT INTO users (username, user_id) VALUES (?, ?)",
+                    "INSERT INTO users (username, id) VALUES (?, ?)",
                     (username, user_id)
                 )
             await conn.commit()
