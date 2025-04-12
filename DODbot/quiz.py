@@ -21,7 +21,7 @@ class QuizStates(StatesGroup):
 
 
 async def create_quiz_table():
-    async with db_manager.get_async_connection() as conn:
+    async with db_manager.get_connection() as conn:
         cursor = await conn.cursor()
 
         # Создание таблиц
@@ -98,7 +98,7 @@ async def create_quiz_table():
 
 
 async def update_quiz_time(quiz_id, new_time):
-    async with db_manager.get_async_connection() as conn:
+    async with db_manager.get_connection() as conn:
         cursor = await conn.cursor()
         await cursor.execute(
         "UPDATE quiz_schedule SET start_time = ? WHERE id = ?", (new_time, quiz_id))
@@ -106,7 +106,7 @@ async def update_quiz_time(quiz_id, new_time):
 
 @router.message(F.text == "🎓 Квизы")
 async def send_quiz(message: Message, state: FSMContext):
-    async with db_manager.get_async_connection() as conn:
+    async with db_manager.get_connection() as conn:
         cursor = await conn.cursor()
         quizzes = await cursor.execute("SELECT id, quiz_name, start_time, location FROM quiz_schedule ORDER BY start_time ASC")
         quizzes = await cursor.fetchall()
@@ -155,7 +155,7 @@ async def start_quiz(message: Message, quiz_id: int):
         await message.answer("Вы уже участвовали в этом квизе.")
         return
 
-    async with db_manager.get_async_connection() as conn:
+    async with db_manager.get_connection() as conn:
         cursor = await conn.cursor()
         question = await cursor.execute("SELECT id FROM questions WHERE quiz_id = ? ORDER BY id ASC LIMIT 1", (quiz_id,))
         question = await question.fetchone()
@@ -165,7 +165,7 @@ async def start_quiz(message: Message, quiz_id: int):
 
 
 async def send_question(chat_id: int, user: str, question_id: int, quiz_id: int):
-    async with db_manager.get_async_connection() as conn:
+    async with db_manager.get_connection() as conn:
         cursor = await conn.cursor()
         answers = await cursor.execute("SELECT id, answer_text FROM answers WHERE question_id = ? ORDER BY id ASC", (question_id,))
         answers = await answers.fetchall()
@@ -190,7 +190,7 @@ async def check_answer(callback: CallbackQuery):
     question_id, answer_id, user, quiz_id = int(
         data[1]), int(data[2]), data[3], int(data[4])
 
-    async with db_manager.get_async_connection() as conn:
+    async with db_manager.get_connection() as conn:
         cursor = await conn.cursor()
 
         # Проверка правильности ответа

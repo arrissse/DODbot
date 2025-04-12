@@ -23,7 +23,7 @@ class NewsletterStates(StatesGroup):
 
 async def init_db():
     try:
-        async with db_manager.get_connection() as conn:  # Замена get_async_connection() на get_connection()
+        async with db_manager.get_connection() as conn:  # Замена get_connection() на get_connection()
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS newsletter (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,

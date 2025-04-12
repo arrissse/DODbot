@@ -15,7 +15,7 @@ async def init_admins():
 
 
 async def create_admins_table():
-    async with db_manager.get_async_connection() as conn:
+    async with db_manager.get_connection() as conn:
         cursor = await conn.cursor()
         await cursor.execute("""
             CREATE TABLE IF NOT EXISTS admins (
@@ -28,7 +28,7 @@ async def create_admins_table():
 
 
 async def add_admin(adminname: str, adminlevel: int) -> bool:
-    async with db_manager.get_async_connection() as conn:
+    async with db_manager.get_connection() as conn:
         cursor = await conn.cursor()
         await cursor.execute(
             "SELECT COUNT(*) FROM admins WHERE adminname = ?",
@@ -49,7 +49,7 @@ async def add_admin(adminname: str, adminlevel: int) -> bool:
 
 
 async def update_admin_info(adminname: str, admin_level: int):
-    async with db_manager.get_async_connection() as conn:
+    async with db_manager.get_connection() as conn:
         cursor = await conn.cursor()
         await cursor.execute(
             "UPDATE admins SET adminlevel = ? WHERE adminname = ?",
@@ -59,14 +59,14 @@ async def update_admin_info(adminname: str, admin_level: int):
 
 
 async def get_all_admins() -> list:
-    async with db_manager.get_async_connection() as conn:
+    async with db_manager.get_connection() as conn:
         cursor = await conn.cursor()
         await cursor.execute("SELECT * FROM admins")
         return [admin for admin in await cursor.fetchall()]
 
 
 async def get_admin_level(username: str) -> int:
-    async with db_manager.get_async_connection() as conn:
+    async with db_manager.get_connection() as conn:
         cursor = await conn.cursor()
         try:
             await cursor.execute(
@@ -81,7 +81,7 @@ async def get_admin_level(username: str) -> int:
 
 
 async def update_admin_questnum(username: str, new_value: int):
-    async with db_manager.get_async_connection() as conn:
+    async with db_manager.get_connection() as conn:
         cursor = await conn.cursor()
         await cursor.execute(
             "UPDATE admins SET questnum = ? WHERE adminname = ?",
@@ -118,7 +118,7 @@ async def save_admins_to_excel(bot) -> BufferedInputFile:
 
 
 async def get_admin_by_username(username: str):
-    async with db_manager.get_async_connection() as conn:
+    async with db_manager.get_connection() as conn:
         cursor = await conn.cursor()
         await cursor.execute(
             "SELECT * FROM admins WHERE adminname = ?",
