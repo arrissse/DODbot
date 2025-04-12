@@ -97,6 +97,13 @@ async def create_quiz_table():
         await conn.commit()
 
 
+async def update_quiz_time(quiz_id, new_time):
+    async with db_manager.get_async_connection() as conn:
+        cursor = await conn.cursor()
+        await cursor.execute(
+        "UPDATE quiz_schedule SET start_time = ? WHERE id = ?", (new_time, quiz_id))
+
+
 @router.message(F.text == "🎓 Квизы")
 async def send_quiz(message: Message, state: FSMContext):
     async with db_manager.get_async_connection() as conn:
