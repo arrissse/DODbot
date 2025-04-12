@@ -238,8 +238,8 @@ async def send_map_photo(message: types.Message):
 @router.message(F.text == "📍 Расположение стендов")
 async def send_stands_photo(message: types.Message):
     try:
-        with open("img/stand.png", "rb") as photo:
-            await message.answer_photo(photo, caption="📍 Расположение стендов:")
+        photo = FSInputFile("img/stand.png")
+        await message.answer_photo(photo, caption="📍 Расположение стендов:")
     except Exception as e:
         await message.answer(f"Ошибка: {str(e)}")
 
@@ -261,7 +261,7 @@ async def school_handler(message: types.Message):
 async def handle_activity(message: types.Message):
     try:
         school_number = schools[message.text]
-        with open(f"img/activities/{school_number}.png", "rb") as photo:
-            await message.answer_photo(photo)
+        photo = FSInputFile(f"img/activities/{school_number}.png")
+        await message.answer_photo(photo)
     except Exception as e:
         await message.answer(f"Ошибка: {str(e)}")
