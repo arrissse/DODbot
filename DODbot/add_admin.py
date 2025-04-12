@@ -29,7 +29,6 @@ async def new_admin(message: types.Message, state: FSMContext):
 async def process_name(message: types.Message, state: FSMContext):
     username = message.text.lstrip('@')
     users = await get_all_users()
-    username = message.text
     admins = await get_all_admins()
 
     user_exists = any(user['username'] == username for user in users)
@@ -42,7 +41,7 @@ async def process_name(message: types.Message, state: FSMContext):
         await message.answer(f"Пользователь @{username} уже является админом.")
         return await state.clear()
 
-    await state.update_data(username=username)
+    await state.update_data(username=f'@{username}')
     await message.answer("Введите уровень админства (0 - pro-admin, 1 - выдача мерча, 2 - админ фш):")
     await state.set_state(AdminStates.waiting_level)
 
