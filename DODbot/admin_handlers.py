@@ -548,20 +548,14 @@ def process_type_cost(message, type):
             cursor.execute("""
                 INSERT OR IGNORE INTO merch_prices (merch_type, price) VALUES (?, ?)
             """, (type, cost))
+            try:
+                add_column(type)
+            except Exception as e:
+                bot.send_message(
+                message.chat.id, f"❌ Ошибка при добавлении колонки: {e}")
 
-            add_column(type)
-
-            
-            
-
-    try:
-        add_column(type)
-    except Exception as e:
-        bot.send_message(
-            message.chat.id, f"❌ Ошибка при добавлении колонки: {e}")
-
-    bot.send_message(
-        message.chat.id, f"✅ Позиция '{type}' добавлена с ценой {cost} баллов.")
+            bot.send_message(
+            message.chat.id, f"✅ Позиция '{type}' добавлена с ценой {cost} баллов.")
 
 
 '''
