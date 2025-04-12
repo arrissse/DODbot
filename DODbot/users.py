@@ -46,7 +46,7 @@ async def add_user(user_id: int, username: str):
             await conn.execute(
                 "INSERT INTO users (id, username) VALUES ($1, $2) "
                 "ON CONFLICT (id) DO NOTHING",
-                user_id, username
+                (user_id, username)
             )
     except Exception as e:
         print(f"Error adding user: {e}")
@@ -120,7 +120,7 @@ async def start_quest(username: str):
         async with db_manager.get_connection() as conn:
             await conn.execute(
                 "UPDATE users SET quest_started = 1 WHERE username = $1",
-                username
+                (username, )
             )
     except Exception as e:
         print(f"Error starting quest: {e}")
@@ -132,7 +132,7 @@ async def finish_quest(username: str):
         async with db_manager.get_connection() as conn:
             await conn.execute(
                 "UPDATE users SET quest_station = 11 WHERE username = $1",
-                username
+                (username, )
             )
     except Exception as e:
         print(f"Error finishing quest: {e}")

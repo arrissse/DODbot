@@ -56,7 +56,7 @@ async def give_merch(username: str, type: str):
         )
         await conn.execute(
             f'UPDATE merch SET "{type}" = 1 WHERE username = $1',
-            username
+            (username, )
         )
 
 
@@ -64,7 +64,7 @@ async def is_got_merch(username: str) -> bool:
     async with db_manager.get_connection() as conn:
         await conn.execute(
             "INSERT INTO merch (username) VALUES ($1) ON CONFLICT (username) DO NOTHING",
-            username
+            (username, )
         )
         await conn.commit()
 
