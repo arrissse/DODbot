@@ -265,7 +265,7 @@ async def send_users_list(message: Message):
 
 @router.message(F.text == "Переключить меню")
 async def chage_menu(m):
-    await m.answer(m.chat.id, "Для повторного переключения меню введите /start",
+    await m.answer("Для повторного переключения меню введите /start",
                      reply_markup=main_keyboard())
 
 
