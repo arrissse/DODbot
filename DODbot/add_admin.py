@@ -85,7 +85,7 @@ async def process_number(callback: types.CallbackQuery, state: FSMContext):
         await add_admin(username, admin_level)
         await update_admin_questnum(username, int(number))
         await callback.message.answer(
-            f"✅ Админу @{username} назначена станция №{number}."
+            f"✅ Админу {username} назначена станция №{number}."
         )
         await process_admin_creation(callback.message, username, int(admin_level))
     except Exception as e:
@@ -96,7 +96,7 @@ async def process_number(callback: types.CallbackQuery, state: FSMContext):
 
 async def process_admin_creation(message: types.Message, username: str, admin_level: int):
     try:
-        user = await get_user_by_username(username)
+        user = await get_user_by_username(username.lstrip)
 
         if user:
             await message.bot.send_message(
