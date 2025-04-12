@@ -104,11 +104,11 @@ async def save_users_to_excel() -> str:
         return None
 
 
-async def get_all_users() -> list[asyncpg.Record]:
-    """Получение всех пользователей (асинхронная версия)"""
+async def get_all_users() -> list:
     try:
         async with db_manager.get_connection() as conn:
-            return await conn.fetch("SELECT * FROM users")
+            async with conn.execute("SELECT * FROM users") as cursor:
+                return await cursor.fetchall()
     except Exception as e:
         print(f"Error getting all users: {e}")
         return []
