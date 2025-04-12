@@ -50,14 +50,14 @@ async def add_user(user_id: int, username: str):
                 (user_id, username)
             )
     except Exception as e:
-        print(f"Error adding user: {e}")
+        logging.info(f"Error adding user: {e}")
 
 
 async def get_user_by_username(username: str) -> asyncpg.Record:
     """Получение пользователя по username (асинхронная версия)"""
     try:
         async with db_manager.get_connection() as conn:
-            return await conn.fetchrow(
+            return await conn.fetchall(
                 "SELECT * FROM users WHERE username = ?", (username, )
             )
     except Exception as e:
