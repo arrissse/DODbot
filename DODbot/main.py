@@ -1,11 +1,15 @@
 from flask import Flask, request
 from aiogram import types
 from bot import bot, dp, router
+from database import db_manager
 import asyncio
 import logging
-from database import init_database
 import newsletter
-from . import users, admin, handler, admin_handlers, newsletter, add_admin, merch, quiz, set_points
+from . import users, admin, handlers, admin_handlers, newsletter, add_admin, merch, quiz, set_points
+
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 dp.include_router(router)
 WEBHOOK_URL = "https://fest.mipt.ru/your-webhook-path"
@@ -13,7 +17,7 @@ WEBHOOK_URL = "https://fest.mipt.ru/your-webhook-path"
 def register_all_handlers(dp):
     users.register(dp)
     admin.register(dp)
-    handler.register(dp)
+    handlers.register(dp)
     admin_handlers.register(dp)
     newsletter.register(dp)
     add_admin.register(dp)
@@ -45,9 +49,13 @@ async def webhook():
 
 async def on_startup():
     await bot.set_webhook(WEBHOOK_URL)
-    await init_database()
     await newsletter.start_sending_newsletters()
 
+    
+
+
+async def on_shutdown(dispatcher):
+    await bot.delete_webhook()
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
