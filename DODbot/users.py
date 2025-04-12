@@ -113,7 +113,7 @@ async def save_users_to_excel() -> str:
         return None
 
 
-async def get_all_users() -> list:
+async def get_all_users():
     try:
         async with db_manager.get_connection() as conn:
             cursor = await conn.execute("SELECT * FROM users")
