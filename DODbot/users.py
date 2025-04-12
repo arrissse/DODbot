@@ -55,7 +55,6 @@ async def add_user(user_id: int, username: str):
                 f"Пользователь {username} (id: {user_id}) добавлен/обновлен")
 
     except Exception as e:
-        # Подробное логирование ошибки с трейсбэком
         logging.error(f"Ошибка добавления пользователя: {e}", exc_info=True)
         raise
 
@@ -98,7 +97,6 @@ async def save_users_to_excel() -> str:
         for user in users:
             sheet.append(list(user.values()))
 
-        # Стилизация
         header_fill = PatternFill(start_color="4F81BD",
                                   end_color="4F81BD", fill_type="solid")
         header_font = Font(bold=True, color="FFFFFF")
@@ -119,10 +117,10 @@ async def get_all_users() -> list:
     try:
         async with db_manager.get_connection() as conn:
             cursor = await conn.execute("SELECT * FROM users")
-            logging.info(f"get_all_users: {await cursor.fetchall()}")
-            return await cursor.fetchall()
+            rows = await cursor.fetchall()
+            return [dict(row) for row in rows]
     except Exception as e:
-        logging.info(f"Error getting all users: {e}")
+        logging.error(f"Error getting all users: {e}", exc_info=True)
         return []
 
 
