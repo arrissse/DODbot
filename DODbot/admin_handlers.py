@@ -180,7 +180,7 @@ async def start_quiz(call):
     await call.answer()
     _, quiz_id = call.data.split(":")
     quiz_id = int(quiz_id)
-    async with db_manager.pool.acquire() as conn:
+    async with db_manager.get_connection() as conn:
         quiz_info = await conn.fetchrow(
             "SELECT * FROM quiz_schedule WHERE id = $1",
             quiz_id
@@ -215,7 +215,7 @@ async def check_answer(call):
   question_id, answer_id = int(question_id), int(answer_id)
 
 
-  async with db_manager.pool.acquire() as conn:
+  async with db_manager.get_connection() as conn:
     result = await conn.fetchrow(
         "SELECT is_correct FROM answers WHERE id = $1",
         answer_id
@@ -301,7 +301,7 @@ async def statistics(message):
 
 
 async def create_price_table():
-    async with db_manager.pool.acquire() as conn:
+    async with db_manager.get_connection() as conn:
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS merch_prices (
                 merch_type TEXT PRIMARY KEY,
@@ -320,12 +320,12 @@ async def create_price_table():
         
 
 async def get_merch_types():
-    async with db_manager.pool.acquire() as conn:
+    async with db_manager.get_connection() as conn:
         return [row['merch_type'] for row in await conn.fetch("SELECT merch_type FROM merch_prices")]
 
 
 async def get_merch_price(merch_type: str):
-    async with db_manager.pool.acquire() as conn:
+    async with db_manager.get_connection() as conn:
         return await conn.fetchval(
             "SELECT price FROM merch_prices WHERE merch_type = $1",
             merch_type
@@ -333,7 +333,7 @@ async def get_merch_price(merch_type: str):
 
 
 async def update_merch_price(merch_type, new_price):
-    async with db_manager.pool.acquire() as conn:
+    async with db_manager.get_connection() as conn:
         await conn.execute("""
             INSERT INTO merch_prices (merch_type, price) 
             VALUES ($1, $2)
@@ -345,7 +345,7 @@ async def update_merch_price(merch_type, new_price):
 
 @router.message(F.text == "Стоимость мерча")
 async def merch_prices_menu(message):
-    async with db_manager.pool.acquire() as conn:
+    async with db_manager.get_connection() as conn:
             result = await conn.fetch("SELECT merch_type FROM merch_prices")
             merch_types = [row[0] for row in result]
             
@@ -500,7 +500,7 @@ async def process_type_cost(message: Message, state: FSMContext):
         await message.answer("❌ Стоимость должна быть числом. Попробуйте ещё раз.")
         await state.clear()
         return
-    async with db_manager.pool.acquire() as conn:
+    async with db_manager.get_connection() as conn:
             cursor = conn.cursor()
 
             await conn.execute("""
@@ -541,7 +541,7 @@ async def remove_merch_type(message):
 async def process_r_type(message: Message, state: FSMContext):
   merch_type = message.text.strip()
   try:
-    async with db_manager.pool.acquire() as conn:
+    async with db_manager.get_connection() as conn:
             cursor = conn.cursor()
             count = await conn.fetchval(
                 "SELECT COUNT(*) FROM merch_prices WHERE merch_type = $1",

@@ -4,7 +4,7 @@ import asyncpg
 
 
 async def create_merch_table():
-    async with db_manager.pool.acquire() as conn:
+    async with db_manager.get_connection() as conn:
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS merch (
                 username TEXT UNIQUE,
@@ -18,7 +18,7 @@ async def create_merch_table():
 
 
 async def is_valid_column(column_name: str) -> bool:
-    async with db_manager.pool.acquire() as conn:
+    async with db_manager.get_connection() as conn:
         columns = await conn.fetch(
             "SELECT column_name FROM information_schema.columns "
             "WHERE table_name = 'merch'"
@@ -30,7 +30,7 @@ async def got_merch(username: str, type: str) -> bool:
     if not await is_valid_column(type):
         raise ValueError(f"Недопустимое имя колонки: {type}")
 
-    async with db_manager.pool.acquire() as conn:
+    async with db_manager.get_connection() as conn:
         await conn.execute(
             "INSERT INTO merch (username) VALUES ($1) ON CONFLICT (username) DO NOTHING",
             username
@@ -46,7 +46,7 @@ async def give_merch(username: str, type: str):
     if not await is_valid_column(type):
         raise ValueError(f"Недопустимое имя колонки: {type}")
 
-    async with db_manager.pool.acquire() as conn:
+    async with db_manager.get_connection() as conn:
         await conn.execute(
             "INSERT INTO merch (username) VALUES ($1) ON CONFLICT (username) DO NOTHING",
             username
@@ -58,7 +58,7 @@ async def give_merch(username: str, type: str):
 
 
 async def is_got_merch(username: str) -> bool:
-    async with db_manager.pool.acquire() as conn:
+    async with db_manager.get_connection() as conn:
         await conn.execute(
             "INSERT INTO merch (username) VALUES ($1) ON CONFLICT (username) DO NOTHING",
             username
@@ -83,7 +83,7 @@ async def is_got_merch(username: str) -> bool:
 
 
 async def is_got_any_merch(username: str) -> bool:
-    async with db_manager.pool.acquire() as conn:
+    async with db_manager.get_connection() as conn:
         await conn.execute(
             "INSERT INTO merch (username) VALUES ($1) ON CONFLICT (username) DO NOTHING",
             username
@@ -108,7 +108,7 @@ async def is_got_any_merch(username: str) -> bool:
 
 
 async def add_column(column_name: str, column_type: str = "INTEGER DEFAULT 0"):
-    async with db_manager.pool.acquire() as conn:
+    async with db_manager.get_connection() as conn:
         exists = await conn.fetchval(
             "SELECT EXISTS ("
             "SELECT 1 FROM information_schema.columns "
@@ -127,12 +127,12 @@ async def add_column(column_name: str, column_type: str = "INTEGER DEFAULT 0"):
 
 
 async def get_all_merch():
-    async with db_manager.pool.acquire() as conn:
+    async with db_manager.get_connection() as conn:
         return await conn.fetch("SELECT * FROM merch")
 
 
 async def get_table_columns(table_name: str):
-    async with db_manager.pool.acquire() as conn:
+    async with db_manager.get_connection() as conn:
         columns = await conn.fetch(
             "SELECT column_name FROM information_schema.columns "
             "WHERE table_name = $1",

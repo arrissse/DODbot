@@ -8,7 +8,7 @@ import asyncpg
 async def create_users_table():
     """Создание таблицы пользователей (асинхронная версия)"""
     try:
-        async with db_manager.pool.acquire() as conn:
+        async with db_manager.get_connection() as conn:
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     id INTEGER PRIMARY KEY,
@@ -42,7 +42,7 @@ async def create_users_table():
 async def add_user(user_id: int, username: str):
     """Добавление пользователя (асинхронная версия)"""
     try:
-        async with db_manager.pool.acquire() as conn:
+        async with db_manager.get_connection() as conn:
             await conn.execute(
                 "INSERT INTO users (id, username) VALUES ($1, $2) "
                 "ON CONFLICT (id) DO NOTHING",
@@ -55,7 +55,7 @@ async def add_user(user_id: int, username: str):
 async def get_user_by_username(username: str) -> asyncpg.Record:
     """Получение пользователя по username (асинхронная версия)"""
     try:
-        async with db_manager.pool.acquire() as conn:
+        async with db_manager.get_connection() as conn:
             return await conn.fetchrow(
                 "SELECT * FROM users WHERE username = $1", username
             )
@@ -107,7 +107,7 @@ async def save_users_to_excel() -> str:
 async def get_all_users() -> list[asyncpg.Record]:
     """Получение всех пользователей (асинхронная версия)"""
     try:
-        async with db_manager.pool.acquire() as conn:
+        async with db_manager.get_connection() as conn:
             return await conn.fetch("SELECT * FROM users")
     except Exception as e:
         print(f"Error getting all users: {e}")
@@ -117,7 +117,7 @@ async def get_all_users() -> list[asyncpg.Record]:
 async def start_quest(username: str):
     """Старт квеста (асинхронная версия)"""
     try:
-        async with db_manager.pool.acquire() as conn:
+        async with db_manager.get_connection() as conn:
             await conn.execute(
                 "UPDATE users SET quest_started = 1 WHERE username = $1",
                 username
@@ -129,7 +129,7 @@ async def start_quest(username: str):
 async def finish_quest(username: str):
     """Завершение квеста (асинхронная версия)"""
     try:
-        async with db_manager.pool.acquire() as conn:
+        async with db_manager.get_connection() as conn:
             await conn.execute(
                 "UPDATE users SET quest_station = 11 WHERE username = $1",
                 username
@@ -141,7 +141,7 @@ async def finish_quest(username: str):
 async def is_quest_started(username: str) -> bool:
     """Проверка старта квеста (асинхронная версия)"""
     try:
-        async with db_manager.pool.acquire() as conn:
+        async with db_manager.get_connection() as conn:
             result = await conn.fetchval(
                 "SELECT quest_started FROM users WHERE username = $1",
                 username
@@ -155,7 +155,7 @@ async def is_quest_started(username: str) -> bool:
 async def check_points(username: str) -> int:
     """Проверка баллов (асинхронная версия)"""
     try:
-        async with db_manager.pool.acquire() as conn:
+        async with db_manager.get_connection() as conn:
             return await conn.fetchval(
                 "SELECT quest_points FROM users WHERE username = $1",
                 username
@@ -168,7 +168,7 @@ async def check_points(username: str) -> int:
 async def update_merch_points(username: str, points: int):
     """Обновление баллов мерча (асинхронная версия)"""
     try:
-        async with db_manager.pool.acquire() as conn:
+        async with db_manager.get_connection() as conn:
             await conn.execute(
                 "UPDATE users SET quest_points = quest_points - $1 "
                 "WHERE username = $2",
@@ -181,7 +181,7 @@ async def update_merch_points(username: str, points: int):
 async def check_st_points(username: str, station: int) -> int:
     """Проверка баллов станции (асинхронная версия)"""
     try:
-        async with db_manager.pool.acquire() as conn:
+        async with db_manager.get_connection() as conn:
             return await conn.fetchval(
                 f"SELECT quest{station}_points FROM users WHERE username = $1",
                 username
@@ -194,7 +194,7 @@ async def check_st_points(username: str, station: int) -> int:
 async def check_quiz_points(username: str, num: int) -> int:
     """Проверка баллов квиза (асинхронная версия)"""
     try:
-        async with db_manager.pool.acquire() as conn:
+        async with db_manager.get_connection() as conn:
             return await conn.fetchval(
                 f"SELECT quize_{num} FROM users WHERE username = $1",
                 username
@@ -207,7 +207,7 @@ async def check_quiz_points(username: str, num: int) -> int:
 async def update_user_queststation(username: str):
     """Обновление статуса квеста (асинхронная версия)"""
     try:
-        async with db_manager.pool.acquire() as conn:
+        async with db_manager.get_connection() as conn:
             await conn.execute("""
                 UPDATE users SET quest_station = (
                     (quest1_points > 0)::integer + 
@@ -235,7 +235,7 @@ async def is_quest_finished(username: str) -> bool:
 async def is_quiz_finished(username: str) -> bool:
     """Проверка завершения квизов (асинхронная версия)"""
     try:
-        async with db_manager.pool.acquire() as conn:
+        async with db_manager.get_connection() as conn:
             result = await conn.fetchrow("""
                 SELECT quize_1, quize_2, quize_3, quize_4, quize_5
                 FROM users WHERE username = $1
@@ -249,7 +249,7 @@ async def is_quiz_finished(username: str) -> bool:
 async def count_active_quests() -> int:
     """Подсчет активных квестов (асинхронная версия)"""
     try:
-        async with db_manager.pool.acquire() as conn:
+        async with db_manager.get_connection() as conn:
             return await conn.fetchval(
                 "SELECT COUNT(*) FROM users WHERE quest_started = 1"
             ) or 0
@@ -271,7 +271,7 @@ async def count_finished_quests() -> int:
 async def update_user_points(username: str, admin_num: int, points: int):
     """Обновление баллов пользователя (асинхронная версия)"""
     try:
-        async with db_manager.pool.acquire() as conn:
+        async with db_manager.get_connection() as conn:
             await conn.execute(
                 f"UPDATE users SET quest{admin_num}_points = quest{admin_num}_points + $1 "
                 "WHERE username = $2",
@@ -289,7 +289,7 @@ async def update_user_points(username: str, admin_num: int, points: int):
 async def update_quize_points(username: str, num: int):
     """Обновление баллов квиза (асинхронная версия)"""
     try:
-        async with db_manager.pool.acquire() as conn:
+        async with db_manager.get_connection() as conn:
             await conn.execute(
                 f"UPDATE users SET quize_{num} = quize_{num} + 1 "
                 "WHERE username = $1",
@@ -307,7 +307,7 @@ async def update_quize_points(username: str, num: int):
 async def is_finished_quiz(username: str, num: int) -> bool:
     """Проверка завершения квиза (асинхронная версия)"""
     try:
-        async with db_manager.pool.acquire() as conn:
+        async with db_manager.get_connection() as conn:
             result = await conn.fetchval(
                 f"SELECT quize_{num} FROM users WHERE username = $1",
                 username
