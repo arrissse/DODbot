@@ -8,18 +8,12 @@ logger = logging.getLogger(__name__)
 
 
 class AsyncDatabaseManager:
-    def __init__(self, db_path="base.db", lock_path="database.lock"):
+    def __init__(self, db_path="base.db"):
         self.db_path = db_path
-        self.lock = FileLock(lock_path, timeout=30)
 
     @asynccontextmanager
     async def get_connection(self):
         # Получение файловой блокировки с переносом в синхронную задачу:
-        try:
-            await asyncio.to_thread(self.lock.acquire)
-        except Exception as e:
-            logger.critical(f"Не удалось получить файловую блокировку: {e}")
-            raise
 
         conn = None
         try:
@@ -28,6 +22,7 @@ class AsyncDatabaseManager:
             await conn.execute("PRAGMA journal_mode=WAL")
             await conn.execute("PRAGMA busy_timeout=10000")
             # Передача соединения в контекст
+            conn.row_factory = aiosqlite.Row
             yield conn
             await conn.commit()
         except Exception as e:
@@ -38,11 +33,5 @@ class AsyncDatabaseManager:
             if conn:
                 await conn.close()
             # Освобождаем блокировку, если она захвачена
-            if self.lock.is_locked:
-                try:
-                    self.lock.release()
-                except Exception as e:
-                    logger.error(f"Ошибка освобождения блокировки: {e}")
-
 
 db_manager = AsyncDatabaseManager()

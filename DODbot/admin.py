@@ -31,23 +31,26 @@ async def create_admins_table():
 
 async def add_admin(adminname: str, adminlevel: int) -> bool:
     async with db_manager.get_connection() as conn:
-        cursor = await conn.cursor()
-        await cursor.execute(
-            "SELECT COUNT(*) FROM admins WHERE adminname = ?",
-            (adminname,)
-        )
-        exists = (await cursor.fetchone())[0]
+        try:
+            # Проверка существования администратора
+            cursor = await conn.execute(
+                "SELECT 1 FROM admins WHERE adminname = ?",
+                (adminname,)
+            )
+            if await cursor.fetchone():
+                print(f"⚠️ {adminname} уже является админом.")
+                return False
 
-        if exists:
-            print(f"⚠️ {adminname} уже является админом.")
-            return False
-
-        await cursor.execute(
-            "INSERT OR IGNORE INTO admins (adminname, adminlevel) VALUES (?, ?)",
-            (adminname, adminlevel)
-        )
-        await conn.commit()
-        return True
+            # Добавление нового администратора
+            await conn.execute(
+                "INSERT INTO admins (adminname, adminlevel) VALUES (?, ?)",
+                (adminname, adminlevel)
+            )
+            await conn.commit()
+            return True
+        except Exception as e:
+            await conn.rollback()
+            raise
 
 
 async def update_admin_info(adminname: str, admin_level: int):
