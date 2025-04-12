@@ -326,10 +326,12 @@ async def get_merch_types():
 
 async def get_merch_price(merch_type: str):
     async with db_manager.get_connection() as conn:
-        return await conn.fetchval(
-            "SELECT price FROM merch_prices WHERE merch_type = $1",
-            merch_type
-        )
+       async with conn.execute(
+           "SELECT price FROM merch_prices WHERE merch_type = ?",
+           (merch_type,)
+       ) as cursor:
+           result = await cursor.fetchone()
+           return result[0] if result else None
 
 
 async def update_merch_price(merch_type, new_price):
@@ -539,34 +541,36 @@ async def remove_merch_type(message):
 
 @router.message(Form.waiting_delete_merch)
 async def process_r_type(message: Message, state: FSMContext):
-  merch_type = message.text.strip()
-  try:
-    async with db_manager.get_connection() as conn:
-            cursor = conn.cursor()
-            count = await conn.fetchval(
-                "SELECT COUNT(*) FROM merch_prices WHERE merch_type = $1",
-                merch_type
+    merch_type = message.text.strip()
+    try:
+        async with db_manager.get_connection() as conn:
+            # Получаем количество записей
+            cursor = await conn.execute(
+                "SELECT COUNT(*) FROM merch_prices WHERE merch_type = ?",
+                (merch_type,)
             )
+            result = await cursor.fetchone()
+            count = result[0] if result else 0
 
             if count == 0:
-                await message.answer(
-                     f"❌ Позиция '{merch_type}' не найдена.")
-                
+                await message.answer(f"❌ Позиция '{merch_type}' не найдена.")
                 return
 
+            # Удаляем запись из таблицы цен
             await conn.execute(
-                "DELETE FROM merch_prices WHERE merch_type = $1",
-                merch_type
+                "DELETE FROM merch_prices WHERE merch_type = ?",
+                (merch_type,)
             )
 
-            # Удаляем столбец из таблицы merch
+            # ВНИМАНИЕ: Это потенциально опасная операция!
+            # SQL-инъекции через имя столбца. Необходима валидация merch_type.
             await conn.execute(
-                "ALTER TABLE merch DROP COLUMN IF EXISTS $1",
-                merch_type
+                f"ALTER TABLE merch DROP COLUMN IF EXISTS {merch_type}"
             )
 
             await message.answer(f"✅ Позиция '{merch_type}' удалена.")
-  except Exception as e:
+
+    except Exception as e:
         await message.answer(f"❌ Произошла ошибка при удалении позиции: {e}")
-  finally:
+    finally:
         await state.clear()

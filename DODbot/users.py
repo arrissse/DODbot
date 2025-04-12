@@ -142,11 +142,11 @@ async def is_quest_started(username: str) -> bool:
     """Проверка старта квеста (асинхронная версия)"""
     try:
         async with db_manager.get_connection() as conn:
-            result = await conn.fetchval(
-                "SELECT quest_started FROM users WHERE username = $1",
-                username
-            )
-            return result == 1
+            async with conn.execute(
+                "SELECT quest_started FROM users WHERE username = ?",
+                    (username, )) as cursor:
+                result = await cursor.fetchone()
+                return result[0] == 1
     except Exception as e:
         print(f"Error checking quest start: {e}")
         return False
@@ -156,10 +156,12 @@ async def check_points(username: str) -> int:
     """Проверка баллов (асинхронная версия)"""
     try:
         async with db_manager.get_connection() as conn:
-            return await conn.fetchval(
+            async with conn.execute((
                 "SELECT quest_points FROM users WHERE username = $1",
-                username
-            ) or 0
+                (username,)
+            )) as cursor:
+                result = await cursor.fetchone()
+                return result[0] or 0
     except Exception as e:
         print(f"Error checking points: {e}")
         return 0
@@ -182,10 +184,12 @@ async def check_st_points(username: str, station: int) -> int:
     """Проверка баллов станции (асинхронная версия)"""
     try:
         async with db_manager.get_connection() as conn:
-            return await conn.fetchval(
+            async with conn.execute(
                 f"SELECT quest{station}_points FROM users WHERE username = $1",
-                username
-            ) or 0
+                (username,)
+            ) as cursor:
+                result = await cursor.fetchone()
+                return result[0] if result else None
     except Exception as e:
         print(f"Error checking station points: {e}")
         return 0
@@ -195,10 +199,11 @@ async def check_quiz_points(username: str, num: int) -> int:
     """Проверка баллов квиза (асинхронная версия)"""
     try:
         async with db_manager.get_connection() as conn:
-            return await conn.fetchval(
-                f"SELECT quize_{num} FROM users WHERE username = $1",
-                username
-            ) or 0
+            async with conn.execute(f"SELECT quize_{num} FROM users WHERE username = $1",
+                                    (username, )
+            ) as cursor:
+                result=await cursor.fetchone()
+                return result[0] if result else None
     except Exception as e:
         print(f"Error checking quiz points: {e}")
         return 0
@@ -250,9 +255,11 @@ async def count_active_quests() -> int:
     """Подсчет активных квестов (асинхронная версия)"""
     try:
         async with db_manager.get_connection() as conn:
-            return await conn.fetchval(
+            async with conn.execute(
                 "SELECT COUNT(*) FROM users WHERE quest_started = 1"
-            ) or 0
+        ) as cursor:
+                result = await cursor.fetchone()
+                return result[0] if result else 0
     except Exception as e:
         print(f"Error counting active quests: {e}")
         return 0
@@ -308,11 +315,15 @@ async def is_finished_quiz(username: str, num: int) -> bool:
     """Проверка завершения квиза (асинхронная версия)"""
     try:
         async with db_manager.get_connection() as conn:
-            result = await conn.fetchval(
-                f"SELECT quize_{num} FROM users WHERE username = $1",
-                username
-            )
-            return result > 0 if result else False
+            async with conn.execute(
+                f"SELECT quize_{num} FROM users WHERE username = ?",
+                (username,)
+            ) as cursor:
+                result = await cursor.fetchone()
+                return result[0] > 0 if result else False
     except Exception as e:
-        print(f"Error checking quiz finish: {e}")
+        print(f"Database error checking quiz finish: {e}")
+        return False
+    except Exception as e:
+        print(f"Unexpected error checking quiz finish: {e}")
         return False

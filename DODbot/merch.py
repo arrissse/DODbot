@@ -32,15 +32,18 @@ async def got_merch(username: str, type: str) -> bool:
 
     async with db_manager.get_connection() as conn:
         await conn.execute(
-            "INSERT INTO merch (username) VALUES ($1) ON CONFLICT (username) DO NOTHING",
-            username
-        )
-        result = await conn.fetchval(
-            f'SELECT "{type}" FROM merch WHERE username = $1',
-            username
-        )
-        return result == 1
-
+                "INSERT OR IGNORE INTO merch (username) VALUES (?)",
+                (username,)
+            )
+        await conn.commit()  # Явное подтверждение изменений
+            
+            # Проверяем наличие мерча
+        async with conn.execute(
+                f'SELECT "{type}" FROM merch WHERE username = ?',
+                (username,)
+            ) as cursor:
+                result = await cursor.fetchone()
+                return result and result[0] == 1
 
 async def give_merch(username: str, type: str):
     if not await is_valid_column(type):
@@ -63,30 +66,36 @@ async def is_got_merch(username: str) -> bool:
             "INSERT INTO merch (username) VALUES ($1) ON CONFLICT (username) DO NOTHING",
             username
         )
+        await conn.commit()
 
-        columns = await conn.fetch(
-            "SELECT column_name FROM information_schema.columns "
-            "WHERE table_name = 'merch' AND data_type IN ('integer', 'real')"
-        )
-        numeric_columns = [col['column_name']
-                           for col in columns if col['column_name'] != 'username']
+            # Получаем список числовых колонок (кроме username)
+        async with conn.execute(
+                "SELECT name FROM pragma_table_info('merch') WHERE type IN ('INTEGER', 'REAL')"
+            ) as cursor:
+                numeric_columns = [row[0] for row in await cursor.fetchall() 
+                                 if row[0] != 'username']
 
         if not numeric_columns:
-            return False
+                return False
 
-        sum_query = " + ".join([f'"{col}"' for col in numeric_columns])
-        result = await conn.fetchval(
-            f"SELECT ({sum_query}) = {len(numeric_columns)} FROM merch WHERE username = $1",
-            username
-        )
-        return bool(result)
+            # Создаем условие проверки для всех колонок
+        check_conditions = " AND ".join([f'"{col}" = 1' for col in numeric_columns])
+        query = f"""
+                SELECT CASE WHEN ({check_conditions}) THEN 1 ELSE 0 END
+                FROM merch 
+                WHERE username = ?
+            """
+            
+        async with conn.execute(query, (username,)) as cursor:
+                result = await cursor.fetchone()
+                return bool(result[0]) if result else False
 
 
 async def is_got_any_merch(username: str) -> bool:
     async with db_manager.get_connection() as conn:
         await conn.execute(
             "INSERT INTO merch (username) VALUES ($1) ON CONFLICT (username) DO NOTHING",
-            username
+            (username, )
         )
 
         columns = await conn.fetch(
@@ -100,22 +109,24 @@ async def is_got_any_merch(username: str) -> bool:
             return False
 
         sum_query = " + ".join([f'"{col}"' for col in numeric_columns])
-        result = await conn.fetchval(
+        result = await conn.fetchone(
             f"SELECT ({sum_query}) > 0 FROM merch WHERE username = $1",
-            username
+            (username, )
         )
-        return bool(result)
+        return bool(result[0]) if result else False
 
 
 async def add_column(column_name: str, column_type: str = "INTEGER DEFAULT 0"):
     async with db_manager.get_connection() as conn:
-        exists = await conn.fetchval(
+        result = await conn.fetchone(
             "SELECT EXISTS ("
             "SELECT 1 FROM information_schema.columns "
             "WHERE table_name = 'merch' AND column_name = $1"
-            ")",
-            column_name
+            ") AS column_exists",
+            (column_name, )
         )
+
+        exists = result[0] if result else False
 
         if not exists:
             await conn.execute(

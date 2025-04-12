@@ -63,7 +63,7 @@ async def update_admin_info(adminname: str, admin_level: int):
         await conn.commit()
 
 
-async def get_all_admins() -> list:
+async def get_all_admins():
     async with db_manager.get_connection() as conn:
         cursor = await conn.cursor()
         await cursor.execute("SELECT * FROM admins")
@@ -95,7 +95,7 @@ async def update_admin_questnum(username: str, new_value: int):
         await conn.commit()
 
 
-async def save_admins_to_excel(bot) -> BufferedInputFile:
+async def save_admins_to_excel(bot):
     admins = await get_all_admins()  # Предполагается асинхронная реализация
 
     # Создание Excel файла
