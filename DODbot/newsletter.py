@@ -92,7 +92,7 @@ async def newsletter_scheduler():
 @router.message(F.text == "Отправить рассылку")
 async def handle_newsletter(message: Message, state: FSMContext):
     user = await get_admin_by_username(f"@{message.from_user.username}")
-    level = get_admin_level(user)
+    level = await get_admin_level(user)
     if user and level == 0:
         await message.answer("📝 Введите текст рассылки:")
         await state.set_state(NewsletterStates.waiting_newsletter_text)

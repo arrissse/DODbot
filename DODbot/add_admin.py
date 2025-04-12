@@ -5,7 +5,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from users import get_all_users, get_user_by_username
 from handlers import stations
-from admin import add_admin, get_all_admins, get_admin_by_username, update_admin_questnum, update_admin_info
+from admin import add_admin, get_all_admins, get_admin_by_username, update_admin_questnum, update_admin_info, get_admin_level
 
 
 class AdminStates(StatesGroup):
@@ -17,7 +17,8 @@ class AdminStates(StatesGroup):
 @router.message(F.text == "Добавить админа")
 async def new_admin(message: types.Message, state: FSMContext):
     user = await get_admin_by_username('@' + message.from_user.username)
-    if user is not None and user.level == 0:
+    level = await get_admin_level(user)
+    if user is not None and level == 0:
         await message.answer("Введите ник пользователя (@username):")
         await state.set_state(AdminStates.waiting_username)
     else:
