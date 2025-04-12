@@ -459,6 +459,7 @@ def process_fusername(m):
 
         merch_types = get_merch_types()
         for merch in merch_types:
+            print(f"merch: {merch}, price: {get_merch_price(merch)}")
             if check_points(username) >= get_merch_price(merch) and not got_merch(username, merch):
                 price = get_merch_price(merch)
                 markup.add(InlineKeyboardButton(
