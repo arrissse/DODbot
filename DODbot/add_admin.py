@@ -16,7 +16,7 @@ def new_admin(message):
 
 
 def process_name(m):
-    username = m.text
+    username = '@' + m.text
     users = get_all_users()
     admins = get_all_admins()
     user_list = [user[1] for user in users]
