@@ -254,8 +254,7 @@ def send_activity(message, school):
     photo_url = f"img/activities/{school}.png"
     try:
         with open(photo_url, "rb") as photo:
-            bot.send_photo(message.chat.id, photo,
-                           caption=f"📍 Активности {school}:")
+            bot.send_photo(message.chat.id, photo)
     except Exception as e:
         bot.send_message(message.chat.id, f"Ошибка при отправке: {e}")
 
