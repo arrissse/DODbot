@@ -82,6 +82,7 @@ async def process_number(callback: types.CallbackQuery, state: FSMContext):
     _, number, username, admin_level = callback.data.split(':')
 
     try:
+        await add_admin(username)
         await update_admin_questnum(username, int(number))
         await callback.message.answer(
             f"✅ Админу @{username} назначена станция №{number}."
