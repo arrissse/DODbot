@@ -35,7 +35,7 @@ async def webhook():
         # поэтому можно использовать его напрямую в async view
         data = request.get_data().decode("utf-8")
         update = types.Update.model_validate_json(data)
-        await dp.feed_update(bot, update)
+        asyncio.create_task(dp.feed_update(bot, update))
     except Exception as e:
         logger.exception("Ошибка при обработке обновления:")
         return "Ошибка", 500

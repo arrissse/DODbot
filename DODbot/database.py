@@ -14,27 +14,35 @@ class AsyncDatabaseManager:
 
     @asynccontextmanager
     async def get_connection(self):
+        # Получение файловой блокировки с переносом в синхронную задачу:
         try:
-            # Блокировка файла вне асинхронной области
             await asyncio.to_thread(self.lock.acquire)
-
-            conn = await aiosqlite.connect(self.db_path)
-            await conn.execute("PRAGMA journal_mode=WAL")
-            await conn.execute("PRAGMA busy_timeout=10000")
-
-            try:
-                yield conn
-                await conn.commit()
-            finally:
-                await conn.close()
-
         except Exception as e:
-            logger.critical(f"Ошибка подключения к БД: {e}")
+            logger.critical(f"Не удалось получить файловую блокировку: {e}")
             raise
 
+        conn = None
+        try:
+            conn = await aiosqlite.connect(self.db_path)
+            # Настройка параметров работы SQLite
+            await conn.execute("PRAGMA journal_mode=WAL")
+            await conn.execute("PRAGMA busy_timeout=10000")
+            # Передача соединения в контекст
+            yield conn
+            await conn.commit()
+        except Exception as e:
+            logger.critical(f"Ошибка подключения или работы с БД: {e}")
+            raise
         finally:
+            # Закрытие соединения, если оно было создано
+            if conn:
+                await conn.close()
+            # Освобождаем блокировку, если она захвачена
             if self.lock.is_locked:
-                self.lock.release()
+                try:
+                    self.lock.release()
+                except Exception as e:
+                    logger.error(f"Ошибка освобождения блокировки: {e}")
 
 
 db_manager = AsyncDatabaseManager()
