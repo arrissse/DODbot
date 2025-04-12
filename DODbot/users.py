@@ -44,15 +44,22 @@ async def add_user(user_id: int, username: str):
     """Добавление пользователя (асинхронная версия)"""
     try:
         async with db_manager.get_connection() as conn:
-            await conn.execute(
-                "INSERT INTO users (id, username) VALUES (?, ?) "
-                "ON CONFLICT (id) DO NOTHING",
-                (user_id, username)
+            cursor = await conn.execute(
+                "SELECT 1 FROM admins WHERE username = ?",
+                (username,)
             )
+            if await cursor.fetchone():
+                print(f"⚠️ {username} уже в базе.")
+                return False
+            
+            await conn.execute(
+                    "INSERT INTO users (username, user_id) VALUES (?, ?)",
+                    (username, user_id)
+                )
             await conn.commit()
-
             logging.info(
                 f"Пользователь {username} (id: {user_id}) добавлен/обновлен")
+            return True
 
     except Exception as e:
         logging.error(f"Ошибка добавления пользователя: {e}", exc_info=True)
