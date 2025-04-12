@@ -130,8 +130,8 @@ async def do_action(message, photo_url):
 @router.message(F.text == "📅 Расписание лекций")
 async def send_schedule_photo(m):
     try:
-       photo_file = FSInputFile("img/schedule.png")
-       await m.answer_photo(photo=photo_file, caption="📅 Расписание лекций:")
+       photo = FSInputFile("img/schedule.png")
+       await m.answer_photo(photo, caption="📅 Расписание лекций:")
     except Exception as e:
         await m.answer(f"Ошибка: {str(e)}")
 
@@ -220,8 +220,8 @@ async def send_pts(callback: types.CallbackQuery):
 @router.message(F.text == "🗺 Карта")
 async def send_map_photo(message: types.Message):
     try:
-        with open("img/map.png", "rb") as photo:
-            await message.answer_photo(photo, caption="🗺 Карта института:")
+        photo = FSInputFile("img/map.png")
+        await message.answer_photo(photo, caption="🗺 Карта института:")
     except Exception as e:
         await message.answer(f"Ошибка: {str(e)}")
 
