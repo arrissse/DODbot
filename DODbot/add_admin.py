@@ -29,6 +29,7 @@ async def new_admin(message: types.Message, state: FSMContext):
 async def process_name(message: types.Message, state: FSMContext):
     username = message.text.lstrip('@')
     users = await get_all_users()
+    username = message.text
     admins = await get_all_admins()
 
     user_exists = any(user['username'] == username for user in users)
@@ -105,7 +106,7 @@ async def process_admin_creation(message: types.Message, username: str, admin_le
             )
 
         admins = await get_all_admins()
-        admin_list = "\n".join([f"@{a['username']}" for a in admins])
+        admin_list = "\n".join([f"@{a['adminame']}" for a in admins])
         await message.answer(f"\nСписок админов:\n{admin_list}")
 
     except Exception as e:
