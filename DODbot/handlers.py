@@ -251,8 +251,14 @@ schools = {
 
 
 def send_activity(message, school):
-    bot.send_message(
-        message.chat.id, f"Активности {school}", reply_markup=activity_keyboard())
+    school_number = stations[school]
+    photo_url = f"img/activities/{school_number}.png"
+    try:
+        with open(photo_url, "rb") as photo:
+            bot.send_photo(message.chat.id, photo,
+                           caption=f"📍 Активности {school}:")
+    except Exception as e:
+        bot.send_message(message.chat.id, f"Ошибка при отправке: {e}")
 
 
 @bot.message_handler(func=lambda message: message.text == "🧩 Активности ФШ")
