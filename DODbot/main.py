@@ -53,6 +53,7 @@ async def on_startup():
     await admin_handlers.create_price_table()
     await merch.create_merch_table()
     await quiz.create_quiz_table()
+    await admin.init_admins()
     asyncio.create_task(newsletter.newsletter_scheduler())
 
 

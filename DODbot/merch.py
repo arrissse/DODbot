@@ -123,7 +123,7 @@ async def add_column(column_name: str, column_type: str = "INTEGER DEFAULT 0"):
             "SELECT 1 FROM information_schema.columns "
             "WHERE table_name = 'merch' AND column_name = $1"
             ") AS column_exists",
-            (column_name, )
+            column_name
         )
 
         exists = result[0] if result else False
