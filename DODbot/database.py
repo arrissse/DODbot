@@ -18,7 +18,7 @@ class DatabaseManager:
                 self.conn = sqlite3.connect(
                     "base.db",
                     check_same_thread=False,
-                    timeout=30  # Увеличенный таймаут подключения
+                    timeout=5  # Увеличенный таймаут подключения
                 )
                 self.conn.execute("PRAGMA journal_mode=WAL")
                 self.conn.execute("PRAGMA busy_timeout=10000")
