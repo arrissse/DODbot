@@ -45,7 +45,7 @@ async def add_user(user_id: int, username: str):
     try:
         async with db_manager.get_connection() as conn:
             cursor = await conn.execute(
-                "SELECT 1 FROM admins WHERE username = ?",
+                "SELECT 1 FROM users WHERE username = ?",
                 (username,)
             )
             if await cursor.fetchone():
