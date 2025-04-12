@@ -90,7 +90,7 @@ async def start_handler(m: types.Message):
             keyboard = mipt_admin_keyboard()
         await m.answer("🔑 Админ-меню:", reply_markup=keyboard)
     else:
-        add_user(m.chat.id, user.username)
+        await add_user(m.chat.id, user.username)
         await m.answer("📌 Выберите действие:", reply_markup=keyboard)
 
     parts = m.text.split()
