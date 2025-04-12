@@ -3,12 +3,12 @@ from aiogram import types
 from bot import bot, dp, router
 import asyncio
 import logging
-from config import WEBHOOK_URL
 from database import init_database
 import newsletter
 from . import users, admin, handler, admin_handlers, newsletter, add_admin, merch, quiz, set_points
 
 dp.include_router(router)
+WEBHOOK_URL = "https://fest.mipt.ru/your-webhook-path"
 
 def register_all_handlers(dp):
     users.register(dp)
