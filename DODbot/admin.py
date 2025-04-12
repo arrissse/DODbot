@@ -90,7 +90,7 @@ async def update_admin_questnum(username: str, new_value: int):
         await conn.commit()
 
 
-async def save_admins_to_excel(bot) -> BufferedInputFile:
+async def save_admins_to_excel() -> BufferedInputFile:
     admins = await get_all_admins()
 
     if not admins:
