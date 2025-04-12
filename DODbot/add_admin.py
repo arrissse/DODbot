@@ -24,14 +24,13 @@ def process_name(m):
         bot.send_message(
             m.chat.id, f"❌ Пользователь {username} не найден в списке.")
         return
-    if username in admins:
-        bot.send_message(
-            m.chat.id, f"❌ Пользователь {username} уже является админом.")
+    admin_names = [admin[0].lstrip('@') for admin in admins]
+    if username.lstrip('@') in admin_names:
+        bot.send_message(m.chat.id, f"❌ Пользователь {username} уже является админом.")
     else:
-        bot.send_message(
-            m.chat.id, f" Пользователь {username} пока не является админом.")
-    bot.send_message(
-        m.chat.id, "Введите уровень админства (0 - pro-admin, 1 - выдача мерча, 2 - админ фш):")
+        bot.send_message(m.chat.id, f"Пользователь {username} пока не является админом.")
+
+    bot.send_message(m.chat.id, "Введите уровень админства (0 - pro-admin, 1 - выдача мерча, 2 - админ фш):")
     bot.register_next_step_handler(m, process_level, username)
 
 
