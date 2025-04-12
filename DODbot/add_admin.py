@@ -95,19 +95,13 @@ async def process_number(callback: types.CallbackQuery, state: FSMContext):
 
 async def process_admin_creation(message: types.Message, username: str, admin_level: int):
     try:
-        if await get_admin_by_username(username):
-            await update_admin_info(username, admin_level)
-            msg = f"✅ Пользователь @{username} обновлен до уровня {admin_level}!"
-        else:
-            await add_admin(username, admin_level)
-            msg = f"✅ Пользователь @{username} добавлен как админ уровня {admin_level}!"
+        user = await get_user_by_username(username)
 
-            # Отправка уведомления пользователю
-            user = await get_user_by_username(username)[0]
-            if user:
-                await message.bot.send_message(user,
-                    "Вас назначили админом. Для доступа к меню используйте /start"
-                )
+        if user:
+            await message.bot.send_message(
+                user['id'],
+                "Вас назначили админом. Для доступа к меню используйте /start"
+            )
 
         admins = await get_all_admins()
         admin_list = "\n".join([f"@{a.username}" for a in admins])
