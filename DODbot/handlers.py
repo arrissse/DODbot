@@ -80,7 +80,7 @@ async def start_handler(m: types.Message):
 
     if current_username in admin_usernames:
 
-        admin_level = get_admin_level(current_username)
+        admin_level = await get_admin_level(current_username)
         print(f"Уровень админства для {current_username}: {admin_level}")
         if admin_level == 0:
             keyboard = pro_admin_keyboard()
