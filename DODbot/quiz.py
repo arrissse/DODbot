@@ -69,7 +69,9 @@ async def create_quiz_table():
         """)
 
         # Генерация вопросов и ответов
-        quiz_ids = [row[0] for row in await cursor.execute("SELECT id FROM quiz_schedule")]
+        cursor = await conn.execute("SELECT id FROM quiz_schedule")
+        rows = await cursor.fetchall()
+        quiz_ids = [row[0] for row in rows]
 
         for quiz_id in quiz_ids:
             for question_number in range(1, 26):
