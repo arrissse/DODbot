@@ -104,7 +104,7 @@ async def save_admins_to_excel(bot):
     sheet.append(["Username", "Level", "Station"])
 
     for admin in admins:
-        sheet.append([admin.username, admin.level, admin.station])
+        sheet.append([admin[0], admin[1], admin[2]])
 
     # Сохранение в байтовый поток
     buffer = BytesIO()
