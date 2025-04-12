@@ -73,7 +73,6 @@ async def start_handler(m: types.Message):
     current_username = f"@{user.username}"
     admins = await get_all_admins()
     admin_usernames = [admin[0] for admin in admins]
-    logging.info(admin_usernames)
 
     logging.info(f"Список админов: {admin_usernames}")
     logging.info(f"Пользователь: {current_username}")

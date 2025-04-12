@@ -3,6 +3,7 @@ from openpyxl.styles import Font, PatternFill
 from merch import is_got_any_merch
 from database import db_manager
 import asyncpg
+import logging
 
 
 async def create_users_table():
@@ -110,7 +111,7 @@ async def get_all_users() -> list:
             async with conn.execute("SELECT * FROM users") as cursor:
                 return await cursor.fetchall()
     except Exception as e:
-        print(f"Error getting all users: {e}")
+        logging.info(f"Error getting all users: {e}")
         return []
 
 
