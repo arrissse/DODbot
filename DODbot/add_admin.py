@@ -27,6 +27,9 @@ def process_name(m):
     if username in admins:
         bot.send_message(
             m.chat.id, f"❌ Пользователь {username} уже является админом.")
+    else:
+        bot.send_message(
+            m.chat.id, f" Пользователь {username} пока не является админом.")
         return
     bot.send_message(
         m.chat.id, "Введите уровень админства (0 - pro-admin, 1 - выдача мерча, 2 - админ фш):")
