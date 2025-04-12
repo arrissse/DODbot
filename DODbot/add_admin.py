@@ -24,7 +24,7 @@ def process_name(m):
         bot.send_message(
             m.chat.id, f"❌ Пользователь {username} не найден в списке.")
         return
-    if f"@{username}" in admins:
+    if username in admins:
         bot.send_message(
             m.chat.id, f"❌ Пользователь {username} уже является админом.")
     else:
