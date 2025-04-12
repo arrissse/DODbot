@@ -18,28 +18,39 @@ def create_merch_table():
     """)
 
 
-def got_merch(username, type):
-  with db_manager.get_connection() as conn:
-    cursor = conn.cursor()
-    cursor.execute("INSERT OR IGNORE INTO merch (username) VALUES (?)",
-                   (username,))
-    cursor.execute(
-        f'SELECT "{type}" FROM merch WHERE username = ?', (username,))
-    result = cursor.fetchone()
-    
+def is_valid_column(column_name):
+    with db_manager.get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(merch);")
+        columns = [col[1] for col in cursor.fetchall()]
+        return column_name in columns
 
-    return result[0] == 1
+
+def got_merch(username, type):
+    if not is_valid_column(type):
+        raise ValueError(f"Недопустимое имя колонки: {type}")
+
+    with db_manager.get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
+        cursor.execute(
+            f'SELECT "{type}" FROM merch WHERE username = ?', (username,))
+        result = cursor.fetchone()
+        return result and result[0] == 1
 
 
 def give_merch(username, type):
-  with db_manager.get_connection() as conn:
-    cursor = conn.cursor()
-    cursor.execute("INSERT OR IGNORE INTO merch (username) VALUES (?)",
-                   (username,))
-    cursor.execute(
-        f'UPDATE merch SET "{type}" = 1 WHERE username = ?', (username,))
-    conn.commit()
-    
+    if not is_valid_column(type):
+        raise ValueError(f"Недопустимое имя колонки: {type}")
+
+    with db_manager.get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
+        cursor.execute(
+            f'UPDATE merch SET "{type}" = 1 WHERE username = ?', (username,))
+        conn.commit()
 
 
 def is_got_merch(username):
