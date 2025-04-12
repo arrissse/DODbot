@@ -9,7 +9,7 @@ import asyncio
 
 from database import db_manager
 from users import get_all_users
-from admin import get_admin_by_username
+from admin import get_admin_by_username, get_admin_level
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +92,8 @@ async def newsletter_scheduler():
 @router.message(F.text == "Отправить рассылку")
 async def handle_newsletter(message: Message, state: FSMContext):
     user = await get_admin_by_username(f"@{message.from_user.username}")
-    if user and user.level == 0:
+    level = get_admin_level(user)
+    if user and level == 0:
         await message.answer("📝 Введите текст рассылки:")
         await state.set_state(NewsletterStates.waiting_newsletter_text)
     else:
