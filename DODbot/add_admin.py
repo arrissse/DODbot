@@ -103,10 +103,9 @@ async def process_admin_creation(message: types.Message, username: str, admin_le
             msg = f"✅ Пользователь @{username} добавлен как админ уровня {admin_level}!"
 
             # Отправка уведомления пользователю
-            user = await get_user_by_username(username)
+            user = await get_user_by_username(username)[0]
             if user:
-                await message.bot.send_message(
-                    user.id,
+                await message.bot.send_message(user,
                     "Вас назначили админом. Для доступа к меню используйте /start"
                 )
 
