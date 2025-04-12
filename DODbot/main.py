@@ -21,6 +21,8 @@ def init_database():
         logger.info("🚀 newsletter")
         from merch import create_merch_table
         create_merch_table()
+        from merch import get_table_columns
+        assert "Блокнот" in get_table_columns("merch")
         from users import create_users_table
         create_users_table()
         logger.info("🚀 users")
