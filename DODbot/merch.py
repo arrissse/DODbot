@@ -51,11 +51,11 @@ async def give_merch(username: str, type: str):
 
     async with db_manager.get_connection() as conn:
         await conn.execute(
-            "INSERT INTO merch (username) VALUES ($1) ON CONFLICT (username) DO NOTHING",
+            "INSERT INTO merch (username) VALUES (?) ON CONFLICT (username) DO NOTHING",
             username
         )
         await conn.execute(
-            f'UPDATE merch SET "{type}" = 1 WHERE username = $1',
+            f'UPDATE merch SET "{type}" = 1 WHERE username = ?',
             (username, )
         )
 
@@ -63,7 +63,7 @@ async def give_merch(username: str, type: str):
 async def is_got_merch(username: str) -> bool:
     async with db_manager.get_connection() as conn:
         await conn.execute(
-            "INSERT INTO merch (username) VALUES ($1) ON CONFLICT (username) DO NOTHING",
+            "INSERT INTO merch (username) VALUES (?) ON CONFLICT (username) DO NOTHING",
             (username, )
         )
         await conn.commit()
@@ -94,7 +94,7 @@ async def is_got_merch(username: str) -> bool:
 async def is_got_any_merch(username: str) -> bool:
     async with db_manager.get_connection() as conn:
         await conn.execute(
-            "INSERT INTO merch (username) VALUES ($1) ON CONFLICT (username) DO NOTHING",
+            "INSERT INTO merch (username) VALUES (?) ON CONFLICT (username) DO NOTHING",
             (username, )
         )
 
@@ -110,7 +110,7 @@ async def is_got_any_merch(username: str) -> bool:
 
         sum_query = " + ".join([f'"{col}"' for col in numeric_columns])
         result = await conn.fetchone(
-            f"SELECT ({sum_query}) > 0 FROM merch WHERE username = $1",
+            f"SELECT ({sum_query}) > 0 FROM merch WHERE username = ?",
             (username, )
         )
         return bool(result[0]) if result else False
@@ -121,7 +121,7 @@ async def add_column(column_name: str, column_type: str = "INTEGER DEFAULT 0"):
         result = await conn.fetchone(
             "SELECT EXISTS ("
             "SELECT 1 FROM information_schema.columns "
-            "WHERE table_name = 'merch' AND column_name = $1"
+            "WHERE table_name = 'merch' AND column_name = ?"
             ") AS column_exists",
             column_name
         )
@@ -146,7 +146,7 @@ async def get_table_columns(table_name: str):
     async with db_manager.get_connection() as conn:
         columns = await conn.fetch(
             "SELECT column_name FROM information_schema.columns "
-            "WHERE table_name = $1",
+            "WHERE table_name = ?",
             table_name
         )
         return [col['column_name'] for col in columns]

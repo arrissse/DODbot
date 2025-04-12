@@ -182,7 +182,7 @@ async def start_quiz(call):
     quiz_id = int(quiz_id)
     async with db_manager.get_connection() as conn:
         quiz_info = await conn.fetchrow(
-            "SELECT * FROM quiz_schedule WHERE id = $1",
+            "SELECT * FROM quiz_schedule WHERE id = ?",
             quiz_id
         )
     
@@ -217,7 +217,7 @@ async def check_answer(call):
 
   async with db_manager.get_connection() as conn:
     result = await conn.fetchrow(
-        "SELECT is_correct FROM answers WHERE id = $1",
+        "SELECT is_correct FROM answers WHERE id = ?",
         answer_id
     )
     if result and result['is_correct']:
@@ -338,8 +338,8 @@ async def update_merch_price(merch_type, new_price):
     async with db_manager.get_connection() as conn:
         await conn.execute("""
             INSERT INTO merch_prices (merch_type, price) 
-            VALUES ($1, $2)
-            ON CONFLICT (merch_type) DO UPDATE SET price = $2
+            VALUES (?, ?)
+            ON CONFLICT (merch_type) DO UPDATE SET price = ?
         """, merch_type, new_price)
             
             
@@ -506,7 +506,7 @@ async def process_type_cost(message: Message, state: FSMContext):
             cursor = conn.cursor()
 
             await conn.execute("""
-                INSERT OR IGNORE INTO merch_prices (merch_type, price) VALUES ($1, $2)
+                INSERT OR IGNORE INTO merch_prices (merch_type, price) VALUES (?, ?)
             """, (type, cost))
 
             try:

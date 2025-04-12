@@ -16,6 +16,9 @@ import add_admin
 import merch
 import quiz
 import set_points
+import tracemalloc
+
+tracemalloc.start()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

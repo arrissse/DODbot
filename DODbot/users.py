@@ -44,7 +44,7 @@ async def add_user(user_id: int, username: str):
     try:
         async with db_manager.get_connection() as conn:
             await conn.execute(
-                "INSERT INTO users (id, username) VALUES ($1, $2) "
+                "INSERT INTO users (id, username) VALUES (?, ?) "
                 "ON CONFLICT (id) DO NOTHING",
                 (user_id, username)
             )
@@ -57,7 +57,7 @@ async def get_user_by_username(username: str) -> asyncpg.Record:
     try:
         async with db_manager.get_connection() as conn:
             return await conn.fetchrow(
-                "SELECT * FROM users WHERE username = $1", username
+                "SELECT * FROM users WHERE username = ?", username
             )
     except Exception as e:
         print(f"Error getting user: {e}")
@@ -119,7 +119,7 @@ async def start_quest(username: str):
     try:
         async with db_manager.get_connection() as conn:
             await conn.execute(
-                "UPDATE users SET quest_started = 1 WHERE username = $1",
+                "UPDATE users SET quest_started = 1 WHERE username = ?",
                 (username, )
             )
     except Exception as e:
@@ -131,7 +131,7 @@ async def finish_quest(username: str):
     try:
         async with db_manager.get_connection() as conn:
             await conn.execute(
-                "UPDATE users SET quest_station = 11 WHERE username = $1",
+                "UPDATE users SET quest_station = 11 WHERE username = ?",
                 (username, )
             )
     except Exception as e:
@@ -157,7 +157,7 @@ async def check_points(username: str) -> int:
     try:
         async with db_manager.get_connection() as conn:
             async with conn.execute((
-                "SELECT quest_points FROM users WHERE username = $1",
+                "SELECT quest_points FROM users WHERE username = ?",
                 (username,)
             )) as cursor:
                 result = await cursor.fetchone()
@@ -172,8 +172,8 @@ async def update_merch_points(username: str, points: int):
     try:
         async with db_manager.get_connection() as conn:
             await conn.execute(
-                "UPDATE users SET quest_points = quest_points - $1 "
-                "WHERE username = $2",
+                "UPDATE users SET quest_points = quest_points - ? "
+                "WHERE username = ?",
                 points, username
             )
     except Exception as e:
@@ -185,7 +185,7 @@ async def check_st_points(username: str, station: int) -> int:
     try:
         async with db_manager.get_connection() as conn:
             async with conn.execute(
-                f"SELECT quest{station}_points FROM users WHERE username = $1",
+                f"SELECT quest{station}_points FROM users WHERE username = ?",
                 (username,)
             ) as cursor:
                 result = await cursor.fetchone()
@@ -199,7 +199,7 @@ async def check_quiz_points(username: str, num: int) -> int:
     """Проверка баллов квиза (асинхронная версия)"""
     try:
         async with db_manager.get_connection() as conn:
-            async with conn.execute(f"SELECT quize_{num} FROM users WHERE username = $1",
+            async with conn.execute(f"SELECT quize_{num} FROM users WHERE username = ?",
                                     (username, )
             ) as cursor:
                 result=await cursor.fetchone()
@@ -226,7 +226,7 @@ async def update_user_queststation(username: str):
                     (quest9_points > 0)::integer +
                     (quest10_points > 0)::integer +
                     (quest11_points > 0)::integer
-                ) WHERE username = $1
+                ) WHERE username = ?
             """, username)
     except Exception as e:
         print(f"Error updating quest station: {e}")
@@ -243,7 +243,7 @@ async def is_quiz_finished(username: str) -> bool:
         async with db_manager.get_connection() as conn:
             result = await conn.fetchrow("""
                 SELECT quize_1, quize_2, quize_3, quize_4, quize_5
-                FROM users WHERE username = $1
+                FROM users WHERE username = ?
             """, username)
             return all(score > 0 for score in result.values()) if result else False
     except Exception as e:
@@ -280,13 +280,13 @@ async def update_user_points(username: str, admin_num: int, points: int):
     try:
         async with db_manager.get_connection() as conn:
             await conn.execute(
-                f"UPDATE users SET quest{admin_num}_points = quest{admin_num}_points + $1 "
-                "WHERE username = $2",
+                f"UPDATE users SET quest{admin_num}_points = quest{admin_num}_points + ? "
+                "WHERE username = ?",
                 points, username
             )
             await conn.execute(
-                "UPDATE users SET quest_points = quest_points + $1 "
-                "WHERE username = $2",
+                "UPDATE users SET quest_points = quest_points + ? "
+                "WHERE username = ?",
                 points, username
             )
     except Exception as e:
@@ -299,12 +299,12 @@ async def update_quize_points(username: str, num: int):
         async with db_manager.get_connection() as conn:
             await conn.execute(
                 f"UPDATE users SET quize_{num} = quize_{num} + 1 "
-                "WHERE username = $1",
+                "WHERE username = ?",
                 username
             )
             await conn.execute(
                 "UPDATE users SET quize_points = quize_points + 1 "
-                "WHERE username = $1",
+                "WHERE username = ?",
                 username
             )
     except Exception as e:
