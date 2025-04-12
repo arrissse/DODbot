@@ -549,6 +549,8 @@ def process_type_cost(message, type):
                 INSERT OR IGNORE INTO merch_prices (merch_type, price) VALUES (?, ?)
             """, (type, cost))
 
+            add_column(type)
+
             
             
 
