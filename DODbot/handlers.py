@@ -6,9 +6,10 @@ from aiogram.filters import Command
 from aiogram.types import FSInputFile
 
 from keyboard import main_keyboard, admin_keyboard, pro_admin_keyboard, mipt_admin_keyboard, quest_keyboard, quest_started_keyboard, continue_quest_keyboard, activity_keyboard
-from users import add_user, start_quest, is_quest_started, check_points, check_st_points, get_user_by_username
+from users import add_user, start_quest, is_quest_started, check_points, check_st_points, get_user_by_username, get_all_users
 from admin import get_all_admins, add_admin, get_admin_level
 from aiogram.types import BotCommand
+import logging
 
 stations = {
     "станция ФРКТ": 1,
@@ -65,14 +66,17 @@ schools = {
 async def start_handler(m: types.Message):
  try:
     user = m.from_user
-    await add_user(m.chat.id, user.username)
+    user_list = await get_all_users()
+    logging.info(user_list)
+    if not user in user_list: 
+        await add_user(m.chat.id, user.username)
     current_username = f"@{user.username}"
     admins = await get_all_admins()
     admin_usernames = [admin[0] for admin in admins]
-    print(admin_usernames)
+    logging.info(admin_usernames)
 
-    print(f"Список админов: {admin_usernames}")
-    print(f"Пользователь: {current_username}")
+    logging.info(f"Список админов: {admin_usernames}")
+    logging.info(f"Пользователь: {current_username}")
 
     keyboard = main_keyboard()
     commands = [BotCommand(command="start", description="Перезапустить бота")]
