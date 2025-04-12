@@ -1,133 +1,124 @@
-from bot import bot
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-from keyboard import main_keyboard
-from users import update_user_points, get_user_by_username, is_quest_started
-from users import update_user_queststation
+from bot import bot, dp, router
+from aiogram import Bot, types, F
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+from users import update_user_points, get_user_by_username, is_quest_started, update_user_queststation
 from admin import get_admin_by_username, get_admin_level
-from handler import stations
-
-@bot.message_handler(func=lambda message: message.text == "Квест. Проставить баллы")
-def set_points(message):
-    user = get_admin_by_username('@' + message.from_user.username)
-    level = get_admin_level('@' + message.from_user.username)
-    if user and (level == 0 or level == 2):
-        bot.send_message(message.chat.id, "Введите ник пользователя (@username):")
-        bot.register_next_step_handler(message, process_username)
-    else:
-        bot.send_message(message.chat.id, "❌ У вас нет доступа к этой команде.")
+from handlers import stations
+from keyboard import main_keyboard
 
 
-def process_username(m):
-    username = m.text.strip().lstrip('@')
+class SetPointsStates(StatesGroup):
+    waiting_username = State()
+    waiting_station = State()
+    waiting_points = State()
 
-    admin = get_admin_by_username('@' + m.from_user.username)
-    admin_num = admin[2]
 
-    user = get_user_by_username(username)
-
-    if user is None:
-        bot.send_message(m.chat.id, f"❌ Пользователь {username} не найден!")
+@router.message(F.text == "Квест. Проставить баллы")
+async def set_points(message: Message, state: FSMContext):
+    admin = await get_admin_by_username(f"@{message.from_user.username}")
+    if not admin or (admin.level != 0 and admin.level != 2):
+        await message.answer("❌ У вас нет доступа к этой команде.")
         return
 
-    if admin[1] == 0:
-        markup = InlineKeyboardMarkup()
+    await state.set_state(SetPointsStates.waiting_username)
+    await message.answer("Введите ник пользователя (@username):")
+
+
+@router.message(SetPointsStates.waiting_username)
+async def process_username(message: Message, state: FSMContext):
+    username = message.text.strip().lstrip('@')
+    user = await get_user_by_username(username)
+
+    if not user:
+        await message.answer(f"❌ Пользователь {username} не найден!")
+        await state.clear()
+        return
+
+    admin = await get_admin_by_username(f"@{message.from_user.username}")
+
+    await state.update_data(username=username, admin=admin)
+
+    if admin.level == 0:
+        builder = InlineKeyboardBuilder()
         for name, number in stations.items():
-            markup.add(InlineKeyboardButton(name, callback_data=f"select_station&{username}&{number}"))
+            builder.button(text=name, callback_data=f"select_station:{number}")
+        builder.adjust(2)
 
-
-        bot.send_message(m.chat.id, "Выберите номер станции:",
-                         reply_markup=markup)
-    elif admin[1] == 2:
-        if user[admin_num + 2] != 0:
-            bot.send_message(
-                m.chat.id, f"❌ Пользователю {username} уже начислены баллы.")
+        await message.answer("Выберите номер станции:", reply_markup=builder.as_markup())
+        await state.set_state(SetPointsStates.waiting_station)
+    elif admin.level == 2:
+        if user.stations[admin.quest_num] != 0:
+            await message.answer(f"❌ Пользователю {username} уже начислены баллы.")
+            await state.clear()
             return
-        process_points_selection(m.chat.id, username, admin[2], user)
-    else:
-        bot.send_message(
-            m.chat.id, "❌ У вас нет доступа ставить баллы.", reply_markup=main_keyboard())
+        await process_points_selection(message, username, admin.quest_num, user)
 
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("select_station&"))
-def process_station_selection(call):
-    bot.answer_callback_query(call.id)
+@router.callback_query(F.data.startswith("select_station:"), SetPointsStates.waiting_station)
+async def process_station_selection(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    username = data['username']
+    admin = data['admin']
+    station_num = int(callback.data.split(":")[1])
 
-    _, username, admin_num = call.data.split("&")
-    admin_num = int(admin_num)
-
-    user = get_user_by_username(username)
-    if user is None:
-        bot.send_message(call.message.chat.id,
-                         f"❌ Пользователь {username} не найден!")
+    user = await get_user_by_username(username)
+    if user.stations[station_num] != 0:
+        await callback.message.answer(f"❌ Пользователю {username} уже начислены баллы.")
+        await state.clear()
         return
 
-    if user[admin_num + 2] != 0:
-        bot.send_message(call.message.chat.id,
-                         f"❌ Пользователю {username} уже начислены баллы.")
+    await state.update_data(station_num=station_num)
+    await callback.message.answer(f"✅ Вы выбрали станцию {station_num}")
+    await process_points_selection(callback.message, username, station_num, user)
+
+
+async def process_points_selection(message: Message, username: str, station_num: int, user):
+    if not await is_quest_started(username):
+        await message.answer(f"❌ Пользователь {username} ещё не начал квест.")
         return
 
-    bot.send_message(call.message.chat.id, f"✅ Вы выбрали станцию {admin_num}")
+    builder = InlineKeyboardBuilder()
+    builder.button(text="1️⃣", callback_data=f"points:1")
+    builder.button(text="2️⃣", callback_data=f"points:2")
+    builder.button(text="🔙 Назад", callback_data="back_to_stations")
+    builder.adjust(2)
 
-    process_points_selection(call.message.chat.id, username, admin_num, user)
-
-
-def process_points_selection(chat_id, username, admin_num, user):
-    if not is_quest_started(username):
-        bot.send_message(
-            chat_id, f"❌ Пользователь {username} ещё не начал принимать участие в квесте.")
-        return
-    if user[admin_num + 2] != 0:
-        bot.send_message(
-            chat_id, f"❌ Пользователю {username} уже начислены баллы.")
-        return
-
-    markup = InlineKeyboardMarkup()
-    markup.add(
-        InlineKeyboardButton(
-            "1️⃣", callback_data=f"points&{username}&{admin_num}&1"),
-        InlineKeyboardButton(
-            "2️⃣", callback_data=f"points&{username}&{admin_num}&2")
+    await message.answer(
+        f"Выберите количество баллов для {username}:",
+        reply_markup=builder.as_markup()
     )
-    markup.add(
-        InlineKeyboardButton("🔙 Назад", callback_data=f"back_to_stations&{username}")
+    await message.get_state().set_state(SetPointsStates.waiting_points)
+
+
+@router.callback_query(F.data == "back_to_stations", SetPointsStates.waiting_points)
+async def back_to_stations(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    username = data['username']
+
+    builder = InlineKeyboardBuilder()
+    for name, number in stations.items():
+        builder.button(text=name, callback_data=f"select_station:{number}")
+    builder.adjust(2)
+
+    await callback.message.edit_text(
+        "Выберите номер станции:",
+        reply_markup=builder.as_markup()
     )
-
-    bot.send_message(
-        chat_id, f"Выберите количество баллов для пользователя {username}:", reply_markup=markup)
+    await state.set_state(SetPointsStates.waiting_station)
 
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("back_to_stations&"))
-def back_to_stations(call):
-    bot.answer_callback_query(call.id)
+@router.callback_query(F.data.startswith("points:"), SetPointsStates.waiting_points)
+async def process_points_callback(callback: CallbackQuery, state: FSMContext):
+    points = int(callback.data.split(":")[1])
+    data = await state.get_data()
 
-    _, username = call.data.split("&")
-    
-    bot.send_message(call.message.chat.id, f"🔙 Возвращаемся к выбору станции для {username}.")
-    
-    markup = InlineKeyboardMarkup()
-    for i in range(1, 12):
-        markup.add(InlineKeyboardButton(
-            f"Станция {i}", callback_data=f"select_station&{username}&{i}"))
+    await update_user_points(data['username'], data['station_num'], points)
+    await update_user_queststation(data['username'])
 
-    bot.send_message(call.message.chat.id, "Выберите номер станции:",
-                         reply_markup=markup)
-
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith("points&"))
-def process_points_callback(call):
-    bot.answer_callback_query(call.id, f"✅ Баллы начислены!")
-
-    _, username, admin_num, points = call.data.split("&")
-    admin_num = int(admin_num)
-    points = int(points)
-
-    user = get_user_by_username(username)
-    if user is None:
-        bot.send_message(call.message.chat.id,
-                         f"❌ Пользователь {username} не найден!")
-        return
-
-    update_user_points(username, admin_num, points)
-    update_user_queststation(username)
-    bot.send_message(call.message.chat.id,
-                     f"✅ Пользователю {username} начислено {points} баллов!")
+    await callback.message.answer(
+        f"✅ Пользователю {data['username']} начислено {points} баллов!"
+    )
+    await state.clear()
