@@ -466,10 +466,10 @@ def process_fusername(m):
 
         if markup.keyboard:
             bot.send_message(
-                m.chat.id, f"Выберите мерч пользователю {username}:", reply_markup=markup)
+                m.chat.id, f"Количество баллов {username}: {check_points(username)}. Выберите мерч пользователю {username}:", reply_markup=markup)
         else:
             bot.send_message(
-                m.chat.id, f"❌ Пользователь {username} не может получить мерч.")
+                m.chat.id, f"❌ Пользователь {username} не может получить мерч. Количество баллов: {check_points(username)}")
     except Exception as e:
         bot.send_message(m.chat.id, e)
 
