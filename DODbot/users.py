@@ -44,24 +44,37 @@ async def add_user(user_id: int, username: str):
     """Добавление пользователя (асинхронная версия)"""
     try:
         async with db_manager.get_connection() as conn:
+            # Выполняем запрос на вставку
             await conn.execute(
                 "INSERT INTO users (id, username) VALUES (?, ?) "
                 "ON CONFLICT (id) DO NOTHING",
                 (user_id, username)
             )
+            # Важно: явное подтверждение изменений для SQLite
+            await conn.commit()
+
+            # Логируем успешное добавление
+            logging.info(
+                f"Пользователь {username} (id: {user_id}) добавлен/обновлен")
+
     except Exception as e:
-        logging.info(f"Error adding user: {e}")
+        # Подробное логирование ошибки с трейсбэком
+        logging.error(f"Ошибка добавления пользователя: {e}", exc_info=True)
+        raise
 
 
-async def get_user_by_username(username: str) -> asyncpg.Record:
-    """Получение пользователя по username (асинхронная версия)"""
+async def get_user_by_username(username: str) -> dict:
+    """Получение пользователя по username"""
     try:
         async with db_manager.get_connection() as conn:
-            return await conn.fetchall(
-                "SELECT * FROM users WHERE username = ?", (username, )
+            cursor = await conn.execute(
+                "SELECT * FROM users WHERE username = ?",
+                (username,)
             )
+            row = await cursor.fetchone()
+            return dict(row) if row else None
     except Exception as e:
-        print(f"Error getting user: {e}")
+        logging.error(f"Ошибка получения пользователя: {e}", exc_info=True)
         return None
 
 
