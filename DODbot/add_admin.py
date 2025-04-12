@@ -27,21 +27,21 @@ async def new_admin(message: types.Message, state: FSMContext):
 
 @router.message(AdminStates.waiting_username)
 async def process_name(message: types.Message, state: FSMContext):
-    username = message.text.lstrip('@')
+    username = message.text
     users = await get_all_users()
     admins = await get_all_admins()
 
-    user_exists = any(user['username'] == username for user in users)
+    user_exists = any(user['username'] == username.lstrip('@') for user in users)
     if not user_exists:
         await message.answer(f"❌ Пользователь @{username} не найден в списке.")
         return await state.clear()
 
     admin_exists = any(admin['adminname'] == username for admin in admins)
     if admin_exists:
-        await message.answer(f"Пользователь @{username} уже является админом.")
+        await message.answer(f"Пользователь {username} уже является админом.")
         return await state.clear()
 
-    await state.update_data(username=f'@{username}')
+    await state.update_data(username=username)
     await message.answer("Введите уровень админства (0 - pro-admin, 1 - выдача мерча, 2 - админ фш):")
     await state.set_state(AdminStates.waiting_level)
 
@@ -82,12 +82,11 @@ async def process_number(callback: types.CallbackQuery, state: FSMContext):
     _, number, username, admin_level = callback.data.split(':')
 
     try:
-        await add_admin(username, admin_level)
+        await process_admin_creation(callback.message, username, admin_level)
         await update_admin_questnum(username, int(number))
         await callback.message.answer(
             f"✅ Админу {username} назначена станция №{number}."
         )
-        await process_admin_creation(callback.message, username, int(admin_level))
     except Exception as e:
         await callback.message.answer(f"❌ Ошибка: {str(e)}")
 
@@ -96,7 +95,7 @@ async def process_number(callback: types.CallbackQuery, state: FSMContext):
 
 async def process_admin_creation(message: types.Message, username: str, admin_level: int):
     try:
-        user = await get_user_by_username(username.lstrip)
+        user = await get_user_by_username(username.lstrip('@'))
 
         if user:
             await message.bot.send_message(
