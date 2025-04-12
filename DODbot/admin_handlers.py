@@ -193,8 +193,10 @@ def start_quiz(call):
         bot.send_message(call.message.chat.id, f"❌ {e}")
 
 
+
 @bot.callback_query_handler(func=lambda call: call.data.startswith("next_question:"))
 def send_next_question(call):
+   return
    bot.answer_callback_query(call.id)
    _, quiz_id, question_number = call.data.split(":")
    quiz_id, question_number = int(quiz_id), int(question_number)
