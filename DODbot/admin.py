@@ -4,7 +4,9 @@ from database import db_manager
 import openpyxl
 from openpyxl.styles import Font, PatternFill
 import asyncio
-
+from io import BytesIO
+from openpyxl import Workbook
+from aiogram.types import BufferedInputFile
 
 async def init_admins():
     try:
@@ -90,31 +92,24 @@ async def update_admin_questnum(username: str, new_value: int):
         await conn.commit()
 
 
-async def save_admins_to_excel() -> BufferedInputFile:
-    admins = await get_all_admins()
+async def save_admins_to_excel(bot) -> BufferedInputFile:
+    admins = await get_all_admins()  # Предполагается асинхронная реализация
 
-    if not admins:
-        return None
+    # Создание Excel файла
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append(["Username", "Level", "Station"])
 
-    # Синхронные операции выполняем в отдельном потоке
-    def generate_excel():
-        workbook = openpyxl.Workbook()
-        sheet = workbook.active
-        sheet.title = "Админы"
-        sheet.append(["Adminname", "Level", "Station"])
+    for admin in admins:
+        sheet.append([admin.username, admin.level, admin.station])
 
-        for admin in admins:
-            sheet.append(list(admin))
+    # Сохранение в байтовый поток
+    buffer = BytesIO()
+    workbook.save(buffer)
+    buffer.seek(0)
 
-        filename = "admins.xlsx"
-        workbook.save(filename)
-        return filename
-
-    loop = asyncio.get_event_loop()
-    filename = await loop.run_in_executor(None, generate_excel)
-
-    with open(filename, 'rb') as file:
-        return BufferedInputFile(file.read(), filename="admins_list.xlsx")
+    # Возвращаем файл для отправки
+    return BufferedInputFile(buffer.read(), filename="admins.xlsx")
 
 
 async def get_admin_by_username(username: str):

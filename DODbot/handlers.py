@@ -3,7 +3,7 @@ from aiogram import Bot, types, F
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 from aiogram.enums import ParseMode
 from aiogram.filters import Command
-from aiogram.types import InputFile
+from aiogram.types import FSInputFile
 
 from keyboard import main_keyboard, admin_keyboard, pro_admin_keyboard, mipt_admin_keyboard, quest_keyboard, quest_started_keyboard, continue_quest_keyboard, activity_keyboard
 from users import add_user, start_quest, is_quest_started, check_points, check_st_points, get_user_by_username
@@ -79,7 +79,7 @@ async def start_handler(m: types.Message):
     await bot.set_my_commands(commands)
 
     if current_username in admin_usernames:
-        
+
         admin_level = get_admin_level(current_username)
         print(f"Уровень админства для {current_username}: {admin_level}")
         if admin_level == 0:
@@ -113,8 +113,8 @@ async def start_handler(m: types.Message):
 
 async def do_action(message, photo_url):
     try:
-        with open(photo_url, "rb") as photo:
-            await message.answer_photo(photo, caption="Ваше местоположение:")
+        photo = FSInputFile(photo_url)
+        await message.answer_photo(photo, caption="Ваше местоположение:")
     except Exception as e:
         await message.answer(f"Ошибка: {str(e)}")
 
@@ -130,7 +130,7 @@ async def do_action(message, photo_url):
 @router.message(F.text == "📅 Расписание лекций")
 async def send_schedule_photo(m):
     try:
-       photo_file = InputFile("img/schedule.png")
+       photo_file = FSInputFile("img/schedule.png")
        await m.answer_photo(photo=photo_file, caption="📅 Расписание лекций:")
     except Exception as e:
         await m.answer(f"Ошибка: {str(e)}")
