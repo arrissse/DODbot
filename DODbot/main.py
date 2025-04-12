@@ -14,19 +14,6 @@ logger = logging.getLogger(__name__)
 dp.include_router(router)
 WEBHOOK_URL = "https://fest.mipt.ru/your-webhook-path"
 
-def register_all_handlers(dp):
-    users.register(dp)
-    admin.register(dp)
-    handlers.register(dp)
-    admin_handlers.register(dp)
-    newsletter.register(dp)
-    add_admin.register(dp)
-    merch.register(dp)
-    quiz.register(dp)
-    set_points.register(dp)
-
-register_all_handlers(dp)
-
 app = Flask(__name__)
 
 
