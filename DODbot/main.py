@@ -5,7 +5,7 @@ from database import db_manager
 import asyncio
 import logging
 import newsletter
-from . import users, admin, handlers, admin_handlers, newsletter, add_admin, merch, quiz, set_points
+import users, admin, handlers, admin_handlers, newsletter, add_admin, merch, quiz, set_points
 
 
 logging.basicConfig(level=logging.INFO)
