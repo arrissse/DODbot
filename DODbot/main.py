@@ -2,6 +2,9 @@ from flask import Flask, request
 from aiogram import types
 from bot import bot, dp, router
 from database import db_manager
+from aiogram.enums import ParseMode
+from aiogram.webhook.aiohttp_server import SimpleRequestHandler
+from aiohttp import web
 import asyncio
 import logging
 import newsletter
@@ -53,10 +56,36 @@ async def on_startup():
     asyncio.create_task(newsletter.newsletter_scheduler())
 
 
-async def on_shutdown(dispatcher):
+async def on_shutdown():
     await bot.delete_webhook()
+    await dp.storage.close()
+
+WEBHOOK_URL = "https://fest.mipt.ru/your-webhook-path"
+WEB_SERVER_HOST = "0.0.0.0"
+WEB_SERVER_PORT = 10181
+
+async def main():
+    await on_startup()
+
+    app = web.Application()
+    handler = SimpleRequestHandler(dp, bot)
+    handler.register(app, path="/your-webhook-path")
+
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, WEB_SERVER_HOST, WEB_SERVER_PORT)
+
+    try:
+        await site.start()
+        logging.info("Сервер успешно запущен")
+        await asyncio.Event().wait()
+    finally:
+        await runner.cleanup()
+        await on_shutdown()
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(on_startup())
-    app.run(host="0.0.0.0", port=10181)
+    logging.basicConfig(level=logging.INFO)
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logging.info("Бот остановлен")
