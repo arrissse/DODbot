@@ -3,6 +3,7 @@ from aiogram import Bot, types, F
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 from aiogram.enums import ParseMode
 from aiogram.filters import Command
+from aiogram.types import InputFile
 
 from keyboard import main_keyboard, admin_keyboard, pro_admin_keyboard, mipt_admin_keyboard, quest_keyboard, quest_started_keyboard, continue_quest_keyboard, activity_keyboard
 from users import add_user, start_quest, is_quest_started, check_points, check_st_points, get_user_by_username
@@ -127,10 +128,9 @@ async def do_action(message, photo_url):
 
 @router.message(F.text == "📅 Расписание лекций")
 async def send_schedule_photo(m):
-    photo_url = "img/schedule.png"
     try:
-        with open(photo_url, "rb") as photo:
-            await m.answer_photo(photo, caption="📅 Расписание лекций:")
+       photo_file = InputFile("img/schedule.png")
+       await m.answer_photo(photo=photo_file, caption="📅 Расписание лекций:")
     except Exception as e:
         await m.answer(f"Ошибка: {str(e)}")
 
