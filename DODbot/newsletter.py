@@ -1,22 +1,30 @@
-import sqlite3
-import time
+from bot import bot, router, dp
+from aiogram import F
+import logging
 from datetime import datetime
-from bot import bot
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram import Bot, Router, F
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+from database import db_manager
 from users import get_all_users
 from admin import get_admin_by_username
-import threading
-import logging
-from database import db_manager
+import asyncio
 
-pending_newsletters = {}
+router = Router()
+logger = logging.getLogger(__name__)
 
 
-def create_db():
-    """Создание таблицы newsletter с улучшенной структурой"""
+class NewsletterStates(StatesGroup):
+    waiting_text = State()
+    waiting_time = State()
+
+
+async def create_db():
+    """Создание таблицы newsletter"""
     try:
-        with db_manager.get_connection() as conn:
-            conn.execute("""
+        async with db_manager.get_async_connection() as conn:
+            await conn.execute("""
                 CREATE TABLE IF NOT EXISTS newsletter (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     message TEXT NOT NULL,
@@ -24,245 +32,137 @@ def create_db():
                     sent BOOLEAN DEFAULT FALSE
                 )
             """)
-            print("✅ Таблица newsletter создана/проверена")
-        logger.info("✅ Таблица newsletter создана/проверена")
-    except sqlite3.Error as e:
+            logger.info("✅ Таблица newsletter создана/проверена")
+    except Exception as e:
         logger.error(f"❌ Ошибка создания таблицы: {str(e)}")
         raise
 
-def add_newsletter(message, send_time):
-    """Добавление рассылки с обработкой ошибок"""
+
+@router.message(F.text == "Отправить рассылку")
+async def handle_newsletter_start(message: Message, state: FSMContext):
+    """Обработчик начала создания рассылки"""
     try:
-        dt = datetime.strptime(send_time, '%Y-%m-%d %H:%M')
-        formatted_time = dt.isoformat()
-
-        with db_manager.get_connection() as conn:
-            conn.execute(
-                "INSERT INTO newsletter (message, send_time) VALUES (?, ?)",
-                (message, formatted_time))
-            
-
-    except ValueError as e:
-        bot.send_message(message.chat.id, f"❌ Ошибка формата времени: {e}")
-    except Exception as e:
-        bot.send_message(message.chat.id, f"❌ Ошибка добавления рассылки: {e}")
-
-            
-def send_newsletter():
-    """Улучшенная логика рассылки с блокировками"""
-    while True:
-        try:
-            current_time = datetime.now().isoformat()
-
-            with db_manager.get_connection() as conn:
-                # Выбираем неотправленные рассылки
-                cursor = conn.execute("""
-                    SELECT id, message 
-                    FROM newsletter 
-                    WHERE send_time <= ? AND sent = FALSE
-                """, (current_time,))
-
-                newsletters = cursor.fetchall()
-
-                if newsletters:
-                    users = get_all_users()
-                    for newsletter_id, message in newsletters:
-                        send_to_users(message, users)
-
-                        # Помечаем как отправленные
-                        conn.execute(
-                            "UPDATE newsletter SET sent = TRUE WHERE id = ?",
-                            (newsletter_id,)
-                        )
-                        
-
-            time.sleep(60)
-
-        except Exception as e:
-            logger.error(f"❌ Ошибка в цикле рассылки: {e}")
-            time.sleep(10)
-
-
-def send_to_users(message, users):
-    """Отправка сообщений пользователям с обработкой исключений"""
-    success = errors = 0
-    for user_id, *_ in users:  # Предполагаем структуру (id, ...)
-        try:
-            bot.send_message(user_id, message)
-            success += 1
-        except Exception as e:
-            bot.send_message(
-                message.chat.id, f"❌ Ошибка отправки {user_id}: {str(e)}")
-            errors += 1
-    bot.send_message(
-        message.chat.id, f"✅ Отправлено: {success} | ❌ Ошибок: {errors}")
-
-
-logger = logging.getLogger(__name__)
-pending_newsletters = {}
-
-
-def start_sending_newsletters():
-    """Запуск фонового потока для рассылки с обработкой исключений"""
-    try:
-        thread = threading.Thread(
-            target=send_newsletter,
-            name="NewsletterThread",
-            daemon=True
-        )
-        thread.start()
-        logger.info("Фоновый поток рассылки запущен")
-    except Exception as e:
-        logger.error(f"Ошибка запуска потока: {e}")
-
-
-@bot.message_handler(func=lambda message: message.text == "Отправить рассылку")
-def ask_newsletter_text(message):
-    """Обработчик команды рассылки с проверкой прав"""
-    try:
-        username = f"@{message.from_user.username}"
-        user = get_admin_by_username(username)
-
-        if user and user.level == 0:  # Предполагаем использование объектов-моделей
-            msg = bot.send_message(
-                message.chat.id, "📝 Введите текст рассылки:")
-            bot.register_next_step_handler(msg, ask_send_time)
+        user = await get_admin_by_username(f"@{message.from_user.username}")
+        if user and user.level == 0:
+            await message.answer("📝 Введите текст рассылки:")
+            await state.set_state(NewsletterStates.waiting_text)
         else:
-            bot.send_message(message.chat.id, "❌ Доступ запрещен")
-
+            await message.answer("❌ Доступ запрещен")
     except Exception as e:
-        logger.error(f"Ошибка в ask_newsletter_text: {e}")
-        bot.send_message(
-            message.chat.id, "⚠️ Произошла ошибка, попробуйте позже")
+        logger.error(f"Ошибка в handle_newsletter_start: {e}")
+        await message.answer("⚠️ Произошла ошибка, попробуйте позже")
 
 
-def ask_send_time(message):
-    """Сохранение текста рассылки и запрос времени"""
-    try:
-        chat_id = message.chat.id
-        if not message.text:
-            raise ValueError("Пустой текст рассылки")
+@router.message(NewsletterStates.waiting_text)
+async def process_newsletter_text(message: Message, state: FSMContext):
+    """Обработка текста рассылки"""
+    await state.update_data(text=message.text)
 
-        pending_newsletters[chat_id] = {
-            'text': message.text,
-            'timestamp': datetime.now()
-        }
+    markup = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🚀 Сейчас", callback_data="send_now")],
+        [InlineKeyboardButton(text="⏳ Позже", callback_data="schedule_later")]
+    ])
 
-        markup = InlineKeyboardMarkup(row_width=2)
-        markup.add(
-            InlineKeyboardButton(
-                "🚀 Сейчас", callback_data=f"send_now_{chat_id}"),
-            InlineKeyboardButton(
-                "⏳ Позже", callback_data=f"schedule_later_{chat_id}")
-        )
-
-        bot.send_message(chat_id, "⏰ Выберите время отправки:",
-                         reply_markup=markup)
-
-    except Exception as e:
-        logger.error(f"Ошибка в ask_send_time: {e}")
-        bot.send_message(message.chat.id, "❌ Ошибка обработки запроса")
+    await message.answer("⏰ Выберите время отправки:", reply_markup=markup)
+    await state.set_state(NewsletterStates.waiting_time)
 
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith(("send_now", "schedule_later")))
-def handle_send_option(call):
+@router.callback_query(NewsletterStates.waiting_time, F.data.in_(["send_now", "schedule_later"]))
+async def handle_send_option(callback: CallbackQuery, state: FSMContext, bot: Bot):
     """Обработка выбора времени рассылки"""
     try:
-        chat_id = int(call.data.split("_")[-1])
-        data = pending_newsletters.get(chat_id)
+        data = await state.get_data()
+        text = data['text']
 
-        if not data:
-            raise ValueError("Данные рассылки не найдены")
-
-        if call.data.startswith("send_now"):
-            # Запуск в отдельном потоке для избежания блокировки
-            threading.Thread(
-                target=send_newsletter_now,
-                args=(data['text'],)
-            ).start()
-
-            bot.send_message(
-                chat_id,
-                f"✅ Рассылка начата!\nСтек: {len(data['text'])} символов",
-                parse_mode="Markdown"
-            )
+        if callback.data == "send_now":
+            await start_immediate_newsletter(bot, text)
+            await callback.message.answer("✅ Рассылка начата!")
         else:
-            msg = bot.send_message(
-                chat_id,
-                "📅 Введите дату и время в формате:\nYYYY-MM-DD HH:MM\n(Например: 2025-03-28 14:30)"
-            )
-            bot.register_next_step_handler(
-                msg, schedule_newsletter, data['text'])
+            await callback.message.answer("📅 Введите дату и время в формате:\nYYYY-MM-DD HH:MM\n(Например: 2025-03-28 14:30)")
+            await state.set_state(NewsletterStates.waiting_time)
 
-        # Очистка временных данных
-        del pending_newsletters[chat_id]
+        await state.clear()
 
     except Exception as e:
         logger.error(f"Ошибка в handle_send_option: {e}")
-        bot.answer_callback_query(call.id, "❌ Ошибка обработки запроса")
+        await callback.answer("❌ Ошибка обработки запроса")
 
 
-def schedule_newsletter(message, text):
-    """Планирование рассылки на определенное время"""
+@router.message(NewsletterStates.waiting_time)
+async def process_send_time(message: Message, state: FSMContext, bot: Bot):
+    """Обработка времени для отложенной рассылки"""
     try:
-        chat_id = message.chat.id
-        send_time = message.text.strip()
+        data = await state.get_data()
+        text = data['text']
 
-        # Валидация даты
         try:
-            dt = datetime.strptime(send_time, '%Y-%m-%d %H:%M')
+            dt = datetime.strptime(message.text, '%Y-%m-%d %H:%M')
             if dt < datetime.now():
                 raise ValueError("Дата в прошлом")
 
+            async with db_manager.get_async_connection() as conn:
+                await conn.execute(
+                    "INSERT INTO newsletter (message, send_time) VALUES (?, ?)",
+                    (text, dt.isoformat())
+                )
+                await conn.commit()
+
+            await message.answer(f"✅ Запланировано на {message.text}!")
+
         except ValueError as e:
-            error_msg = {
-                "Дата в прошлом": "⏳ Нельзя планировать в прошлое время!",
-                "unconverted data remains": "⚠️ Неверный формат времени"
-            }.get(str(e), "❌ Некорректная дата")
-
-            raise ValueError(error_msg)
-
-        # Добавление в базу данных
-        with db_manager.get_connection() as conn:
-            conn.execute(
-                "INSERT INTO newsletter (message, send_time) VALUES (?, ?)",
-                (text, dt.isoformat())
-            )
-            
-
-        bot.send_message(
-            chat_id,
-            f"✅ Запланировано на {send_time}!\nСообщение: {text[:50]}...",
-            parse_mode="Markdown"
-        )
+            error_msg = "❌ Некорректная дата или время" if "unconverted" in str(
+                e) else "⏳ Нельзя планировать в прошлое!"
+            await message.answer(error_msg)
 
     except Exception as e:
-        logger.error(f"Ошибка в schedule_newsletter: {e}")
+        logger.error(f"Ошибка в process_send_time: {e}")
+    finally:
+        await state.clear()
 
 
-def send_newsletter_now(text):
-    """Мгновенная рассылка с обработкой исключений"""
+async def start_immediate_newsletter(bot: Bot, text: str):
+    """Мгновенная рассылка"""
     try:
-        users = get_all_users()
+        users = await get_all_users()
         total = len(users)
         success = 0
 
         logger.info(f"Начало рассылки для {total} пользователей")
 
-        for idx, user in enumerate(users, 1):
+        for user in users:
             try:
-                bot.send_message(user.id, text)
+                await bot.send_message(user[0], text)
                 success += 1
-
-                # Логирование прогресса
-                if idx % 50 == 0:
-                    logger.info(f"Отправлено {idx}/{total} сообщений")
-
             except Exception as e:
-                logger.warning(f"Ошибка отправки пользователю {user.id}: {e}")
+                logger.warning(f"Ошибка отправки пользователю {user[0]}: {e}")
 
         logger.info(f"Рассылка завершена. Успешно: {success}/{total}")
 
     except Exception as e:
         logger.error(f"Критическая ошибка рассылки: {e}")
 
+
+async def newsletter_scheduler(bot: Bot):
+    """Фоновая задача для проверки запланированных рассылок"""
+    while True:
+        try:
+            now = datetime.now().isoformat()
+
+            async with db_manager.get_async_connection() as conn:
+                cursor = await conn.execute("""
+                    SELECT id, message 
+                    FROM newsletter 
+                    WHERE send_time <= ? AND sent = FALSE
+                """, (now,))
+
+                newsletters = await cursor.fetchall()
+
+                for newsletter_id, message in newsletters:
+                    await start_immediate_newsletter(bot, message)
+                    await conn.execute("UPDATE newsletter SET sent = TRUE WHERE id = ?", (newsletter_id,))
+                    await conn.commit()
+
+        except Exception as e:
+            logger.error(f"Ошибка в newsletter_scheduler: {e}")
+
+        await asyncio.sleep(60)

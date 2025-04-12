@@ -1,137 +1,14 @@
-from bot import bot
-from telebot import types
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from bot import bot, dp, router
+from aiogram import Bot, types, F
+from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
+from aiogram.enums import ParseMode
+from aiogram.filters import Command
+
+
 from keyboard import main_keyboard, admin_keyboard, pro_admin_keyboard, mipt_admin_keyboard, quest_keyboard, quest_started_keyboard, continue_quest_keyboard, activity_keyboard
 from users import add_user, start_quest, is_quest_started, check_points, check_st_points, get_user_by_username
 from admin import get_all_admins, add_admin, get_admin_level
-from telebot.types import BotCommand
-
-'''
------------------------
-
-Старт + обработка QR-кодов
-
------------------------
-'''
-
-
-@bot.message_handler(commands=["start"])
-def start(m):
- try:
-    add_user(m.chat.id, m.from_user.username)
-    current_username = '@' + m.from_user.username
-    admins = get_all_admins()
-    admin_usernames = [admin[0] for admin in admins]
-    print(admin_usernames)
-    keyboard = main_keyboard()
-
-    print(f"Список админов: {admin_usernames}")
-    print(f"Пользователь: {current_username}")
-
-    bot.set_my_commands([BotCommand("start", "Перезапустить бота")])
-
-    if current_username in admin_usernames:
-        admin_level = get_admin_level(current_username)
-        print(f"Уровень админства для {current_username}: {admin_level}")
-        if admin_level == 0:
-            keyboard = pro_admin_keyboard()
-        elif admin_level == 1:
-            keyboard = admin_keyboard()
-        elif admin_level == 2:
-            keyboard = mipt_admin_keyboard()
-        bot.send_message(m.chat.id, "🔑 Админ-меню:", reply_markup=keyboard)
-    else:
-        add_user(m.chat.id, m.from_user.username)
-        bot.send_message(m.chat.id, "📌 Выберите действие:",
-                         reply_markup=keyboard)
-    parts = m.text.split()
-    if len(parts) > 1:
-        param = parts[1]
-
-        try:
-            if int(param[-2:]) >= 10:
-                name = param[-2:]
-            else:
-                name = param[-1]
-        except ValueError:
-            name = param[-1]
-
-        photo_url = f"img/{name}.png"
-        do_action(m, photo_url)
- except Exception as e:
-     bot.send_message(m.chat.id, e)
-
-
-def do_action(message, photo_url):
-    with open(photo_url, "rb") as photo:
-        bot.send_photo(message.chat.id, photo, caption="Ваше местоположение: ")
-
-
-'''
------------------------
-
-Расписание лекций
-
------------------------
-'''
-
-
-@bot.message_handler(func=lambda message: message.text == "📅 Расписание лекций")
-def send_schedule_photo(m):
-    photo_url = "img/schedule.png"
-    try:
-        with open(photo_url, "rb") as photo:
-            bot.send_photo(m.chat.id, photo, caption="📅 Расписание лекций:")
-    except Exception as e:
-        bot.send_message(m.chat.id, f"Ошибка при отправке: {e}")
-
-
-'''
------------------------
-
-Квест
-
------------------------
-'''
-
-
-@bot.message_handler(func=lambda message: message.text == "🎯 Квест")
-def qwest(message):
-    if is_quest_started(message.from_user.username):
-        keyboard = quest_started_keyboard()
-    else:
-        keyboard = quest_keyboard()
-    bot.send_message(message.chat.id, "*Описание квеста*",
-                     reply_markup=keyboard)
-    bot.send_message(message.chat.id, "Выберите действие:",
-                     reply_markup=keyboard)
-
-
-@bot.message_handler(func=lambda message: message.text == "▶️ Начать")
-def start(message):
-    start_quest(message.from_user.username)
-    markup = continue_quest_keyboard()
-    bot.send_message(message.chat.id, "Выберите станцию:", reply_markup=markup)
-
-
-@bot.message_handler(func=lambda message: message.text == "▶️ Продолжить")
-def continue_quest(message):
-    markup = continue_quest_keyboard()
-    bot.send_message(message.chat.id, "Выберите станцию:", reply_markup=markup)
-
-
-@bot.message_handler(func=lambda message: message.text == "⬅️ Назад")
-def back(message):
-    bot.send_message(message.chat.id, "Вы снова в главном меню",
-                     reply_markup=main_keyboard())
-
-
-def send_quest_points(message, username, station):
-    bot.send_message(
-        message.chat.id, f"Всего баллов: {check_points(username)}", reply_markup=quest_started_keyboard())
-    bot.send_message(
-        message.chat.id, f"Баллы за данную станцию: {check_st_points(username, station)}", reply_markup=quest_started_keyboard())
-
+from aiogram.types import BotCommand
 
 stations = {
     "станция ФРКТ": 1,
@@ -161,80 +38,6 @@ station_place = [
     "Физтех.Арктика 4 этаж"
 ]
 
-
-@bot.message_handler(func=lambda message: message.text in stations)
-def handle_station(message):
-  try:
-    station_number = stations[message.text]
-    st_place = station_place[station_number - 1]
-    username = message.from_user.username
-    markup = InlineKeyboardMarkup()
-
-    markup.add(InlineKeyboardButton(
-        "Код для участия", callback_data=f'code:{username}'))
-
-    markup.add(InlineKeyboardButton(
-        "Баллы", callback_data=f"points:{username}:{station_number}"))
-    bot.send_message(message.chat.id, f"Расположение {message.text}: {st_place}", reply_markup=markup)
-  except Exception as e:
-    bot.send_message(
-        message.chat.id, e)
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith("code:"))
-def send_code(call):
-    bot.answer_callback_query(call.id)
-    _, username = call.data.split(":")
-    bot.send_message(call.message.chat.id,
-                     f"Сообщите на станции ваш код: {username}")
-
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith("points:"))
-def send_pts(call):
-    bot.answer_callback_query(call.id)
-    _, username, station_number = call.data.split(":")
-    send_quest_points(call.message, username, station_number)
-
-
-'''
------------------------
-
-Карта
-
------------------------
-'''
-
-
-@bot.message_handler(func=lambda message: message.text == "🗺 Карта")
-def send_map_photo(message):
-    photo_url = "img/map.png"
-    try:
-        with open(photo_url, "rb") as photo:
-            bot.send_photo(message.chat.id, photo,
-                           caption="🗺 Карта института:")
-    except Exception as e:
-        bot.send_message(message.chat.id, f"Ошибка при отправке: {e}")
-
-
-'''
------------------------
-
-Расположение стендов
-
------------------------
-'''
-
-
-@bot.message_handler(func=lambda message: message.text == "📍 Расположение стендов")
-def send_map_photo(message):
-    photo_url = "img/stand.png"
-    try:
-        with open(photo_url, "rb") as photo:
-            bot.send_photo(message.chat.id, photo,
-                           caption="📍 Расположение стендов:")
-    except Exception as e:
-        bot.send_message(message.chat.id, f"Ошибка при отправке: {e}")
-
-
 schools = {
     "ФРКТ": 1,
     "ЛФИ": 2,
@@ -249,25 +52,216 @@ schools = {
     "ПИШ РПИ": 11
 }
 
+'''
+-----------------------
 
-def send_activity(message, school):
-    photo_url = f"img/activities/{school}.png"
+Старт + обработка QR-кодов
+
+-----------------------
+'''
+
+
+@router.message(Command("start"))
+async def start_handler(m: types.Message):
+ try:
+    user = m.from_user
+    await add_user(m.chat.id, user.username)
+    current_username = f"@{user.username}"
+    admins = await get_all_admins()
+    admin_usernames = [admin[0] for admin in admins]
+    print(admin_usernames)
+
+    print(f"Список админов: {admin_usernames}")
+    print(f"Пользователь: {current_username}")
+
+    keyboard = main_keyboard()
+    commands = [BotCommand(command="start", description="Перезапустить бота")]
+    await bot.set_my_commands(commands)
+
+    if current_username in admin_usernames:
+        admin_level = get_admin_level(current_username)
+        print(f"Уровень админства для {current_username}: {admin_level}")
+        if admin_level == 0:
+            keyboard = pro_admin_keyboard()
+        elif admin_level == 1:
+            keyboard = admin_keyboard()
+        elif admin_level == 2:
+            keyboard = mipt_admin_keyboard()
+        await m.answer("🔑 Админ-меню:", reply_markup=keyboard)
+    else:
+        add_user(m.chat.id, user.username)
+        await m.answer("📌 Выберите действие:", reply_markup=keyboard)
+
+    parts = m.text.split()
+    if len(parts) > 1:
+        param = parts[1]
+
+        try:
+            if int(param[-2:]) >= 10:
+                name = param[-2:]
+            else:
+                name = param[-1]
+        except ValueError:
+            name = param[-1]
+
+        photo_url = f"img/{name}.png"
+        await do_action(m, photo_url)
+ except Exception as e:
+     await m.answer(str(e))
+
+
+async def do_action(message, photo_url):
     try:
         with open(photo_url, "rb") as photo:
-            bot.send_photo(message.chat.id, photo)
+            await message.answer_photo(photo, caption="Ваше местоположение:")
     except Exception as e:
-        bot.send_message(message.chat.id, f"Ошибка при отправке: {e}")
+        await message.answer(f"Ошибка: {str(e)}")
+
+'''
+-----------------------
+
+Расписание лекций
+
+-----------------------
+'''
 
 
-@bot.message_handler(func=lambda message: message.text == "🧩 Активности ФШ")
-def school(message):
-    markup = activity_keyboard()
-    bot.send_message(message.chat.id, "Выберите ФШ:", reply_markup=markup)
+@router.message(F.text == "📅 Расписание лекций")
+async def send_schedule_photo(m):
+    photo_url = "img/schedule.png"
+    try:
+        with open(photo_url, "rb") as photo:
+            await m.answer_photo(photo, caption="📅 Расписание лекций:")
+    except Exception as e:
+        await m.answer(f"Ошибка: {str(e)}")
 
 
-@bot.message_handler(func=lambda message: message.text in schools)
-def handle_activity(message):
-    schools_number = schools[message.text]
-    bot.send_message(message.chat.id, message.text,
-                     reply_markup=activity_keyboard())
-    send_activity(message, schools_number)
+'''
+-----------------------
+
+Квест
+
+-----------------------
+'''
+
+
+@router.message(F.text == "🎯 Квест")
+async def quest_handler(message):
+    if await is_quest_started(message.from_user.username):
+        keyboard = quest_started_keyboard()
+    else:
+        keyboard = quest_keyboard()
+    await message.answer("*Описание квеста*", reply_markup=keyboard)
+    await message.answer("Выберите действие:", reply_markup=keyboard)
+
+
+@router.message(F.text == "▶️ Начать")
+async def start_quest_handler(message: types.Message):
+    await start_quest(message.from_user.username)
+    await message.answer("Выберите станцию:", reply_markup=continue_quest_keyboard())
+
+
+@router.message(F.text == "▶️ Продолжить")
+async def continue_quest_handler(message: types.Message):
+    await message.answer("Выберите станцию:", reply_markup=continue_quest_keyboard())
+
+
+@router.message(F.text == "⬅️ Назад")
+async def back_handler(message: types.Message):
+    await message.answer("Вы снова в главном меню", reply_markup=main_keyboard())
+
+
+async def send_quest_points(message: types.Message, username: str, station: str):
+    points = await check_points(username)
+    st_points = await check_st_points(username, station)
+    await message.answer(f"Всего баллов: {points}\nБаллы за станцию: {st_points}", reply_markup=quest_started_keyboard())
+
+@router.message(F.text.in_(stations))
+async def handle_station(message: types.Message):
+    try:
+        station_number = stations[message.text]
+        st_place = station_place[station_number - 1]
+        username = message.from_user.username
+
+        builder = InlineKeyboardBuilder()
+        builder.button(text="Код для участия",
+                       callback_data=f"code:{username}")
+        builder.button(
+            text="Баллы", callback_data=f"points:{username}:{station_number}")
+
+        await message.answer(f"Расположение {message.text}: {st_place}", reply_markup=builder.as_markup())
+    except Exception as e:
+        await message.answer(str(e))
+
+
+@router.callback_query(F.data.startswith("code:"))
+async def send_code(callback: types.CallbackQuery):
+    _, username = callback.data.split(":")
+    await callback.message.answer(f"Сообщите на станции ваш код: {username}")
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("points:"))
+async def send_pts(callback: types.CallbackQuery):
+    _, username, station_number = callback.data.split(":")
+    await send_quest_points(callback.message, username, station_number)
+    await callback.answer()
+
+
+'''
+-----------------------
+
+Карта
+
+-----------------------
+'''
+
+
+@router.message(F.text == "🗺 Карта")
+async def send_map_photo(message: types.Message):
+    try:
+        with open("img/map.png", "rb") as photo:
+            await message.answer_photo(photo, caption="🗺 Карта института:")
+    except Exception as e:
+        await message.answer(f"Ошибка: {str(e)}")
+
+
+'''
+-----------------------
+
+Расположение стендов
+
+-----------------------
+'''
+
+
+@router.message(F.text == "📍 Расположение стендов")
+async def send_stands_photo(message: types.Message):
+    try:
+        with open("img/stand.png", "rb") as photo:
+            await message.answer_photo(photo, caption="📍 Расположение стендов:")
+    except Exception as e:
+        await message.answer(f"Ошибка: {str(e)}")
+
+
+'''
+-----------------------
+
+Активности ФШ
+
+-----------------------
+'''
+
+@router.message(F.text == "🧩 Активности ФШ")
+async def school_handler(message: types.Message):
+    await message.answer("Выберите ФШ:", reply_markup=activity_keyboard())
+
+
+@router.message(F.text.in_(schools))
+async def handle_activity(message: types.Message):
+    try:
+        school_number = schools[message.text]
+        with open(f"img/activities/{school_number}.png", "rb") as photo:
+            await message.answer_photo(photo)
+    except Exception as e:
+        await message.answer(f"Ошибка: {str(e)}")

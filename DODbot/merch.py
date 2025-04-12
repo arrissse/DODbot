@@ -1,154 +1,149 @@
 import openpyxl
 from database import db_manager
+import asyncpg
 
 
-def create_merch_table():
-  with db_manager.get_connection() as conn:
-    cursor = conn.cursor()
+async def create_merch_table():
+    async with db_manager.pool.acquire() as conn:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS merch (
+                username TEXT UNIQUE,
+                "Раскрасить футболку" INTEGER DEFAULT 0,
+                "Раскрасить шоппер" INTEGER DEFAULT 0,
+                "Футболка" INTEGER DEFAULT 0,
+                "Блокнот" INTEGER DEFAULT 0,
+                "ПБ" INTEGER DEFAULT 0
+            )
+        """)
 
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS merch (
-            username TEXT UNIQUE,                 -- Имя пользователя (@username)
-            "Раскрасить футболку" INTEGER DEFAULT 0,  -- раскрасить футболку (7)
-            "Раскрасить шоппер" INTEGER DEFAULT 0,   -- раскрасить шоппер (5)
-            "Футболка" INTEGER DEFAULT 0,           -- получить футболку (8)
-            "Блокнот" INTEGER DEFAULT 0,           -- блокнот (2)
-            "ПБ" INTEGER DEFAULT 0                 -- ПБ (15)
+
+async def is_valid_column(column_name: str) -> bool:
+    async with db_manager.pool.acquire() as conn:
+        columns = await conn.fetch(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_name = 'merch'"
         )
-    """)
+        return any(column['column_name'] == column_name for column in columns)
 
 
-def is_valid_column(column_name):
-    with db_manager.get_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute("PRAGMA table_info(merch);")
-        columns = [col[1] for col in cursor.fetchall()]
-        return column_name in columns
-
-
-def got_merch(username, type):
-    if not is_valid_column(type):
+async def got_merch(username: str, type: str) -> bool:
+    if not await is_valid_column(type):
         raise ValueError(f"Недопустимое имя колонки: {type}")
 
-    with db_manager.get_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
-        cursor.execute(
-            f'SELECT "{type}" FROM merch WHERE username = ?', (username,))
-        result = cursor.fetchone()
-        return result and result[0] == 1
+    async with db_manager.pool.acquire() as conn:
+        await conn.execute(
+            "INSERT INTO merch (username) VALUES ($1) ON CONFLICT (username) DO NOTHING",
+            username
+        )
+        result = await conn.fetchval(
+            f'SELECT "{type}" FROM merch WHERE username = $1',
+            username
+        )
+        return result == 1
 
 
-def give_merch(username, type):
-    if not is_valid_column(type):
+async def give_merch(username: str, type: str):
+    if not await is_valid_column(type):
         raise ValueError(f"Недопустимое имя колонки: {type}")
 
-    with db_manager.get_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
-        cursor.execute(
-            f'UPDATE merch SET "{type}" = 1 WHERE username = ?', (username,))
-        conn.commit()
+    async with db_manager.pool.acquire() as conn:
+        await conn.execute(
+            "INSERT INTO merch (username) VALUES ($1) ON CONFLICT (username) DO NOTHING",
+            username
+        )
+        await conn.execute(
+            f'UPDATE merch SET "{type}" = 1 WHERE username = $1',
+            username
+        )
 
 
-def is_got_merch(username):
-  with db_manager.get_connection() as conn:
-    cursor = conn.cursor()
+async def is_got_merch(username: str) -> bool:
+    async with db_manager.pool.acquire() as conn:
+        await conn.execute(
+            "INSERT INTO merch (username) VALUES ($1) ON CONFLICT (username) DO NOTHING",
+            username
+        )
 
-    cursor.execute(
-        "INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
+        columns = await conn.fetch(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_name = 'merch' AND data_type IN ('integer', 'real')"
+        )
+        numeric_columns = [col['column_name']
+                           for col in columns if col['column_name'] != 'username']
 
-    cursor.execute("PRAGMA table_info(merch);")
-    columns = cursor.fetchall()
+        if not numeric_columns:
+            return False
 
-    numeric_columns = [col[1] for col in columns if col[1]
-                       != 'username' and col[2] in ('INTEGER', 'REAL')]
-
-    if not numeric_columns:
-        
-        return False
-
-    sum_query = " + ".join(
-        [f'COALESCE("{col}", 0)' for col in numeric_columns])
-
-    query = f"SELECT {sum_query} FROM merch WHERE username = ?"
-    cursor.execute(query, (username,))
-
-    result = cursor.fetchone()
-    
-
-    return result[0] == len(numeric_columns)
+        sum_query = " + ".join([f'"{col}"' for col in numeric_columns])
+        result = await conn.fetchval(
+            f"SELECT ({sum_query}) = {len(numeric_columns)} FROM merch WHERE username = $1",
+            username
+        )
+        return bool(result)
 
 
-def is_got_any_merch(username):
-  with db_manager.get_connection() as conn:
-    cursor = conn.cursor()
+async def is_got_any_merch(username: str) -> bool:
+    async with db_manager.pool.acquire() as conn:
+        await conn.execute(
+            "INSERT INTO merch (username) VALUES ($1) ON CONFLICT (username) DO NOTHING",
+            username
+        )
 
-    cursor.execute(
-        "INSERT OR IGNORE INTO merch (username) VALUES (?)", (username,))
+        columns = await conn.fetch(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_name = 'merch' AND data_type IN ('integer', 'real')"
+        )
+        numeric_columns = [col['column_name']
+                           for col in columns if col['column_name'] != 'username']
 
-    cursor.execute("PRAGMA table_info(merch);")
-    columns = cursor.fetchall()
+        if not numeric_columns:
+            return False
 
-    numeric_columns = [col[1] for col in columns if col[1] !=
-                       'username' and col[2] and col[2].upper() in ('INTEGER', 'REAL')]
-
-    if not numeric_columns:
-        
-        return False
-
-    sum_query = " + ".join([f"COALESCE({col}, 0)" for col in numeric_columns])
-
-    query = f"SELECT {sum_query} FROM merch WHERE username = ?"
-    cursor.execute(query, (username,))
-
-    result = cursor.fetchone()
-    
-
-    return result and result[0] > 0
+        sum_query = " + ".join([f'"{col}"' for col in numeric_columns])
+        result = await conn.fetchval(
+            f"SELECT ({sum_query}) > 0 FROM merch WHERE username = $1",
+            username
+        )
+        return bool(result)
 
 
-def add_column(column_name, column_type="INTEGER DEFAULT 0"):
-  with db_manager.get_connection() as conn:
-    cursor = conn.cursor()
+async def add_column(column_name: str, column_type: str = "INTEGER DEFAULT 0"):
+    async with db_manager.pool.acquire() as conn:
+        exists = await conn.fetchval(
+            "SELECT EXISTS ("
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = 'merch' AND column_name = $1"
+            ")",
+            column_name
+        )
 
-    cursor.execute("PRAGMA table_info(merch);")
-    existing_columns = [row[1] for row in cursor.fetchall()]
-
-    if column_name not in existing_columns:
-        cursor.execute(
-            f"ALTER TABLE merch ADD COLUMN {column_name} {column_type};")
-        conn.commit()
-        print(f"Столбец '{column_name}' добавлен в таблицу.")
-    else:
-        print(f"Столбец '{column_name}' уже существует.")
-
-    
-
-
-def get_all_merch():
-  with db_manager.get_connection() as conn:
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM merch")
-    merch = cursor.fetchall()
-    
-    return [(merch_) for merch_ in merch]
+        if not exists:
+            await conn.execute(
+                f"ALTER TABLE merch ADD COLUMN {column_name} {column_type}"
+            )
+            print(f"Столбец '{column_name}' добавлен в таблицу.")
+        else:
+            print(f"Столбец '{column_name}' уже существует.")
 
 
-def get_table_columns(table_name):
-  with db_manager.get_connection() as conn:
-    cursor = conn.cursor()
-    cursor.execute(f"PRAGMA table_info({table_name});")
-    columns = [column[1] for column in cursor.fetchall()]
-    
-    return columns
+async def get_all_merch():
+    async with db_manager.pool.acquire() as conn:
+        return await conn.fetch("SELECT * FROM merch")
 
 
-def save_merch_to_excel():
-    merch = get_all_merch()
-    columns = get_table_columns('merch')
+async def get_table_columns(table_name: str):
+    async with db_manager.pool.acquire() as conn:
+        columns = await conn.fetch(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_name = $1",
+            table_name
+        )
+        return [col['column_name'] for col in columns]
+
+
+async def save_merch_to_excel():
+    merch = await get_all_merch()
+    columns = await get_table_columns('merch')
 
     if not merch:
         return None
@@ -159,8 +154,8 @@ def save_merch_to_excel():
 
     sheet.append(columns)
 
-    for merch_ in merch:
-        sheet.append(list(merch_))
+    for item in merch:
+        sheet.append(list(item.values()))
 
     filename = "merch.xlsx"
     workbook.save(filename)

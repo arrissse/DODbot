@@ -1,114 +1,142 @@
-from telebot import types
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+
 
 def main_keyboard():
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    item1 = types.KeyboardButton("📅 Расписание лекций")
-    item2 = types.KeyboardButton("🗺 Карта")
-    item3 = types.KeyboardButton("🧩 Активности ФШ")
-    item4 = types.KeyboardButton("🎓 Квизы")
-    item5 = types.KeyboardButton("📍 Расположение стендов")
-    item6 = types.KeyboardButton("🎯 Квест")
-    markup.add(item1, item2, item3, item4, item5, item6)
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    buttons = [
+        KeyboardButton(text="📅 Расписание лекций"),
+        KeyboardButton(text="🗺 Карта"),
+        KeyboardButton(text="🧩 Активности ФШ"),
+        KeyboardButton(text="🎓 Квизы"),
+        KeyboardButton(text="📍 Расположение стендов"),
+        KeyboardButton(text="🎯 Квест")
+    ]
+    markup.add(*buttons)
     return markup
+
 
 def pro_admin_keyboard():
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    item1 = types.KeyboardButton("Таблица пользователей")
-    item2 = types.KeyboardButton("Квест. Проставить баллы")
-    item3 = types.KeyboardButton("Квест. Текущая статистика")
-    item4 = types.KeyboardButton("Отправить рассылку")
-    item5 = types.KeyboardButton("Добавить админа")
-    item6 = types.KeyboardButton("Мерч")
-    item7 = types.KeyboardButton("Переключить меню")
-    item8 = types.KeyboardButton("Начать квиз")
-    markup.add(item1, item2, item3, item4, item5, item6, item7, item8)
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    buttons = [
+        KeyboardButton(text="Таблица пользователей"),
+        KeyboardButton(text="Квест. Проставить баллы"),
+        KeyboardButton(text="Квест. Текущая статистика"),
+        KeyboardButton(text="Отправить рассылку"),
+        KeyboardButton(text="Добавить админа"),
+        KeyboardButton(text="Мерч"),
+        KeyboardButton(text="Переключить меню"),
+        KeyboardButton(text="Начать квиз")
+    ]
+    markup.add(*buttons)
     return markup
+
 
 def pro_admin_merch():
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    item1 = types.KeyboardButton("Выдать мерч")
-    item2 = types.KeyboardButton("Стоимость мерча")
-    item3 = types.KeyboardButton("Добавить позицию мерча")
-    item4 = types.KeyboardButton("Удалить позицию мерча")
-    item5 = types.KeyboardButton("Назад ⬅️")
-    markup.add(item1, item2, item3, item4, item5)
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    buttons = [
+        KeyboardButton(text="Выдать мерч"),
+        KeyboardButton(text="Стоимость мерча"),
+        KeyboardButton(text="Добавить позицию мерча"),
+        KeyboardButton(text="Удалить позицию мерча"),
+        KeyboardButton(text="Назад ⬅️")
+    ]
+    markup.add(*buttons)
     return markup
+
 
 def pro_admin_quiz_start():
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    item1 = types.KeyboardButton("Квиз 1")
-    item2 = types.KeyboardButton("Квиз 2")
-    item3 = types.KeyboardButton("Квиз 3")
-    item4 = types.KeyboardButton("Квиз 4")
-    item5 = types.KeyboardButton("Квиз 5")
-    item6 = types.KeyboardButton("Назад ⬅️")
-    markup.add(item1, item2, item3, item4, item5, item6)
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    buttons = [
+        KeyboardButton(text="Квиз 1"),
+        KeyboardButton(text="Квиз 2"),
+        KeyboardButton(text="Квиз 3"),
+        KeyboardButton(text="Квиз 4"),
+        KeyboardButton(text="Квиз 5"),
+        KeyboardButton(text="Назад ⬅️")
+    ]
+    markup.add(*buttons)
     return markup
+
 
 def mipt_admin_keyboard():
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    item1 = types.KeyboardButton("Таблица пользователей")
-    item2 = types.KeyboardButton("Квест. Проставить баллы")
-    item3 = types.KeyboardButton("Квест. Текущая статистика")
-    item4 = types.KeyboardButton("Переключить меню")
-    markup.add(item1, item2, item3, item4)
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    buttons = [
+        KeyboardButton(text="Таблица пользователей"),
+        KeyboardButton(text="Квест. Проставить баллы"),
+        KeyboardButton(text="Квест. Текущая статистика"),
+        KeyboardButton(text="Переключить меню")
+    ]
+    markup.add(*buttons)
     return markup
+
 
 def admin_keyboard():
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    item1 = types.KeyboardButton("Таблица пользователей")
-    item2 = types.KeyboardButton("Выдать мерч")
-    item3 = types.KeyboardButton("Квест. Текущая статистика")
-    item4 = types.KeyboardButton("Переключить меню")
-    markup.add(item1, item2, item3, item4)
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    buttons = [
+        KeyboardButton(text="Таблица пользователей"),
+        KeyboardButton(text="Выдать мерч"),
+        KeyboardButton(text="Квест. Текущая статистика"),
+        KeyboardButton(text="Переключить меню")
+    ]
+    markup.add(*buttons)
     return markup
+
 
 def quest_keyboard():
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    item1 = types.KeyboardButton("▶️ Начать")
-    item2 = types.KeyboardButton("⬅️ Назад")
-    markup.add(item1, item2)
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    buttons = [
+        KeyboardButton(text="▶️ Начать"),
+        KeyboardButton(text="⬅️ Назад")
+    ]
+    markup.add(*buttons)
     return markup
+
 
 def quest_started_keyboard():
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    item1 = types.KeyboardButton("▶️ Продолжить")
-    item2 = types.KeyboardButton("⬅️ Назад")
-    markup.add(item1, item2)
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    buttons = [
+        KeyboardButton(text="▶️ Продолжить"),
+        KeyboardButton(text="⬅️ Назад")
+    ]
+    markup.add(*buttons)
     return markup
 
+
 def continue_quest_keyboard():
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    item1 = types.KeyboardButton("станция ФРКТ")
-    item2 = types.KeyboardButton("станция ЛФИ")
-    item3 = types.KeyboardButton("станция ФАКТ")
-    item4 = types.KeyboardButton("станция ФЭФМ")
-    item5 = types.KeyboardButton("станция ФПМИ")
-    item6 = types.KeyboardButton("станция ФБМФ")
-    item7 = types.KeyboardButton("станция КНТ")
-    item8 = types.KeyboardButton("станция ФБВТ")
-    item9 = types.KeyboardButton("станция ВШПИ")
-    item10 = types.KeyboardButton("станция ВШМ")
-    item11 = types.KeyboardButton("станция ПИШ РПИ")
-    item12 = types.KeyboardButton("⬅️ Назад")
-    markup.add(item1, item2, item3, item4, item5, item6, item7, item8, item9, item10, item11, item12)
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    buttons = [
+        KeyboardButton(text="станция ФРКТ"),
+        KeyboardButton(text="станция ЛФИ"),
+        KeyboardButton(text="станция ФАКТ"),
+        KeyboardButton(text="станция ФЭФМ"),
+        KeyboardButton(text="станция ФПМИ"),
+        KeyboardButton(text="станция ФБМФ"),
+        KeyboardButton(text="станция КНТ"),
+        KeyboardButton(text="станция ФБВТ"),
+        KeyboardButton(text="станция ВШПИ"),
+        KeyboardButton(text="станция ВШМ"),
+        KeyboardButton(text="станция ПИШ РПИ"),
+        KeyboardButton(text="⬅️ Назад")
+    ]
+    markup.add(*buttons)
     return markup
 
 
 def activity_keyboard():
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    item1 = types.KeyboardButton("ФРКТ")
-    item2 = types.KeyboardButton("ЛФИ")
-    item3 = types.KeyboardButton("ФАКТ")
-    item4 = types.KeyboardButton("ФЭФМ")
-    item5 = types.KeyboardButton("ФПМИ")
-    item6 = types.KeyboardButton("ФБМФ")
-    item7 = types.KeyboardButton("КНТ")
-    item8 = types.KeyboardButton("ФБВТ")
-    item9 = types.KeyboardButton("ВШПИ")
-    item10 = types.KeyboardButton("ВШМ")
-    item11 = types.KeyboardButton("ПИШ РПИ")
-    item12 = types.KeyboardButton("⬅️ Назад")
-    markup.add(item1, item2, item3, item4, item5, item6,
-               item7, item8, item9, item10, item11, item12)
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    buttons = [
+        KeyboardButton(text="ФРКТ"),
+        KeyboardButton(text="ЛФИ"),
+        KeyboardButton(text="ФАКТ"),
+        KeyboardButton(text="ФЭФМ"),
+        KeyboardButton(text="ФПМИ"),
+        KeyboardButton(text="ФБМФ"),
+        KeyboardButton(text="КНТ"),
+        KeyboardButton(text="ФБВТ"),
+        KeyboardButton(text="ВШПИ"),
+        KeyboardButton(text="ВШМ"),
+        KeyboardButton(text="ПИШ РПИ"),
+        KeyboardButton(text="⬅️ Назад")
+    ]
+    markup.add(*buttons)
     return markup

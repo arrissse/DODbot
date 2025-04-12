@@ -1,5 +1,7 @@
-import telebot
+from aiogram import Bot, Dispatcher, Router
+from aiogram.enums import ParseMode
 from config import TOKEN
 
-
-bot = telebot.TeleBot(TOKEN)
+bot = Bot(token=TOKEN, parse_mode=ParseMode.HTML)
+dp = Dispatcher()
+router = Router()

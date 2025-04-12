@@ -1,115 +1,117 @@
-from bot import bot
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from bot import bot, dp, router
+from aiogram import F, types
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+from users import get_all_users, get_user_by_username
 from handlers import stations
-from users import get_all_users
-from admin import add_admin, get_all_admins, update_admin_questnum, get_admin_by_username, update_admin_info
+from admin import add_admin, get_all_admins, get_admin_by_username, update_admin_questnum, update_admin_info
 
 
-@bot.message_handler(func=lambda message: message.text == "Добавить админа")
-def new_admin(message):
-    user = get_admin_by_username('@' + message.from_user.username)
-    if user and user[1] == 0:
-        bot.send_message(message.chat.id, "Введите ник пользователя (@username):")
-        bot.register_next_step_handler(message, process_name)
+class AdminStates(StatesGroup):
+    waiting_username = State()
+    waiting_level = State()
+    waiting_station = State()
+
+
+@router.message(F.text == "Добавить админа")
+async def new_admin(message: types.Message, state: FSMContext):
+    user = await get_admin_by_username('@' + message.from_user.username)
+    if user is not None and user.level == 0:
+        await message.answer("Введите ник пользователя (@username):")
+        await state.set_state(AdminStates.waiting_username)
     else:
-        bot.send_message(message.chat.id, "❌ У вас нет доступа к этой команде.")
+        await message.answer("❌ У вас нет доступа к этой команде.")
 
 
-def process_name(m):
-    username = m.text
-    users = get_all_users()
-    admins = get_all_admins()
-    user_list = [user[1] for user in users]
-    if username.lstrip('@') not in user_list:
-        bot.send_message(
-            m.chat.id, f"❌ Пользователь {username} не найден в списке.")
-        return
-    admin_names = [admin[0].lstrip('@') for admin in admins]
-    if username.lstrip('@') in admin_names:
-        bot.send_message(
-            m.chat.id, f"Пользователь {username} уже является админом.")
+@router.message(AdminStates.waiting_username)
+async def process_name(message: types.Message, state: FSMContext):
+    username = message.text.strip('@')
+    users = await get_all_users()
+    admins = await get_all_admins()
 
-    bot.send_message(m.chat.id, "Введите уровень админства (0 - pro-admin, 1 - выдача мерча, 2 - админ фш):")
-    bot.register_next_step_handler(m, process_level, username)
+    user_exists = any(user.username == username for user in users)
+    if not user_exists:
+        await message.answer(f"❌ Пользователь @{username} не найден в списке.")
+        return await state.clear()
+
+    admin_exists = any(admin.username == username for admin in admins)
+    if admin_exists:
+        await message.answer(f"Пользователь @{username} уже является админом.")
+        return await state.clear()
+
+    await state.update_data(username=username)
+    await message.answer("Введите уровень админства (0 - pro-admin, 1 - выдача мерча, 2 - админ фш):")
+    await state.set_state(AdminStates.waiting_level)
 
 
-def process_level(m, username):
+@router.message(AdminStates.waiting_level)
+async def process_level(message: types.Message, state: FSMContext):
     try:
-        admin_level = int(m.text)
+        admin_level = int(message.text)
+        if admin_level not in {0, 1, 2}:
+            raise ValueError
     except ValueError:
-        bot.send_message(
-            m.chat.id, "❌ Уровень админства должен быть целым числом. Попробуйте еще раз.")
-        return
-    
+        await message.answer("❌ Некорректный уровень админства. Используйте 0, 1 или 2.")
+        return await state.clear()
+
+    data = await state.get_data()
+    username = data['username']
+
     if admin_level == 2:
-        markup = InlineKeyboardMarkup()
+        builder = InlineKeyboardBuilder()
         for name, number in stations.items():
-            markup.add(InlineKeyboardButton(name, callback_data=f"select_station_&{username}&{number}&{admin_level}"))
-
-        bot.send_message(m.chat.id, "Выберите номер станции админа:",
-                         reply_markup=markup)
+            builder.button(
+                text=name,
+                callback_data=f"select_station:{number}:{username}:{admin_level}"
+            )
+        builder.adjust(2)
+        await message.answer(
+            "Выберите номер станции админа:",
+            reply_markup=builder.as_markup()
+        )
+        await state.set_state(AdminStates.waiting_station)
     else:
-        admin_names = [admin[0].lstrip('@') for admin in get_all_admins()]
-        if username.lstrip('@') in admin_names:
-            update_admin(m, username, admin_level)
-        else:
-            add_admin_to_db(m, username, admin_level)
+        await process_admin_creation(message, username, admin_level)
+        await state.clear()
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("select_station_&"))
-def process_number(call):
-    _, username, questnum, admin_level = call.data.split("&")
+
+@router.callback_query(F.data.startswith("select_station:"), AdminStates.waiting_station)
+async def process_number(callback: types.CallbackQuery, state: FSMContext):
+    _, number, username, admin_level = callback.data.split(':')
+
     try:
-        admin_names = [admin[0].lstrip('@') for admin in get_all_admins()]
-        if username.lstrip('@') in admin_names:
-            update_admin(call.message, username, admin_level)
-        else:
-            add_admin_to_db(call.message, username, admin_level)
-        update_admin_questnum(username, questnum)
-        bot.send_message(
-                call.message.chat.id, f"✅ Админу {username} назначена станция №{questnum}.")
+        await update_admin_questnum(username, int(number))
+        await callback.message.answer(
+            f"✅ Админу @{username} назначена станция №{number}."
+        )
+        await process_admin_creation(callback.message, username, int(admin_level))
     except Exception as e:
-                bot.send_message(
-                call.message.chat.id, f"{e}")
+        await callback.message.answer(f"❌ Ошибка: {str(e)}")
+
+    await state.clear()
 
 
-def update_admin(m, username, admin_level):
+async def process_admin_creation(message: types.Message, username: str, admin_level: int):
     try:
-        update_admin_info(username, admin_level)
-        bot.send_message(
-            m.chat.id, f"✅ Пользователь {username} теперь является админом с уровнем {admin_level}!")
-    except Exception as e:
-        bot.send_message(
-            m.chat.id, f"❌ Не удалось обновить информацию администратора. {e}")
-        print(e)
-
-def add_admin_to_db(m, username, admin_level):
-    try:
-        admins = get_all_admins()
-        admin_usernames = [admin[0] for admin in admins]
-        if add_admin(username, admin_level):
-            username = username.strip().lstrip('@')
-            user_id = None
-            for user in get_all_users():
-                print(user[1], username)
-                if user[1] == username:
-                    user_id = user[0]
-            if user_id:
-                bot.send_message(
-                    user_id, "Вас сделали админом. Для получения доступа к админ-меню напишите /start.")
-            else:
-                bot.send_message(
-                    m.chat.id, f"❌ Пользователь {username} не найден среди зарегистрированных пользователей.")
-            bot.send_message(
-                m.chat.id, f"✅ Пользователь {username} теперь является админом с уровнем {admin_level}!")
+        if await get_admin_by_username(username):
+            await update_admin_info(username, admin_level)
+            msg = f"✅ Пользователь @{username} обновлен до уровня {admin_level}!"
         else:
-            bot.send_message(
-                m.chat.id, f"❌ Не удалось добавить администратора {username}.")
+            await add_admin(username, admin_level)
+            msg = f"✅ Пользователь @{username} добавлен как админ уровня {admin_level}!"
 
-        admins = get_all_admins()
-        admin_usernames = [admin[0].lstrip('@') for admin in admins]
-        bot.send_message(m.chat.id, f"Список админов: {admin_usernames}")
+            # Отправка уведомления пользователю
+            user = await get_user_by_username(username)
+            if user:
+                await message.bot.send_message(
+                    user.id,
+                    "Вас назначили админом. Для доступа к меню используйте /start"
+                )
+
+        admins = await get_all_admins()
+        admin_list = "\n".join([f"@{a.username}" for a in admins])
+        await message.answer(f"{msg}\nСписок админов:\n{admin_list}")
+
     except Exception as e:
-        bot.send_message(
-            m.chat.id, "❌ Не удалось добавить администратора. Возможно, неверный ник.")
-        print(e)
-
+        await message.answer(f"❌ Ошибка: {str(e)}")

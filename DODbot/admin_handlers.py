@@ -1,8 +1,11 @@
-from bot import bot
-import sqlite3
-from telebot import types
+from bot import bot, dp, router
+from aiogram import Bot, types, F
+from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
+from aiogram.types import Message, CallbackQuery, FSInputFile, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.enums import ParseMode
+from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
 from datetime import datetime
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from keyboard import main_keyboard, pro_admin_merch, pro_admin_keyboard, pro_admin_quiz_start
 from users import save_users_to_excel, count_active_quests, get_user_by_username
 from users import count_finished_quests
@@ -11,6 +14,19 @@ from admin import save_admins_to_excel, get_admin_by_username, get_admin_level
 from merch import give_merch, is_got_merch, got_merch, add_column, save_merch_to_excel
 from quiz import update_quiz_time
 from database import db_manager
+from aiogram.fsm.state import State, StatesGroup
+
+
+class Form(StatesGroup):
+    waiting_username = State()
+    waiting_merch_type = State()
+    waiting_new_price = State()
+    waiting_merch_name = State()
+    waiting_merch_cost = State()
+    waiting_delete_merch = State()
+    edit_price = State()
+
+state = Form
 
 '''
 -----------------------
@@ -21,25 +37,21 @@ admins
 '''
 
 
-@bot.message_handler(commands=["admins"])
-def send_admins_list(message):
-
-    user = get_admin_by_username('@' + message.from_user.username)
-    level = get_admin_level('@' + message.from_user.username)
+@router.message(Command("admins"))
+async def send_admins_list(message):
+    user = await get_admin_by_username(f'@{message.from_user.username}')
+    level = await get_admin_level(f'@{message.from_user.username}') if user else None
 
     if user and level == 0:
-        filename = save_admins_to_excel()
+        filename = await save_admins_to_excel()
         print(f"Файл Excel создан: {filename}")
 
         if filename:
-            with open(filename, "rb") as file:
-                bot.send_document(message.chat.id, file)
+            await message.answer_document(FSInputFile(filename)) 
         else:
-            bot.send_message(
-                message.chat.id, "❌ В базе данных нет пользователей.")
+            await message.answer("❌ В базе данных нет пользователей.")
     else:
-        bot.send_message(
-            message.chat.id, "❌ У вас нет доступа к этой команде.")
+        await message.answer("❌ У вас нет доступа к этой команде.")
 
 
 '''
@@ -51,24 +63,23 @@ merch
 '''
 
 
-@bot.message_handler(commands=["merch"])
-def send_admins_list(message):
+@router.message(Command("merch"))
+async def send_admins_list(message):
 
-    user = get_admin_by_username('@' + message.from_user.username)
-    level = get_admin_level('@' + message.from_user.username)
+    user = await get_admin_by_username(f'@{message.from_user.username}')
+    level = await get_admin_level(f'@{message.from_user.username}') if user else None
 
     if user and level == 0:
-        filename = save_merch_to_excel()
+        filename = await save_merch_to_excel()
         print(f"Файл Excel создан: {filename}")
 
         if filename:
-            with open(filename, "rb") as file:
-                bot.send_document(message.chat.id, file)
+            await message.answer_document(FSInputFile(filename)) 
         else:
-            bot.send_message(message.chat.id, "❌ База данных пуста.")
+            await message.answer("❌ База данных пуста.")
     else:
-        bot.send_message(
-            message.chat.id, "❌ У вас нет доступа к этой команде.")
+        await message.answer(
+             "❌ У вас нет доступа к этой команде.")
 
 
 '''
@@ -80,20 +91,20 @@ def send_admins_list(message):
 '''
 
 
-@bot.message_handler(func=lambda message: message.text == "Мерч")
-def pro_admin_merch_button(message):
-    user = get_admin_by_username('@' + message.from_user.username)
-    level = get_admin_level('@' + message.from_user.username)
+@router.message(F.text == "Мерч")
+async def pro_admin_merch_button(message):
+    user = await get_admin_by_username(f'@{message.from_user.username}')
+    level = await get_admin_level(f'@{message.from_user.username}') if user else None
 
     try:
         if user and level == 0:
-            bot.send_message(message.chat.id, "Выберите действие:",
+            await message.answer("Выберите действие:",
                              reply_markup=pro_admin_merch())
         else:
-            bot.send_message(
-                message.chat.id, "❌ У вас нет доступа к этой команде.")
+            await message.answer(
+                 "❌ У вас нет доступа к этой команде.")
     except Exception as e:
-        bot.send_message(message.chat.id, e)
+        await message.answer(e)
 
 
 '''
@@ -105,19 +116,19 @@ def pro_admin_merch_button(message):
 '''
 
 
-@bot.message_handler(func=lambda message: message.text == "Назад ⬅️")
-def pro_admin_merch_back(message):
-    user = get_admin_by_username('@' + message.from_user.username)
-    level = get_admin_level('@' + message.from_user.username)
+@router.message(F.text == "Назад ⬅️")
+async def pro_admin_merch_back(message):
+    user = await get_admin_by_username(f'@{message.from_user.username}')
+    level = await get_admin_level(f'@{message.from_user.username}') if user else None
     try:
         if user and level == 0:
-            bot.send_message(message.chat.id, "🔑 Админ-меню:",
+            await message.answer("🔑 Админ-меню:",
                              reply_markup=pro_admin_keyboard())
         else:
-            bot.send_message(
-                message.chat.id, "❌ У вас нет доступа к этой команде.")
+            await message.answer(
+                 "❌ У вас нет доступа к этой команде.")
     except Exception as e:
-        bot.send_message(message.chat.id, e)
+        await message.answer(e)
 
 
 '''
@@ -129,20 +140,20 @@ def pro_admin_merch_back(message):
 '''
 
 
-@bot.message_handler(func=lambda message: message.text == "Начать квиз")
-def pro_admin_quiz_button(message):
-    user = get_admin_by_username('@' + message.from_user.username)
-    level = get_admin_level('@' + message.from_user.username)
+@router.message(F.text == "Начать квиз")
+async def pro_admin_quiz_button(message):
+    user = await get_admin_by_username(f'@{message.from_user.username}')
+    level = await get_admin_level(f'@{message.from_user.username}') if user else None
 
     try:
         if user and level == 0:
-            bot.send_message(message.chat.id, "Выберите квиз:",
+            await message.answer("Выберите квиз:",
                              reply_markup=pro_admin_quiz_start())
         else:
-            bot.send_message(
-                message.chat.id, "❌ У вас нет доступа к этой команде.")
+            await message.answer(
+                 "❌ У вас нет доступа к этой команде.")
     except Exception as e:
-        bot.send_message(message.chat.id, e)
+        await message.answer(e)
 
 
 quiz_list = {
@@ -154,114 +165,71 @@ quiz_list = {
 }
 
 
-@bot.message_handler(func=lambda message: message.text in quiz_list)
-def handle_quiz_start(message):
+@router.message(F.text.in_(quiz_list))
+async def handle_quiz_start(message):
     quiz_number = quiz_list[message.text]
-    markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("Да", callback_data=f'start_quiz:{quiz_number}'), InlineKeyboardButton(
+    markup = InlineKeyboardBuilder()
+    markup.button(InlineKeyboardButton("Да", callback_data=f'start_quiz:{quiz_number}'), InlineKeyboardButton(
         "Нет", callback_data=f'not_start_quiz:'), )
-    bot.send_message(
-        message.chat.id, f"Начать {message.text}?", reply_markup=markup)
+    await message.answer(f"Начать {message.text}?", reply_markup=markup.as_markup())
 
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("start_quiz:"))
-def start_quiz(call):
+@router.callback_query(F.data.startswith("start_quiz:"))
+async def start_quiz(call):
   try:
-    bot.answer_callback_query(call.id)
+    await call.answer()
     _, quiz_id = call.data.split(":")
     quiz_id = int(quiz_id)
-    with db_manager.get_connection() as conn:
-        cur = conn.cursor()
-
-        cur.execute("SELECT quiz_name FROM quiz_schedule WHERE id = ?", (quiz_id,))
-        quiz_info = cur.fetchone()
+    async with db_manager.pool.acquire() as conn:
+        quiz_info = await conn.fetchrow(
+            "SELECT * FROM quiz_schedule WHERE id = $1",
+            quiz_id
+        )
     
 
         if not quiz_info:
-            bot.send_message(call.message.chat.id, "Ошибка: квиз не найден.")
-            return
+            return await call.message.answer("Ошибка: квиз не найден.")
+            
 
         quiz_name = quiz_info[0]
         current_time = datetime.now().strftime("%H:%M")
-        update_quiz_time(quiz_id, current_time)
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("Отправить первый вопрос",
+        await update_quiz_time(quiz_id, current_time)
+        markup = InlineKeyboardBuilder()
+        markup.button(InlineKeyboardButton("Отправить первый вопрос",
                callback_data=f'next_question:{quiz_id}:1'))
-        bot.send_message(call.message.chat.id,
+        await call.message.answer(
                         f"✅ {quiz_name} начат!", reply_markup=markup)
   except Exception as e:
-        bot.send_message(call.message.chat.id, f"❌ {e}")
+        await call.message.answer( f"❌ {e}")
 
 
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("next_question:"))
-def send_next_question(call):
+@router.callback_query(F.data.startswith("next_question:"))
+async def send_next_question(call):
    return
-   bot.answer_callback_query(call.id)
-   _, quiz_id, question_number = call.data.split(":")
-   quiz_id, question_number = int(quiz_id), int(question_number)
 
-   with db_manager.get_connection() as conn:
-    cur = conn.cursor()
-
-    cur.execute("""
-        SELECT id, text FROM questions 
-        WHERE quiz_id = ? ORDER BY id ASC LIMIT 1 OFFSET ?
-    """, (quiz_id, question_number - 1))
-    question = cur.fetchone()
-
-    if not question:
-        bot.send_message(call.message.chat.id, "Квиз завершён!")
-        
-        return
-
-    question_id, question_text = question
-
-    cur.execute(
-        "SELECT id, text FROM answers WHERE question_id = ?", (question_id,))
-    answers = cur.fetchall()
-
-    markup = InlineKeyboardMarkup()
-    for answer_id, answer_text in answers:
-        markup.add(InlineKeyboardButton(
-            answer_text, callback_data=f'answer:{question_id}:{answer_id}'))
-
-    bot.send_message(call.message.chat.id, question_text, reply_markup=markup)
-
-    markup_next = InlineKeyboardMarkup()
-    markup_next.add(InlineKeyboardButton("Следующий вопрос",
-                    callback_data=f'next_question:{quiz_id}:{question_number + 1}'))
-    bot.send_message(call.message.chat.id,
-                     "Готовы к следующему вопросу?", reply_markup=markup_next)
-
-    
-
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith("answer:"))
-def check_answer(call):
-  bot.answer_callback_query(call.id)
+@router.callback_query(F.data.startswith("answer:"))
+async def check_answer(call):
+  await call.answer()
   _, question_id, answer_id = call.data.split(":")
   question_id, answer_id = int(question_id), int(answer_id)
 
 
-  with db_manager.get_connection() as conn:
-    cur = conn.cursor()
-
-    cur.execute("SELECT is_correct FROM answers WHERE id = ?", (answer_id,))
-    result = cur.fetchone()
-
-    if result and result[0] == 1:
-        bot.send_message(call.message.chat.id, "✅ Верно!")
+  async with db_manager.pool.acquire() as conn:
+    result = await conn.fetchrow(
+        "SELECT is_correct FROM answers WHERE id = $1",
+        answer_id
+    )
+    if result and result['is_correct']:
+        await call.message.answer( "✅ Верно!")
     else:
-        bot.send_message(call.message.chat.id, "❌ Неверно.")
+        await call.message.answer( "❌ Неверно.")
 
     
-
-
-@bot.callback_query_handler(func=lambda call: call.data == "not_start_quiz")
-def cancel_quiz(call):
-    bot.answer_callback_query(call.id, "❌ Операция отменена.")
-    bot.send_message(call.message.chat.id, "❌ Операция отменена.")
+@router.callback_query(F.data.startswith("not_start_quiz"))
+async def cancel_quiz(call):
+    await call.answer("❌ Операция отменена.")
+    await call.message.answer( "❌ Операция отменена.")
 
 
 '''
@@ -273,17 +241,17 @@ def cancel_quiz(call):
 '''
 
 
-@bot.message_handler(func=lambda message: message.text == "Таблица пользователей")
-def send_users_list(message):
-    user = get_admin_by_username('@' + message.from_user.username)
+@router.message(F.text == "Таблица пользователей")
+async def send_users_list(message: Message):
+    user = await get_admin_by_username(f'@{message.from_user.username}')
     if user:
-        filename = save_users_to_excel()
-
+        filename = await save_users_to_excel()
         if filename:
-            with open(filename, "rb") as file:
-                bot.send_document(message.chat.id, file)
+            await message.answer_document(FSInputFile(filename))
+        else:
+            await message.answer("❌ В базе данных нет пользователей.")
     else:
-        bot.send_message(message.chat.id, "❌ В базе данных нет пользователей.")
+        await message.answer("❌ У вас нет доступа к этой команде.")
 
 
 '''
@@ -295,9 +263,9 @@ def send_users_list(message):
 '''
 
 
-@bot.message_handler(func=lambda message: message.text == "Переключить меню")
-def chage_menu(m):
-    bot.send_message(m.chat.id, "Для повторного переключения меню введите /start",
+@router.message(F.text == "Переключить меню")
+async def chage_menu(m):
+    await m.answer(m.chat.id, "Для повторного переключения меню введите /start",
                      reply_markup=main_keyboard())
 
 
@@ -310,18 +278,17 @@ def chage_menu(m):
 '''
 
 
-@bot.message_handler(func=lambda message: message.text == "Квест. Текущая статистика")
-def statistics(message):
-    user = get_admin_by_username('@' + message.from_user.username)
+@router.message(F.text == "Квест. Текущая статистика")
+async def statistics(message):
+    user = await get_admin_by_username(f'@{message.from_user.username}')
     if user:
-        active_users = count_active_quests()
-        finished_users = count_finished_quests()
-        bot.send_message(
-            message.chat.id, f"Количество пользователей, начавших квест: {active_users}\n"
+        active_users = await count_active_quests()
+        finished_users = await count_finished_quests()
+        await message.answer(f"Количество пользователей, начавших квест: {active_users}\n"
             f"Количество пользователей, завершивших квест: {finished_users}\n")
     else:
-        bot.send_message(
-            message.chat.id, "❌ У вас нет доступа к этой команде.")
+        await message.answer(
+             "❌ У вас нет доступа к этой команде.")
 
 
 '''
@@ -333,89 +300,85 @@ def statistics(message):
 '''
 
 
-def create_price_table():
-    with db_manager.get_connection() as conn:
-        conn.execute("""
+async def create_price_table():
+    async with db_manager.pool.acquire() as conn:
+        await conn.execute("""
             CREATE TABLE IF NOT EXISTS merch_prices (
                 merch_type TEXT PRIMARY KEY,
                 price INTEGER DEFAULT 0
             )
         """)
-        conn.execute("""
-            INSERT OR IGNORE INTO merch_prices (merch_type, price) VALUES 
-                ("Раскрасить футболку", 7),
-                ("Раскрасить шоппер", 5),
-                ("Футболка", 8),
-                ("Блокнот", 2),
-                ("ПБ", 15)
+        await conn.execute("""
+            INSERT INTO merch_prices (merch_type, price) VALUES 
+                ('Раскрасить футболку', 7),
+                ('Раскрасить шоппер', 5),
+                ('Футболка', 8),
+                ('Блокнот', 2),
+                ('ПБ', 15)
+            ON CONFLICT (merch_type) DO NOTHING
         """)
         
 
-
-def get_merch_types():
-    with db_manager.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT merch_type FROM merch_prices")
-            types = [row[0] for row in cursor.fetchall()]
-            
-            return types
+async def get_merch_types():
+    async with db_manager.pool.acquire() as conn:
+        return [row['merch_type'] for row in await conn.fetch("SELECT merch_type FROM merch_prices")]
 
 
-def get_merch_price(merch_type):
-    with db_manager.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                "SELECT price FROM merch_prices WHERE merch_type = ?", (merch_type,))
-            result = cursor.fetchone()
-            
-            return result[0] if result else 0
+async def get_merch_price(merch_type: str):
+    async with db_manager.pool.acquire() as conn:
+        return await conn.fetchval(
+            "SELECT price FROM merch_prices WHERE merch_type = $1",
+            merch_type
+        )
 
 
-def update_merch_price(merch_type, new_price):
-    with db_manager.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("INSERT INTO merch_prices (merch_type, price) VALUES (?, ?) ON CONFLICT(merch_type) DO UPDATE SET price = ?",
-                           (merch_type, new_price, new_price))
+async def update_merch_price(merch_type, new_price):
+    async with db_manager.pool.acquire() as conn:
+        await conn.execute("""
+            INSERT INTO merch_prices (merch_type, price) 
+            VALUES ($1, $2)
+            ON CONFLICT (merch_type) DO UPDATE SET price = $2
+        """, merch_type, new_price)
             
             
 
 
-@bot.message_handler(func=lambda message: message.text == "Стоимость мерча")
-def merch_prices_menu(message):
-    with db_manager.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT merch_type FROM merch_prices")
-            merch_types = [row[0] for row in cursor.fetchall()]
+@router.message(F.text == "Стоимость мерча")
+async def merch_prices_menu(message):
+    async with db_manager.pool.acquire() as conn:
+            result = await conn.fetch("SELECT merch_type FROM merch_prices")
+            merch_types = [row[0] for row in result]
             
 
-            markup = types.InlineKeyboardMarkup()
+            markup = types.InlineKeyboardBuilder()
             for merch in merch_types:
-                markup.add(types.InlineKeyboardButton(
+                markup.button(types.InlineKeyboardButton(
                     merch, callback_data=f"edit_price:{merch}"))
 
-            bot.send_message(
-                message.chat.id, "Выберите товар для изменения стоимости:", reply_markup=markup)
+            await message.answer("Выберите товар для изменения стоимости:", reply_markup=markup)
 
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_price"))
-def edit_price(call):
+@router.callback_query(F.data.startswith("edit_price"))
+async def edit_price_handler(call: CallbackQuery, state: FSMContext):
     merch_type = call.data.split(":")[1]
-    current_price = get_merch_price(merch_type)
-    bot.send_message(call.message.chat.id,
-                     f"Текущая стоимость {merch_type}: {current_price}\nВведите новую стоимость:")
-    bot.register_next_step_handler(
-        call.message, lambda msg: process_new_price(msg, merch_type))
+    await state.update_data(merch_type=merch_type)
+    await state.set_state(Form.edit_price)
+    current_price = await get_merch_price(merch_type)
+    await call.message.answer(f"Текущая стоимость {merch_type}: {current_price}\nВведите новую стоимость:")
 
 
-def process_new_price(message, merch_type):
+@router.message(Form.edit_price)
+async def process_new_price(message: Message, state: FSMContext):
+    data = await state.get_data()
+    merch_type = data['merch_type']
+
     try:
         new_price = int(message.text)
-        update_merch_price(merch_type, new_price)
-        bot.send_message(
-            message.chat.id, f"✅ Стоимость {merch_type} обновлена до {new_price}!")
+        await update_merch_price(merch_type, new_price)
+        await message.answer(f"✅ Стоимость {merch_type} обновлена до {new_price}!")
     except ValueError:
-        bot.send_message(
-            message.chat.id, "❌ Ошибка! Введите корректное число.")
+        await message.answer("❌ Ошибка! Введите корректное число.")
+    await state.clear()
 
 
 '''
@@ -427,83 +390,78 @@ def process_new_price(message, merch_type):
 '''
 
 
-@bot.message_handler(func=lambda message: message.text == "Выдать мерч")
-def give_merch_to_user(message):
-    user = get_admin_by_username('@' + message.from_user.username)
+@router.message(F.text == "Выдать мерч")
+async def give_merch_to_user(message):
+    user = await get_admin_by_username(f'@{message.from_user.username}')
     if user and (user[1] == 0 or user[1] == 1):
-        bot.send_message(
-            message.chat.id, "Введите ник пользователя (@username):")
-        bot.register_next_step_handler(message, process_fusername)
+        await message.answer("Введите ник пользователя (@username):")
+        await state.set_state(Form.waiting_username)
     else:
-        bot.send_message(
-            message.chat.id, "❌ У вас нет доступа к этой команде.")
+        await message.answer("❌ У вас нет доступа к этой команде.")
 
 
-def process_fusername(m):
+@router.message(Form.waiting_username)
+async def process_fusername(m, state):
     try:
         if m.text[0] != '@':
-            bot.send_message(
-                m.chat.id, f"❌ Введите корректно ник пользователя.")
+            await m.answer(f"❌ Введите корректно ник пользователя.")
             return
         username = m.text.lstrip('@')
-        if is_got_merch(username):
-            bot.send_message(
-                m.chat.id, f"❌ Пользователь {username} уже получил мерч.")
+        if await is_got_merch(username):
+            await m.answer(f"❌ Пользователь {username} уже получил мерч.")
             return
-        if not get_user_by_username(username):
-            bot.send_message(
-                m.chat.id, f"❌ Пользователя {username} нет в базе.")
+        if not await get_user_by_username(username):
+            await m.answer(f"❌ Пользователя {username} нет в базе.")
             return
+        
+        await state.update_data(username=username)
+        markup = InlineKeyboardBuilder()
 
-        markup = InlineKeyboardMarkup()
-
-        merch_types = get_merch_types()
+        merch_types = await get_merch_types()
         for merch in merch_types:
             print(f"merch: {merch}, price: {get_merch_price(merch)}")
-            if check_points(username) >= get_merch_price(merch) and not got_merch(username, merch):
-                price = get_merch_price(merch)
-                markup.add(InlineKeyboardButton(
+            if await check_points(username) >= await get_merch_price(merch) and not await got_merch(username, merch):
+                price = await get_merch_price(merch)
+                markup.button(InlineKeyboardButton(
                     f"{merch}: {price}", callback_data=f'give_merch:{get_merch_price(merch)}:{merch}:{username}'))
 
         if markup.keyboard:
-            bot.send_message(
-                m.chat.id, f"Количество баллов {username}: {check_points(username)}. Выберите мерч пользователю {username}:", reply_markup=markup)
+            await m.answer(f"Количество баллов {username}: {check_points(username)}. Выберите мерч пользователю {username}:", reply_markup=markup)
         else:
-            bot.send_message(
-                m.chat.id, f"❌ Пользователь {username} не может получить мерч. Количество баллов: {check_points(username)}")
+            await m.answer(f"❌ Пользователь {username} не может получить мерч. Количество баллов: {check_points(username)}")
+        await state.clear()
     except Exception as e:
-        bot.send_message(m.chat.id, e)
+        await m.answer(e)
+        await state.clear()
 
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith("give_merch"))
-def process_merch_callback(call):
+@router.callback_query(F.data.startswith("give_merch"))
+async def process_merch_callback(call):
     _, merch_price, merch_type, username = call.data.split(":")
 
-    markup = InlineKeyboardMarkup()
-    markup.add(
+    markup = InlineKeyboardBuilder()
+    markup.button(
         InlineKeyboardButton(
             'Да', callback_data=f'yes:{merch_price}:{merch_type}:{username}'),
         InlineKeyboardButton('Нет', callback_data='no')
     )
-    bot.send_message(call.message.chat.id,
-                     f"Выдать {username} {merch_type}?", reply_markup=markup)
+    await call.message.answer(f"Выдать {username} {merch_type}?", reply_markup=markup)
 
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("yes"))
-def process_merch_call_yes(call):
+@router.callback_query(F.data.startswith("yes"))
+async def process_merch_call_yes(call):
     _, merch_price, merch_type, username = call.data.split(":")
-    give_merch(username, merch_type)
-    update_merch_points(username, merch_price)
-    print(int(get_merch_price(merch_type)))
-    bot.answer_callback_query(call.id, "✅ Мерч за квест выдан!")
-    bot.send_message(call.message.chat.id,
+    await give_merch(username, merch_type)
+    await update_merch_points(username, merch_price)
+    print(int(await get_merch_price(merch_type)))
+    await call.answer("✅ Мерч за квест выдан!")
+    await call.message.answer(
                      f"✅ Пользователю {username} выдан мерч за квест!")
 
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("no"))
-def process_merch_call_no(call):
-    bot.answer_callback_query(call.id, "❌ Операция отменена.")
-    bot.send_message(call.message.chat.id, "❌ Операция отменена.")
+@router.callback_query(F.data.startswith("no"))
+async def process_merch_call_no(call):
+    await call.answer("❌ Операция отменена.")
+    await call.message.answer("❌ Операция отменена.")
 
 
 '''
@@ -515,48 +473,49 @@ def process_merch_call_no(call):
 '''
 
 
-@bot.message_handler(func=lambda message: message.text == "Добавить позицию мерча")
-def add_merch_type(message):
-    user = get_admin_by_username('@' + message.from_user.username)
+@router.message(F.text == "Добавить позицию мерча")
+async def add_merch_type(message):
+    user = await get_admin_by_username(f'@{message.from_user.username}')
     if user and user[1] == 0:
-        bot.send_message(
-            message.chat.id, "Введите название новой позиции мерча: ")
-        bot.register_next_step_handler(message, process_type)
+        await message.answer("Введите название новой позиции мерча: ")
+        await state.set_state(Form.waiting_merch_name)
     else:
-        bot.send_message(
-            message.chat.id, "❌ У вас нет доступа к этой команде.")
+        await message.answer("❌ У вас нет доступа к этой команде.")
 
 
-def process_type(message):
-    type = message.text
-    bot.send_message(
-        message.chat.id, "Введите стоимость новой позиции мерча: ")
-    bot.register_next_step_handler(
-        message, lambda msg: process_type_cost(msg, type))
+@router.message(Form.waiting_merch_name)
+async def process_type(message: Message, state: FSMContext):
+    await state.update_data(type=message.text)
+    await message.answer("Введите стоимость новой позиции мерча: ")
+    await state.set_state(Form.waiting_merch_cost)
 
 
-def process_type_cost(message, type):
+@router.message(Form.waiting_merch_cost)
+async def process_type_cost(message: Message, state: FSMContext):
     try:
+        data = await state.get_data()
+        type = data['type']
         cost = int(message.text)
     except ValueError:
-        bot.send_message(
-            message.chat.id, "❌ Стоимость должна быть числом. Попробуйте ещё раз.")
+        await message.answer("❌ Стоимость должна быть числом. Попробуйте ещё раз.")
+        await state.clear()
         return
-    with db_manager.get_connection() as conn:
+    async with db_manager.pool.acquire() as conn:
             cursor = conn.cursor()
 
-            cursor.execute("""
-                INSERT OR IGNORE INTO merch_prices (merch_type, price) VALUES (?, ?)
+            await conn.execute("""
+                INSERT OR IGNORE INTO merch_prices (merch_type, price) VALUES ($1, $2)
             """, (type, cost))
 
             try:
                 add_column(type)
             except Exception as e:
-                bot.send_message(
-                message.chat.id, f"❌ Ошибка при добавлении колонки: {e}")
+                await message.answer(f"❌ Ошибка при добавлении колонки: {e}")
+                await state.clear()
 
-            bot.send_message(
-            message.chat.id, f"✅ Позиция '{type}' добавлена с ценой {cost} баллов.")
+            await message.answer(f"✅ Позиция '{type}' добавлена с ценой {cost} баллов.")
+            await state.clear()
+
 
 
 '''
@@ -568,54 +527,46 @@ def process_type_cost(message, type):
 '''
 
 
-@bot.message_handler(func=lambda message: message.text == "Удалить позицию мерча")
-def remove_merch_type(message):
-    user = get_admin_by_username('@' + message.from_user.username)
+@router.message(F.text == "Удалить позицию мерча")
+async def remove_merch_type(message):
+    user = await get_admin_by_username(f'@{message.from_user.username}')
     if user and user[1] == 0:
-        bot.send_message(
-            message.chat.id, "Введите название позиции мерча, которую необходимо удалить: ")
-        bot.register_next_step_handler(message, process_r_type)
+        await message.answer("Введите название позиции мерча, которую необходимо удалить: ")
+        await state.set_state(Form.waiting_delete_merch)
     else:
-        bot.send_message(
-            message.chat.id, "❌ У вас нет доступа к этой команде.")
+        await message.answer("❌ У вас нет доступа к этой команде.")
 
 
-def process_r_type(message):
-    merch_type = message.text.strip()
-
-    with db_manager.get_connection() as conn:
+@router.message(Form.waiting_delete_merch)
+async def process_r_type(message: Message, state: FSMContext):
+  merch_type = message.text.strip()
+  try:
+    async with db_manager.pool.acquire() as conn:
             cursor = conn.cursor()
+            count = await conn.fetchval(
+                "SELECT COUNT(*) FROM merch_prices WHERE merch_type = $1",
+                merch_type
+            )
 
-            cursor.execute(
-                "SELECT COUNT(*) FROM merch_prices WHERE merch_type = ?", (merch_type,))
-            if cursor.fetchone()[0] == 0:
-                bot.send_message(
-                    message.chat.id, f"❌ Позиция '{merch_type}' не найдена.")
+            if count == 0:
+                await message.answer(
+                     f"❌ Позиция '{merch_type}' не найдена.")
                 
                 return
 
-            cursor.execute(
-                "DELETE FROM merch_prices WHERE merch_type = ?", (merch_type,))
+            await conn.execute(
+                "DELETE FROM merch_prices WHERE merch_type = $1",
+                merch_type
+            )
 
-            cursor.execute("PRAGMA table_info(merch);")
-            columns = [row[1] for row in cursor.fetchall()]
+            # Удаляем столбец из таблицы merch
+            await conn.execute(
+                "ALTER TABLE merch DROP COLUMN IF EXISTS $1",
+                merch_type
+            )
 
-            if merch_type in columns:
-                new_columns = [col for col in columns if col != merch_type]
-                if not new_columns:
-                    bot.send_message(
-                        message.chat.id, "❌ Ошибка: нельзя удалить последнюю колонку.")
-                    
-                    return
-
-                columns_str = ", ".join(f'"{col}"' for col in new_columns)
-
-                cursor.execute(
-                    f"CREATE TABLE merch_temp AS SELECT {columns_str} FROM merch;")
-                cursor.execute("DROP TABLE merch;")
-                cursor.execute("ALTER TABLE merch_temp RENAME TO merch;")
-
-            
-            
-
-    bot.send_message(message.chat.id, f"✅ Позиция '{merch_type}' удалена.")
+            await message.answer(f"✅ Позиция '{merch_type}' удалена.")
+  except Exception as e:
+        await message.answer(f"❌ Произошла ошибка при удалении позиции: {e}")
+  finally:
+        await state.clear()

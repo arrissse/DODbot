@@ -1,5 +1,5 @@
-from bot import bot
-import sqlite3
+from bot import bot, router, dp
+from aiogram import F
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from keyboard import main_keyboard
 from users import update_quize_points, is_finished_quiz, check_quiz_points
@@ -8,232 +8,201 @@ import random
 from database import db_manager
 
 
-def create_quiz_table():
-    with db_manager.get_connection() as conn:
-        cursor = conn.cursor()
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+from database import db_manager
+from datetime import datetime
+import random
 
-        cursor.execute("""
-    CREATE TABLE IF NOT EXISTS quiz_schedule (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        quiz_name TEXT NOT NULL,
-        start_time TEXT CHECK (LENGTH(start_time) = 5 AND start_time LIKE '__:__'), -- Ограничение формата HH:MM
-        location TEXT NOT NULL,
-        is_started INTEGER DEFAULT 0
-    )
-    """)
 
-        cursor.execute("""
-    INSERT OR IGNORE INTO quiz_schedule (quiz_name, start_time, location) VALUES 
-        ("История мфти", "11:00", "2.36 Физтех.Цифра"),
-        ("Физтех шутят", "12:00", "2.36 Физтех.Цифра"),
-        ("Физика не для слабонервных", "13:00", "2.36 Физтех.Цифра"),
-        ("Математика не для слабонервных", "14:00", "2.36 Физтех.Цифра"),
-        ("Квиз 5", "15:00", "305 ЛК");
-    """)
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS questions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            quiz_id INTEGER NOT NULL,
-            question_number INTEGER NOT NULL,
-            text TEXT DEFAULT 'Вопрос без текста', 
-            UNIQUE(quiz_id, question_number),
-            FOREIGN KEY (quiz_id) REFERENCES quiz_schedule(id)
-        )
-    """)
+class QuizStates(StatesGroup):
+    waiting_code = State()
 
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS answers(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            question_id INTEGER NOT NULL,
-            answer_text TEXT NOT NULL,
-            is_correct INTEGER DEFAULT 0,
-            FOREIGN KEY(question_id) REFERENCES questions(id)
-        )
-    """)
 
-        cursor.execute("SELECT id FROM quiz_schedule")
-        quiz_ids = [row[0] for row in cursor.fetchall()]
+async def create_quiz_table():
+    async with db_manager.get_async_connection() as conn:
+        cursor = await conn.cursor()
 
-        # Для каждого квиза вставляем ровно 25 вопросов, используя question_number для уникальности
+        # Создание таблиц
+        await cursor.execute("""
+            CREATE TABLE IF NOT EXISTS quiz_schedule (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                quiz_name TEXT NOT NULL,
+                start_time TEXT CHECK (LENGTH(start_time) = 5 AND start_time LIKE '__:__'),
+                location TEXT NOT NULL,
+                is_started INTEGER DEFAULT 0
+            )
+        """)
+
+        # Инициализация данных
+        await cursor.execute("""
+            INSERT OR IGNORE INTO quiz_schedule (quiz_name, start_time, location) VALUES 
+                ("История мфти", "11:00", "2.36 Физтех.Цифра"),
+                ("Физтех шутят", "12:00", "2.36 Физтех.Цифра"),
+                ("Физика не для слабонервных", "13:00", "2.36 Физтех.Цифра"),
+                ("Математика не для слабонервных", "14:00", "2.36 Физтех.Цифра"),
+                ("Квиз 5", "15:00", "305 ЛК")
+        """)
+
+        # Создание таблицы вопросов
+        await cursor.execute("""
+            CREATE TABLE IF NOT EXISTS questions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                quiz_id INTEGER NOT NULL,
+                question_number INTEGER NOT NULL,
+                text TEXT DEFAULT 'Вопрос без текста', 
+                UNIQUE(quiz_id, question_number),
+                FOREIGN KEY (quiz_id) REFERENCES quiz_schedule(id)
+            )
+        """)
+
+        # Создание таблицы ответов
+        await cursor.execute("""
+            CREATE TABLE IF NOT EXISTS answers(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                question_id INTEGER NOT NULL,
+                answer_text TEXT NOT NULL,
+                is_correct INTEGER DEFAULT 0,
+                FOREIGN KEY(question_id) REFERENCES questions(id)
+            )
+        """)
+
+        # Генерация вопросов и ответов
+        quiz_ids = [row[0] for row in await cursor.execute("SELECT id FROM quiz_schedule")]
+
         for quiz_id in quiz_ids:
             for question_number in range(1, 26):
-                # Пытаемся вставить вопрос; если такой уже есть – пропускаем его (INSERT OR IGNORE)
-                cursor.execute("""
-                INSERT OR IGNORE INTO questions (quiz_id, question_number, text)
-                VALUES (?, ?, ?)
-            """, (quiz_id, question_number, f"Вопрос {question_number} для квиза {quiz_id}"))
-                # Получаем id вопроса только что вставленной или уже существующей записи
-                cursor.execute("""
-                SELECT id FROM questions WHERE quiz_id = ? AND question_number = ?
-            """, (quiz_id, question_number))
-                question_row = cursor.fetchone()
+                await cursor.execute("""
+                    INSERT OR IGNORE INTO questions (quiz_id, question_number, text)
+                    VALUES (?, ?, ?)
+                """, (quiz_id, question_number, f"Вопрос {question_number} для квиза {quiz_id}"))
+
+                question_row = await cursor.execute("""
+                    SELECT id FROM questions WHERE quiz_id = ? AND question_number = ?
+                """, (quiz_id, question_number))
+                question_row = await question_row.fetchone()
+
                 if question_row:
                     question_id = question_row[0]
-                    # Удаляем (или обновляем) варианты ответов для данного вопроса, если они уже существуют
-                    cursor.execute(
-                        "DELETE FROM answers WHERE question_id = ?", (question_id,))
+                    await cursor.execute("DELETE FROM answers WHERE question_id = ?", (question_id,))
 
                     correct_answer = random.randint(1, 4)
                     for i in range(1, 5):
-                        cursor.execute("""
-                        INSERT INTO answers (question_id, answer_text, is_correct)
-                        VALUES (?, ?, ?)
-                    """, (question_id, f"Вариант {i}", 1 if i == correct_answer else 0))
-                else:
-                    print(
-                        f"Не удалось получить вопрос для quiz_id {quiz_id} и question_number {question_number}")
+                        await cursor.execute("""
+                            INSERT INTO answers (question_id, answer_text, is_correct)
+                            VALUES (?, ?, ?)
+                        """, (question_id, f"Вариант {i}", 1 if i == correct_answer else 0))
+
+        await conn.commit()
 
 
-def update_quiz_time(quiz_id, new_time):
-    with db_manager.get_connection() as conn:
-        cursor = conn.cursor()
+@router.message(F.text == "🎓 Квизы")
+async def send_quiz(message: Message, state: FSMContext):
+    async with db_manager.get_async_connection() as conn:
+        cursor = await conn.cursor()
+        quizzes = await cursor.execute("SELECT id, quiz_name, start_time, location FROM quiz_schedule ORDER BY start_time ASC")
+        quizzes = await cursor.fetchall()
 
-        cursor.execute(
-            "UPDATE quiz_schedule SET start_time = ? WHERE id = ?", (new_time, quiz_id))
+        current_time = datetime.now().strftime("%H:%M")
+        selected_quiz = next(
+            (q for q in quizzes if is_within_range(current_time, q[2])), None)
 
-        conn.commit()
+        if selected_quiz:
+            await message.answer("Введите кодовое слово:")
+            await state.set_state(QuizStates.waiting_code)
+            await state.update_data(quiz_id=selected_quiz[0])
+        else:
+            upcoming = next((q for q in quizzes if q[2] > current_time), None)
+            if upcoming:
+                await message.answer(f"Ближайший квиз: {upcoming[1]} в {upcoming[2]} ({upcoming[3]})")
+            else:
+                await message.answer("На сегодня квизов больше нет.")
 
 
 def is_within_range(current_time_str, target_time_str, delta_minutes=10):
     current_dt = datetime.strptime(current_time_str, "%H:%M")
     target_dt = datetime.strptime(target_time_str, "%H:%M")
     diff = (current_dt - target_dt).total_seconds() / 60.0
-    if diff < 0:
-        return False
-    return diff <= delta_minutes
+    return 0 <= diff <= delta_minutes
 
 
-@bot.message_handler(func=lambda message: message.text == "🎓 Квизы")
-def send_quiz(m):
-    with db_manager.get_connection() as conn:
-        cur = conn.cursor()
+@router.message(QuizStates.waiting_code)
+async def process_quiz_code(message: Message, state: FSMContext):
+    data = await state.get_data()
+    quiz_id = data['quiz_id']
+    user_input = message.text.lower().strip()
+    valid_words = {"сосиска": 1, "колбаса": 2, "1": 3, "2": 4, "3": 5}
 
-        cur.execute(
-            "SELECT id, quiz_name, start_time, location FROM quiz_schedule ORDER BY start_time ASC")
-        quizzes = cur.fetchall()
+    if user_input in valid_words and valid_words[user_input] == quiz_id:
+        await start_quiz(message, quiz_id)
+    else:
+        await message.answer("❌ Неверное кодовое слово.")
 
-        current_time = datetime.now().strftime("%H:%M")
-        selected_quiz = None
-
-        for quiz_id, name, time, location in quizzes:
-            if is_within_range(current_time, time):
-                selected_quiz = (quiz_id, name, time, location)
-                break
-
-        if selected_quiz:
-            quiz_id, quiz_name, quiz_time, location = selected_quiz
-            bot.send_message(m.chat.id, "Введите кодовое слово:")
-            bot.register_next_step_handler(
-                m, lambda message: process_quiz_start(message, quiz_id))
-        else:
-            upcoming = next(
-                (quiz for quiz in quizzes if quiz[2] > current_time), None)
-            if upcoming:
-                bot.send_message(
-                    m.chat.id, f"Ближайший квиз: {upcoming[1]} в {upcoming[2]} ({upcoming[3]})")
-            else:
-                bot.send_message(m.chat.id, "На сегодня квизов больше нет.")
+    await state.clear()
 
 
-def process_quiz_start(message, quiz_id):
-    try:
-        user_input = message.text.lower().strip()
-        valid_words = ["сосиска", "колбаса", "1", "2", "3"]
-
-        if user_input in valid_words:
-            if user_input == "сосиска" and quiz_id == 1:
-                start_quiz(message, 1)
-            elif user_input == "колбаса" and quiz_id == 2:
-                start_quiz(message, 2)
-            elif user_input == "1" and quiz_id == 3:
-                start_quiz(message, 3)
-            elif user_input == "2" and quiz_id == 4:
-                start_quiz(message, 4)
-            elif user_input == "3" and quiz_id == 5:
-                start_quiz(message, 5)
-            else:
-                bot.send_message(message.chat.id, "❌ Неверное кодовое слово.")
-        else:
-            bot.send_message(message.chat.id, "❌ Неверное кодовое слово.")
-    except Exception as e:
-        bot.send_message(message.chat.id, e)
-
-
-def start_quiz(message, quiz_id):
+async def start_quiz(message: Message, quiz_id: int):
     user = message.from_user.username
-    if is_finished_quiz(user, quiz_id):
-        bot.send_message(message.chat.id, "Вы уже участвовали в этом квизе.")
+    if await is_finished_quiz(user, quiz_id):
+        await message.answer("Вы уже участвовали в этом квизе.")
         return
 
-    with db_manager.get_connection() as conn:
-        cur = conn.cursor()
-
-        cur.execute(
-            "SELECT id FROM questions WHERE quiz_id = ? ORDER BY id ASC LIMIT 1", (quiz_id,))
-        question = cur.fetchone()
+    async with db_manager.get_async_connection() as conn:
+        cursor = await conn.cursor()
+        question = await cursor.execute("SELECT id FROM questions WHERE quiz_id = ? ORDER BY id ASC LIMIT 1", (quiz_id,))
+        question = await question.fetchone()
 
         if question:
-            question_id = question[0]
-            send_question(message.chat.id, user, question_id, quiz_id)
+            await send_question(message.chat.id, user, question[0], quiz_id)
 
 
-def send_question(chat_id, user, question_id, quize_id):
-    with db_manager.get_connection() as conn:
-        cur = conn.cursor()
-        cur.execute(
-            "SELECT id, answer_text FROM answers WHERE question_id = ? ORDER BY id ASC", (question_id,))
-        answers = cur.fetchall()
+async def send_question(chat_id: int, user: str, question_id: int, quiz_id: int):
+    async with db_manager.get_async_connection() as conn:
+        cursor = await conn.cursor()
+        answers = await cursor.execute("SELECT id, answer_text FROM answers WHERE question_id = ? ORDER BY id ASC", (question_id,))
+        answers = await answers.fetchall()
 
-        # Массив с нужными буквами для отображения
         letters = ["А", "Б", "В", "Г"]
-
         markup = InlineKeyboardMarkup(row_width=1)
-        # Для каждого варианта ответа назначаем букву в зависимости от порядкового номера
+
         for idx, (ans_id, ans_text) in enumerate(answers):
-            # на случай, если больше 4 вариантов
             letter = letters[idx] if idx < len(letters) else ans_text
             markup.add(InlineKeyboardButton(
-                letter, callback_data=f"answer:{question_id}:{ans_id}:{user}:{quize_id}"))
+                text=letter,
+                callback_data=f"answer:{question_id}:{ans_id}:{user}:{quiz_id}"
+            ))
 
-        # Здесь можно указать текст вопроса, если он есть (или заменить на нужный)
-        bot.send_message(
-            chat_id, f"❔ Вопрос {question_id}", reply_markup=markup)
+        await bot.send_message(chat_id, f"❔ Вопрос {question_id}", reply_markup=markup)
 
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("answer:"))
-def check_answer(call):
-    try:
-        bot.answer_callback_query(call.id)
-        _, question_id, answer_id, user, quiz_id = call.data.split(":")
-        question_id, answer_id = int(question_id), int(answer_id)
+@router.callback_query(F.data.startswith("answer:"))
+async def check_answer(callback: CallbackQuery):
+    await callback.answer()
+    data = callback.data.split(":")
+    question_id, answer_id, user, quiz_id = int(
+        data[1]), int(data[2]), data[3], int(data[4])
 
-        with db_manager.get_connection() as conn:
-            cur = conn.cursor()
+    async with db_manager.get_async_connection() as conn:
+        cursor = await conn.cursor()
 
-            cur.execute(
-                "SELECT is_correct FROM answers WHERE id = ?", (answer_id,))
-            result = cur.fetchone()
+        # Проверка правильности ответа
+        is_correct = await cursor.execute("SELECT is_correct FROM answers WHERE id = ?", (answer_id,))
+        is_correct = (await is_correct.fetchone())[0]
 
-            if result and result[0] == 1:
-                update_quize_points(user, quiz_id)
-            cur.execute(
-                "SELECT quiz_id FROM questions WHERE id = ?", (question_id,))
-            quiz_id = cur.fetchone()[0]
+        if is_correct:
+            await update_quize_points(user, quiz_id)
 
-            cur.execute("""
-    SELECT id FROM questions 
-    WHERE quiz_id = ? AND id > ? ORDER BY id ASC LIMIT 1
-    """, (quiz_id, question_id))
+        # Получение следующего вопроса
+        next_question = await cursor.execute("""
+            SELECT id FROM questions 
+            WHERE quiz_id = ? AND id > ? 
+            ORDER BY id ASC LIMIT 1
+        """, (quiz_id, question_id))
+        next_question = await next_question.fetchone()
 
-            next_question = cur.fetchone()
-
-            if next_question:
-                next_question_id = next_question[0]
-                send_question(call.message.chat.id, user,
-                              next_question_id, quiz_id)
-            else:
-                bot.send_message(
-                    call.message.chat.id, f"Квиз завершён! Ваши баллы: {check_quiz_points(user, quiz_id)}", reply_markup=main_keyboard())
-
-    except Exception as e:
-        bot.send_message(call.message.chat.id, e)
+        if next_question:
+            await send_question(callback.message.chat.id, user, next_question[0], quiz_id)
+        else:
+            points = await check_quiz_points(user, quiz_id)
+            await callback.message.answer(f"Квиз завершён! Ваши баллы: {points}")

@@ -1,108 +1,127 @@
-import sqlite3
+from bot import bot, dp, router
+from aiogram.types import BufferedInputFile
+from database import db_manager
 import openpyxl
 from openpyxl.styles import Font, PatternFill
-from database import db_manager
+import asyncio
 
 
-def init_admins():
+async def init_admins():
     try:
-        add_admin("@arrisse", 0)
-        add_admin("@Nikita_Savel", 0)
+        await add_admin("@arrisse", 0)
+        await add_admin("@Nikita_Savel", 0)
     except Exception as e:
         print(f"Ошибка инициализации админов: {e}")
 
 
-def create_admins_table():
-  with db_manager.get_connection() as conn:
-    cursor = conn.cursor()
-
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS admins (
-        adminname TEXT,            -- Имя пользователя (@username)
-        adminlevel INTEGER DEFAULT 1, -- Уровень админства
-        questnum INTEGER DEFAULT 0 -- Номер станции (если админ второго уровня)
-    )
-    """)
-
-
-def add_admin(adminname, adminlevel):
-
-  with db_manager.get_connection() as conn:
-    cursor = conn.cursor()
-
-    cursor.execute(
-        "SELECT COUNT(*) FROM admins WHERE adminname = ?", (adminname,))
-    exists = cursor.fetchone()[0]
-
-    if exists:
-        print(f"⚠️ {adminname} уже является админом.")
-        return False
-    cursor.execute("INSERT OR IGNORE INTO admins (adminname, adminlevel) VALUES (?, ?)",
-                   (adminname, adminlevel))
-    conn.commit()
-    return True
-
-def update_admin_info(adminname, admin_level):
-    with db_manager.get_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute("UPDATE admins SET adminlevel = ? WHERE adminname = ?",
-                       (admin_level, adminname))
-        conn.commit()
-
-def get_all_admins():
-  with db_manager.get_connection() as conn:
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM admins")
-    admins = cursor.fetchall()
-    return [(admin) for admin in admins]
+async def create_admins_table():
+    async with db_manager.get_async_connection() as conn:
+        cursor = await conn.cursor()
+        await cursor.execute("""
+            CREATE TABLE IF NOT EXISTS admins (
+                adminname TEXT,
+                adminlevel INTEGER DEFAULT 1,
+                questnum INTEGER DEFAULT 0
+            )
+        """)
+        await conn.commit()
 
 
-def get_admin_level(username):
-  with db_manager.get_connection() as conn:
-    cursor = conn.cursor()
-    try:
-        cursor.execute(
-            "SELECT adminlevel FROM admins WHERE adminname = ?", (username,))
-        result = cursor.fetchone()
-    except Exception as e:
-        print("Ошибка при выполнении запроса:", e)
-        result = None
-    return result[0] if result is not None else 0
+async def add_admin(adminname: str, adminlevel: int) -> bool:
+    async with db_manager.get_async_connection() as conn:
+        cursor = await conn.cursor()
+        await cursor.execute(
+            "SELECT COUNT(*) FROM admins WHERE adminname = ?",
+            (adminname,)
+        )
+        exists = (await cursor.fetchone())[0]
+
+        if exists:
+            print(f"⚠️ {adminname} уже является админом.")
+            return False
+
+        await cursor.execute(
+            "INSERT OR IGNORE INTO admins (adminname, adminlevel) VALUES (?, ?)",
+            (adminname, adminlevel)
+        )
+        await conn.commit()
+        return True
 
 
-def update_admin_questnum(username, new_value):
-  with db_manager.get_connection() as conn:
-    cursor = conn.cursor()
+async def update_admin_info(adminname: str, admin_level: int):
+    async with db_manager.get_async_connection() as conn:
+        cursor = await conn.cursor()
+        await cursor.execute(
+            "UPDATE admins SET adminlevel = ? WHERE adminname = ?",
+            (admin_level, adminname)
+        )
+        await conn.commit()
 
-    cursor.execute(
-        f"UPDATE admins SET questnum = ? WHERE adminname = ?", (new_value, username))
-    conn.commit()
+
+async def get_all_admins() -> list:
+    async with db_manager.get_async_connection() as conn:
+        cursor = await conn.cursor()
+        await cursor.execute("SELECT * FROM admins")
+        return [admin for admin in await cursor.fetchall()]
 
 
-def save_admins_to_excel():
-    users = get_all_admins()
+async def get_admin_level(username: str) -> int:
+    async with db_manager.get_async_connection() as conn:
+        cursor = await conn.cursor()
+        try:
+            await cursor.execute(
+                "SELECT adminlevel FROM admins WHERE adminname = ?",
+                (username,)
+            )
+            result = await cursor.fetchone()
+        except Exception as e:
+            print("Ошибка при выполнении запроса:", e)
+            return 0
+        return result[0] if result else 0
 
-    if not users:
+
+async def update_admin_questnum(username: str, new_value: int):
+    async with db_manager.get_async_connection() as conn:
+        cursor = await conn.cursor()
+        await cursor.execute(
+            "UPDATE admins SET questnum = ? WHERE adminname = ?",
+            (new_value, username)
+        )
+        await conn.commit()
+
+
+async def save_admins_to_excel(bot) -> BufferedInputFile:
+    admins = await get_all_admins()
+
+    if not admins:
         return None
 
-    workbook = openpyxl.Workbook()
-    sheet = workbook.active
-    sheet.title = "Админы"
+    # Синхронные операции выполняем в отдельном потоке
+    def generate_excel():
+        workbook = openpyxl.Workbook()
+        sheet = workbook.active
+        sheet.title = "Админы"
+        sheet.append(["Adminname", "Level", "Station"])
 
-    sheet.append(["Adminname", "level", "station"])
+        for admin in admins:
+            sheet.append(list(admin))
 
-    for user in users:
-        sheet.append(list(user))
+        filename = "admins.xlsx"
+        workbook.save(filename)
+        return filename
 
-    filename = "admins.xlsx"
-    workbook.save(filename)
-    return filename
+    loop = asyncio.get_event_loop()
+    filename = await loop.run_in_executor(None, generate_excel)
+
+    with open(filename, 'rb') as file:
+        return BufferedInputFile(file.read(), filename="admins_list.xlsx")
 
 
-def get_admin_by_username(username):
-  with db_manager.get_connection() as conn:
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT * FROM admins WHERE adminname = ?", (username,))
-    user = cursor.fetchone()
-    return user if user else None
+async def get_admin_by_username(username: str):
+    async with db_manager.get_async_connection() as conn:
+        cursor = await conn.cursor()
+        await cursor.execute(
+            "SELECT * FROM admins WHERE adminname = ?",
+            (username,)
+        )
+        return await cursor.fetchone()

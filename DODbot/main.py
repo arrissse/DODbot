@@ -1,118 +1,56 @@
-from bot import bot, telebot
-from flask import Flask, request, abort
-import requests
-import os
-from requests.exceptions import ConnectionError, Timeout, HTTPError
-import time
-from telebot.apihelper import ApiTelegramException
+from flask import Flask, request
+from aiogram import types
+from bot import bot, dp, router
+import asyncio
 import logging
-from database import logger, db_manager
-
-def init_database():
- try:
-    logger.info("🔑 Начало эксклюзивной инициализации БД")
-    with db_manager.get_connection() as conn:
-        if conn is None:
-                raise RuntimeError("Соединение с БД не установлено")
-        if os.path.exists("database.lock"):
-            os.remove("database.lock")
-        from newsletter import create_db
-        create_db()
-        logger.info("🚀 newsletter")
-        from merch import create_merch_table
-        create_merch_table()
-        from merch import get_table_columns
-        assert "Блокнот" in get_table_columns("merch")
-        from users import create_users_table
-        create_users_table()
-        logger.info("🚀 users")
-        from admin import create_admins_table
-        create_admins_table()
-        logger.info("🚀 admins")
-        from admin_handlers import create_price_table
-        create_price_table()
-        from quiz import create_quiz_table
-        create_quiz_table()
-        from admin import init_admins
-        init_admins()
-        logger.info("✅ БД успешно инициализирована")
- except Exception as e:
-        logger.critical(f"⛔ Критическая ошибка: {str(e)}")
-        raise SystemExit(1)
-
-
-def start_background_threads():
-    init_database()  # Блокирующий вызов, гарантирует инициализацию
-    try:
-        newsletter.start_sending_newsletters()
-    except Exception as e:
-        logger.critical(f"Не удалось запустить рассылку: {e}")
-
-
-import quiz
-import set_points
-import add_admin
+from config import WEBHOOK_URL
+from database import init_database
 import newsletter
-import admin_handlers
-import handlers
+from . import users, admin, handler, admin_handlers, newsletter, add_admin, merch, quiz, set_points
+
+dp.include_router(router)
+
+def register_all_handlers(dp):
+    users.register(dp)
+    admin.register(dp)
+    handler.register(dp)
+    admin_handlers.register(dp)
+    newsletter.register(dp)
+    add_admin.register(dp)
+    merch.register(dp)
+    quiz.register(dp)
+    set_points.register(dp)
+
+register_all_handlers(dp)
 
 app = Flask(__name__)
-app.logger.setLevel(logging.DEBUG)
 
-@app.route('/test')
-def test():
-    return "Test page"
 
-@app.route('/your-webhook-path', methods=['POST'])
-def webhook():
-    print("Webhook received!")
-    json_str = request.get_data(as_text=True)
-    print(f"Raw data: {json_str}")
-    if not json_str:
-        return "No data received", 400
+@app.route("/", methods=["GET"])
+def index():
+    return "Flask + Aiogram бот работает!"
 
+
+@app.route("/your-webhook-path", methods=["POST"])
+async def webhook():
     try:
-        update = telebot.types.Update.de_json(json_str)
-        bot.process_new_updates([update])
+        data = request.get_data().decode("utf-8")
+        update = types.Update.model_validate_json(data)
+        await dp.feed_update(bot, update)
     except Exception as e:
-        print(f"Error processing webhook: {e}")
-        return "Failed to process update", 500
-
+        logging.exception("Ошибка при обработке обновления:")
+        return "Ошибка", 500
     return "OK", 200
 
 
-@app.route("/your-webhook-path", methods=["GET"])
-def index():
-    return "Flask server is running!", 200
-
-@app.route("/", methods=["GET"])
-def home():
-    return "Flask server is running!", 200
-
-def set_webhook_with_retry():
-    retries = 5
-    for _ in range(retries):
-        try:
-            bot.set_webhook(url="https://fest.mipt.ru/your-webhook-path")
-            print("Webhook установлен успешно!")
-            return
-        except Exception as e:
-            print(f"Ошибка при установке webhook: {e}")
-            time.sleep(10)
-    print("Не удалось установить webhook после нескольких попыток.")
+async def on_startup():
+    await bot.set_webhook(WEBHOOK_URL)
+    await init_database()
+    await newsletter.start_sending_newsletters()
 
 
-if __name__ == '__main__':
-    init_database()
-    try:
-        bot.set_webhook(url="https://fest.mipt.ru/your-webhook-path")
-    except ApiTelegramException as e:
-        if e.result_json['error_code'] == 429:
-            retry_after = e.result_json['parameters']['retry_after']
-            print(f"Too many requests. Retrying after {retry_after} seconds...")
-            time.sleep(1)
-            bot.set_webhook(url="https://fest.mipt.ru/your-webhook-path")
-
-    print(bot.get_webhook_info())
-    start_background_threads()
-    app.run(host="0.0.0.0", port=10181, debug=True)
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(on_startup())
+    app.run(host="0.0.0.0", port=10181)

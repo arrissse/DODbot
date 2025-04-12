@@ -4,7 +4,7 @@ from keyboard import main_keyboard
 from users import update_user_points, get_user_by_username, is_quest_started
 from users import update_user_queststation
 from admin import get_admin_by_username, get_admin_level
-from handlers import stations
+from handler import stations
 
 @bot.message_handler(func=lambda message: message.text == "Квест. Проставить баллы")
 def set_points(message):
