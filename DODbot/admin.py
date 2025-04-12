@@ -24,9 +24,6 @@ def create_admins_table():
     )
     """)
 
-    conn.commit()
-    conn.close()
-
 
 def add_admin(adminname, adminlevel):
 
@@ -43,9 +40,6 @@ def add_admin(adminname, adminlevel):
         return False
     cursor.execute("INSERT OR IGNORE INTO admins (adminname, adminlevel) VALUES (?, ?)",
                    (adminname, adminlevel))
-    conn.commit()
-
-    conn.close()
     return True
 
 
@@ -54,7 +48,6 @@ def get_all_admins():
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM admins")
     admins = cursor.fetchall()
-    conn.close()
     return [(admin) for admin in admins]
 
 
@@ -68,7 +61,6 @@ def get_admin_level(username):
     except Exception as e:
         print("Ошибка при выполнении запроса:", e)
         result = None
-    conn.close()
     return result[0] if result is not None else 0
 
 
@@ -78,9 +70,6 @@ def update_admin_questnum(username, new_value):
 
     cursor.execute(
         f"UPDATE admins SET questnum = ? WHERE adminname = ?", (new_value, username))
-
-    conn.commit()
-    conn.close()
 
 
 def save_admins_to_excel():
@@ -109,5 +98,4 @@ def get_admin_by_username(username):
 
     cursor.execute("SELECT * FROM admins WHERE adminname = ?", (username,))
     user = cursor.fetchone()
-    conn.close()
     return user if user else None
