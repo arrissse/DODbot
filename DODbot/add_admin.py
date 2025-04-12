@@ -105,8 +105,8 @@ async def process_admin_creation(message: types.Message, username: str, admin_le
             )
 
         admins = await get_all_admins()
-        admin_list = "\n".join([f"@{a.username}" for a in admins])
-        await message.answer(f"{msg}\nСписок админов:\n{admin_list}")
+        admin_list = "\n".join([f"@{a['username']}" for a in admins])
+        await message.answer(f"\nСписок админов:\n{admin_list}")
 
     except Exception as e:
         await message.answer(f"❌ Ошибка: {str(e)}")
