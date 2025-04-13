@@ -14,8 +14,7 @@ from merch import give_merch, is_got_merch, got_merch, add_column, save_merch_to
 from quiz import update_quiz_time
 from database import db_manager
 from aiogram.fsm.state import State, StatesGroup
-
-# Определяем группу состояний для работы с мерчем и ценами
+import logging
 
 
 class Form(StatesGroup):
@@ -385,7 +384,6 @@ async def process_fusername(m: Message, state: FSMContext):
         if not await get_user_by_username(username):
             await m.answer(f"❌ Пользователя {username} нет в базе.")
             return
-
         await state.update_data(username=username)
         markup = InlineKeyboardBuilder()
         merch_types = await get_merch_types()
