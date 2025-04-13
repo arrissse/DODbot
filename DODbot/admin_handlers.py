@@ -296,7 +296,7 @@ async def get_merch_price(merch_type: str):
     async with db_manager.get_connection() as conn:
        async with conn.execute(
            "SELECT price FROM merch_prices WHERE merch_type = ?",
-           merch_type
+           (merch_type,)
        ) as cursor:
            result = await cursor.fetchone()
            return result[0] if result else None
