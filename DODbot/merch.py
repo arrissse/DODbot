@@ -20,13 +20,10 @@ async def create_merch_table():
 
 async def is_valid_column(column_name: str) -> bool:
     async with db_manager.get_connection() as conn:
-        cursor = await conn.execute(
-            "SELECT column_name FROM information_schema.columns "
-            "WHERE table_name = 'merch'"
-        )
+        cursor = await conn.execute(f"PRAGMA table_info(merch)")
         columns = await cursor.fetchall()
-        # Предполагается, что каждая строка — кортеж, а имя столбца находится в индексе 0
-        return any(row[0] == column_name for row in columns)
+        return any(row[1] == column_name for row in columns)
+
 
 
 async def got_merch(username: str, merch_type: str) -> bool:
@@ -66,27 +63,26 @@ async def give_merch(username: str, merch_type: str):
 async def is_got_merch(username: str) -> bool:
     async with db_manager.get_connection() as conn:
         await conn.execute(
-            "INSERT INTO merch (username) VALUES (?) ON CONFLICT (username) DO NOTHING",
+            "INSERT INTO merch (username) VALUES (?) ON CONFLICT(username) DO NOTHING",
             (username,)
         )
         await conn.commit()
 
-        cursor = await conn.execute(
-            "SELECT name FROM pragma_table_info('merch') WHERE type IN ('INTEGER', 'REAL')"
-        )
+        cursor = await conn.execute("PRAGMA table_info(merch)")
         rows = await cursor.fetchall()
-        numeric_columns = [row[0] for row in rows if row[0] != 'username']
+        numeric_columns = [row[1] for row in rows if row[1] != 'username']
 
         if not numeric_columns:
             return False
 
         check_conditions = " AND ".join(
-            [f'"{col}" = 1' for col in numeric_columns])
+            [f'"{col}" = 1' for col in numeric_columns]
+        )
         query = f"""
-                SELECT CASE WHEN ({check_conditions}) THEN 1 ELSE 0 END
-                FROM merch 
-                WHERE username = ?
-            """
+            SELECT CASE WHEN ({check_conditions}) THEN 1 ELSE 0 END
+            FROM merch 
+            WHERE username = ?
+        """
         cursor2 = await conn.execute(query, (username,))
         result = await cursor2.fetchone()
         return bool(result[0]) if result else False
@@ -95,15 +91,13 @@ async def is_got_merch(username: str) -> bool:
 async def is_got_any_merch(username: str) -> bool:
     async with db_manager.get_connection() as conn:
         await conn.execute(
-            "INSERT INTO merch (username) VALUES (?) ON CONFLICT (username) DO NOTHING",
-            (username, )
+            "INSERT INTO merch (username) VALUES (?) ON CONFLICT(username) DO NOTHING",
+            (username,)
         )
-        cursor = await conn.execute(
-            "SELECT column_name FROM information_schema.columns "
-            "WHERE table_name = 'merch' AND data_type IN ('integer', 'real')"
-        )
+
+        cursor = await conn.execute("PRAGMA table_info(merch)")
         columns = await cursor.fetchall()
-        numeric_columns = [col[0] for col in columns if col[0] != 'username']
+        numeric_columns = [col[1] for col in columns if col[1] != 'username']
 
         if not numeric_columns:
             return False
@@ -119,24 +113,19 @@ async def is_got_any_merch(username: str) -> bool:
 
 async def add_column(column_name: str, column_type: str = "INTEGER DEFAULT 0"):
     async with db_manager.get_connection() as conn:
-        cursor = await conn.execute(
-            "SELECT EXISTS ("
-            "SELECT 1 FROM information_schema.columns "
-            "WHERE table_name = 'merch' AND column_name = ?"
-            ") AS column_exists",
-            (column_name, )
-        )
-        result = await cursor.fetchone()
-        exists = result[0] if result else False
+        cursor = await conn.execute("PRAGMA table_info(merch)")
+        columns = await cursor.fetchall()
+        column_names = [col[1] for col in columns]
 
-        if not exists:
+        if column_name not in column_names:
             await conn.execute(
-                f"ALTER TABLE merch ADD COLUMN {column_name} {column_type}"
+                f'ALTER TABLE merch ADD COLUMN "{column_name}" {column_type}'
             )
             print(f"Столбец '{column_name}' добавлен в таблицу.")
         else:
             print(f"Столбец '{column_name}' уже существует.")
         await conn.commit()
+
 
 
 async def get_all_merch():
@@ -147,13 +136,9 @@ async def get_all_merch():
 
 async def get_table_columns(table_name: str):
     async with db_manager.get_connection() as conn:
-        cursor = await conn.execute(
-            "SELECT column_name FROM information_schema.columns "
-            "WHERE table_name = ?",
-            (table_name, )
-        )
+        cursor = await conn.execute(f"PRAGMA table_info({table_name})")
         columns = await cursor.fetchall()
-        return [col[0] for col in columns]
+        return [col[1] for col in columns]
 
 
 async def save_merch_to_excel():
