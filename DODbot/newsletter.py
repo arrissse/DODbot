@@ -60,7 +60,7 @@ async def newsletter_scheduler():
             async with db_manager.get_connection() as conn:
                 # Получаем все рассылки для текущего времени
                 cursor = await conn.execute(
-                    "SELECT id, message FROM newsletter WHERE send_time = $1",
+                    "SELECT id, message FROM newsletter WHERE send_time = ?",
                     (current_time, )
                 )
                 newsletters = await cursor.fetchall()
@@ -86,7 +86,7 @@ async def newsletter_scheduler():
 
                         # Удаляем отправленную рассылку
                         await conn.execute(
-                            "DELETE FROM newsletter WHERE id = $1",
+                            "DELETE FROM newsletter WHERE id = ?",
                             (newsletter_id, )
                         )
                         await conn.commit()
