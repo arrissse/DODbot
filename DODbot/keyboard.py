@@ -2,16 +2,18 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
 
 def main_keyboard():
+    buttons = [
+        ["📅 Расписание лекций", "🗺 Карта"],
+        ["🧩 Активности ФШ", "📍 Расположение стендов"],
+        ["🎯 Квест"]
+    ]
+
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="📅 Расписание лекций"),
-             KeyboardButton(text="🗺 Карта")],
-            [KeyboardButton(text="🧩 Активности ФШ"),
-             KeyboardButton(text="🎓 Квизы")],
-            [KeyboardButton(text="📍 Расположение стендов"),
-             KeyboardButton(text="🎯 Квест")]
+            [KeyboardButton(text=text) for text in row]
+            for row in buttons
         ],
-        resize_keyboard=True
+        resize_keyboard=True,
     )
 
 
