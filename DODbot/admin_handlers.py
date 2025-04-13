@@ -287,7 +287,8 @@ async def create_price_table():
 
 async def get_merch_types():
     async with db_manager.get_connection() as conn:
-        result = await conn.fetch("SELECT merch_type FROM merch_prices")
+        cursor = await conn.execute("SELECT merch_type FROM merch_prices")
+        result = await cursor.fetchall()
         return [row['merch_type'] for row in result]
 
 
@@ -314,7 +315,8 @@ async def update_merch_price(merch_type, new_price):
 @router.message(F.text == "Стоимость мерча")
 async def merch_prices_menu(message: Message):
     async with db_manager.get_connection() as conn:
-        result = await conn.fetch("SELECT merch_type FROM merch_prices")
+        cursor = await conn.execute("SELECT merch_type FROM merch_prices")
+        result = await cursor.fetchall()
         merch_types = [row[0] for row in result]
 
         markup = InlineKeyboardBuilder()

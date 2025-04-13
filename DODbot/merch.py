@@ -25,8 +25,6 @@ async def is_valid_column(column_name: str) -> bool:
             "WHERE table_name = 'merch'"
         )
         columns = await cursor.fetchall()
-        # Здесь предполагается, что каждая строка – словарь или кортеж, в зависимости от настроек aiosqlite
-        # Если возвращается кортеж, то индекс 0 содержит имя столбца
         return any(row[0] == column_name for row in columns)
 
 
