@@ -41,6 +41,12 @@ async def init_admins():
 
         await add_admin("@bonderson", 2)
         await update_admin_questnum("@bonderson", 11)
+
+        await add_admin("@catmorozz", 2)
+        await update_admin_questnum("@catmorozz", 11)
+
+        await add_admin("@lovetea10", 2)
+        await update_admin_questnum("@lovetea10", 11)
     
         await add_admin("@kson27", 1)
         await add_admin("@carefree_celery", 1)
