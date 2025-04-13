@@ -23,7 +23,7 @@ class NewsletterStates(StatesGroup):
 
 async def init_db():
     try:
-        async with db_manager.get_connection() as conn:  # Замена get_connection() на get_connection()
+        async with db_manager.get_connection() as conn:
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS newsletter (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,7 +41,7 @@ async def add_newsletter(newsletter_text: str, send_time: str):
     try:
         dt = datetime.strptime(send_time, '%Y-%m-%d %H:%M')
         formatted_time = dt.strftime('%Y-%m-%d %H:%M')
-        async with db_manager.get_connection() as db:  # Замена метода подключения
+        async with db_manager.get_connection() as db:
             await db.execute(
                 "INSERT INTO newsletter (message, send_time) VALUES (?, ?)",
                 (newsletter_text, formatted_time)
@@ -53,12 +53,10 @@ async def add_newsletter(newsletter_text: str, send_time: str):
 
 
 async def newsletter_scheduler():
-    """Проверка и отправка запланированных рассылок каждую минуту."""
     while True:
         try:
             current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
             async with db_manager.get_connection() as conn:
-                # Получаем все рассылки для текущего времени
                 cursor = await conn.execute(
                     "SELECT id, message FROM newsletter WHERE send_time = ?",
                     (current_time, )
@@ -87,7 +85,7 @@ async def newsletter_scheduler():
                         # Удаляем отправленную рассылку
                         await conn.execute(
                             "DELETE FROM newsletter WHERE id = ?",
-                            (newsletter_id, )
+                            (newsletter[0], )
                         )
                         await conn.commit()
                         logger.info(
@@ -172,10 +170,11 @@ async def process_custom_time(message: Message, state: FSMContext):
     data = await state.get_data()
     newsletter_text = data.get('text')
     send_time = message.text.strip()
-
+    logger.info("before try")
     try:
         datetime.strptime(send_time, '%Y-%m-%d %H:%M')
         await add_newsletter(newsletter_text, send_time)
+        logger.info("added newsletter")
         await message.answer(f"✅ Рассылка запланирована на {send_time}!")
     except Exception as e:
         await message.answer(f"❌ Ошибка: {str(e)}")
