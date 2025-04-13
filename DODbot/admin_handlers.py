@@ -399,10 +399,8 @@ async def process_fusername(m: Message, state: FSMContext):
                 await check_points(username.strip('@')) >= price
                 and not await got_merch(username, merch)
             ):
-                # Исправлено здесь: используем именованные аргументы
                 markup.add(InlineKeyboardButton(
-                    text=f"{merch}: {price}",  # Явно указываем text=
-                    # callback_data=
+                    text=f"{merch}: {price}",
                     callback_data=f'give_merch:{price}:{merch}:{username}'
                 ))
 
@@ -422,17 +420,27 @@ async def process_fusername(m: Message, state: FSMContext):
         await state.clear()
 
 
-
 @router.callback_query(F.data.startswith("give_merch"))
 async def process_merch_callback(call: CallbackQuery):
     _, merch_price, merch_type, username = call.data.split(":")
+
     markup = InlineKeyboardBuilder()
-    markup.button(
+
+    markup.row(
         InlineKeyboardButton(
-            'Да', callback_data=f'yes:{merch_price}:{merch_type}:{username}'),
-        InlineKeyboardButton('Нет', callback_data='no')
+            text='Да',
+            callback_data=f'yes:{merch_price}:{merch_type}:{username}'
+        ),
+        InlineKeyboardButton(
+            text='Нет',
+            callback_data='no'
+        )
     )
-    await call.message.answer(f"Выдать {username} {merch_type}?", reply_markup=markup.as_markup())
+
+    await call.message.answer(
+        f"Выдать {username} {merch_type}?",
+        reply_markup=markup.as_markup()
+    )
 
 
 @router.callback_query(F.data.startswith("yes"))
