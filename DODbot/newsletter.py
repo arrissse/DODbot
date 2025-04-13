@@ -179,17 +179,36 @@ async def send_newsletter(text: str):
 
 @router.message(NewsletterStates.waiting_custom_time, F.text)
 async def process_custom_time(message: Message, state: FSMContext):
-    logger.info("before try")
     data = await state.get_data()
     newsletter_text = data.get('text')
     send_time = message.text.strip()
-    logger.info("before try")
+
+    if not newsletter_text:
+        await message.answer("❌ Текст рассылки утерян")
+        await state.clear()
+        return
+
     try:
-        datetime.strptime(send_time, '%Y-%m-%d %H:%M')
-        await add_newsletter(newsletter_text, send_time)
-        logger.info("added newsletter")
-        await message.answer(f"✅ Рассылка запланирована на {send_time}!")
+        # Проверка формата времени
+        dt = datetime.strptime(send_time, '%Y-%m-%d %H:%M')
+        formatted_time = dt.strftime('%Y-%m-%d %H:%M')
+
+        # Запись в БД
+        async with db_manager.get_connection() as conn:
+            await conn.execute(
+                "INSERT INTO newsletter (message, send_time) VALUES (?, ?)",
+                (newsletter_text, formatted_time)
+            )
+            await conn.commit()
+
+        logger.info(f"Новая рассылка на {formatted_time}")
+        await message.answer(f"✅ Рассылка запланирована на {formatted_time}!")
+
+    except ValueError as e:
+        logger.error(f"Ошибка формата времени: {e}")
+        await message.answer("❌ Неверный формат времени! Используйте YYYY-MM-DD HH:MM")
     except Exception as e:
-        await message.answer(f"❌ Ошибка: {str(e)}")
+        logger.critical(f"Ошибка БД: {str(e)}")
+        await message.answer("❌ Ошибка сервера при сохранении рассылки")
     finally:
         await state.clear()

@@ -23,7 +23,7 @@ async def is_valid_column(column_name: str) -> bool:
             "SELECT column_name FROM information_schema.columns "
             "WHERE table_name = 'merch'"
         )
-        return any(column['column_name'] == column_name for column in columns)
+        return any(column[f'{column_name}'] == column_name for column in columns)
 
 
 async def got_merch(username: str, type: str) -> bool:
@@ -35,9 +35,7 @@ async def got_merch(username: str, type: str) -> bool:
                 "INSERT OR IGNORE INTO merch (username) VALUES (?)",
                 (username,)
             )
-        await conn.commit()  # Явное подтверждение изменений
-            
-            # Проверяем наличие мерча
+        await conn.commit()  
         async with conn.execute(
                 f'SELECT "{type}" FROM merch WHERE username = ?',
                 (username,)
@@ -52,7 +50,7 @@ async def give_merch(username: str, type: str):
     async with db_manager.get_connection() as conn:
         await conn.execute(
             "INSERT INTO merch (username) VALUES (?) ON CONFLICT (username) DO NOTHING",
-            username
+            (username, )
         )
         await conn.execute(
             f'UPDATE merch SET "{type}" = 1 WHERE username = ?',
@@ -68,7 +66,6 @@ async def is_got_merch(username: str) -> bool:
         )
         await conn.commit()
 
-            # Получаем список числовых колонок (кроме username)
         async with conn.execute(
                 "SELECT name FROM pragma_table_info('merch') WHERE type IN ('INTEGER', 'REAL')"
             ) as cursor:
@@ -78,7 +75,6 @@ async def is_got_merch(username: str) -> bool:
         if not numeric_columns:
                 return False
 
-            # Создаем условие проверки для всех колонок
         check_conditions = " AND ".join([f'"{col}" = 1' for col in numeric_columns])
         query = f"""
                 SELECT CASE WHEN ({check_conditions}) THEN 1 ELSE 0 END
@@ -123,7 +119,7 @@ async def add_column(column_name: str, column_type: str = "INTEGER DEFAULT 0"):
             "SELECT 1 FROM information_schema.columns "
             "WHERE table_name = 'merch' AND column_name = ?"
             ") AS column_exists",
-            column_name
+            (column_name, )
         )
 
         exists = result[0] if result else False
@@ -147,7 +143,7 @@ async def get_table_columns(table_name: str):
         columns = await conn.fetch(
             "SELECT column_name FROM information_schema.columns "
             "WHERE table_name = ?",
-            table_name
+            (table_name, )
         )
         return [col['column_name'] for col in columns]
 
