@@ -8,11 +8,11 @@ async def create_merch_table():
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS merch (
                 username TEXT UNIQUE,
-                "Раскрасить футболку" INTEGER DEFAULT 0,
-                "Раскрасить шоппер" INTEGER DEFAULT 0,
-                "Футболка" INTEGER DEFAULT 0,
-                "Блокнот" INTEGER DEFAULT 0,
-                "ПБ" INTEGER DEFAULT 0
+                "Шоппер для рисования" INTEGER DEFAULT 0,
+                "Шоппер с символикой МФТИ" INTEGER DEFAULT 0,
+                "Футболка для рисования" INTEGER DEFAULT 0,
+                "Футболка с символикой МФТИ" INTEGER DEFAULT 0,
+                "Пауэрбанк" INTEGER DEFAULT 0
             )
         """)
 

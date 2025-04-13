@@ -272,12 +272,12 @@ async def create_price_table():
             )
         """)
         await conn.execute("""
-            INSERT INTO merch_prices (merch_type, price) VALUES 
-                ('Раскрасить футболку', 7),
-                ('Раскрасить шоппер', 5),
-                ('Футболка', 8),
-                ('Блокнот', 2),
-                ('ПБ', 15)
+            INSERT INTO merch_prices (merch_type, price) VALUES
+                ('Шоппер для рисования', 5),
+                ('Шоппер с символикой МФТИ', 6),
+                ('Футболка для рисования', 7),
+                ('Футболка с символикой МФТИ', 8),
+                ('Пауэрбанк', 15)
             ON CONFLICT (merch_type) DO NOTHING
         """)
         await conn.commit()
