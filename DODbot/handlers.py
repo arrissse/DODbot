@@ -190,7 +190,7 @@ async def handle_station(message: types.Message):
         builder.button(text="Код для участия",
                        callback_data=f"code:{username}")
         builder.button(
-            text="Баллы", callback_data=f"points:{username}:{station_number}")
+            text="Баллы", callback_data=f"pts:{username}:{station_number}")
 
         await message.answer(f"Расположение {message.text}: {st_place}", reply_markup=builder.as_markup())
     except Exception as e:
@@ -204,7 +204,7 @@ async def send_code(callback: types.CallbackQuery):
     await callback.answer()
 
 
-@router.callback_query(F.data.startswith("points:"))
+@router.callback_query(F.data.startswith("pts:"))
 async def send_pts(callback: types.CallbackQuery):
     _, username, station_number = callback.data.split(":")
     await send_quest_points(callback.message, username, station_number)
