@@ -118,6 +118,7 @@ async def process_newsletter_text(message: Message, state: FSMContext):
 
 @router.callback_query(NewsletterStates.waiting_send_time, F.data.in_(["send_now", "schedule_later"]))
 async def handle_send_option(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
     data = await state.get_data()
     newsletter_text = data.get('text')
 
