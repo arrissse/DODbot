@@ -36,11 +36,6 @@ async def process_name(message: types.Message, state: FSMContext):
         await message.answer(f"❌ Пользователь @{username} не найден в списке.")
         return await state.clear()
 
-    admin_exists = any(admin['adminname'] == username for admin in admins)
-    if admin_exists:
-        await message.answer(f"Пользователь {username} уже является админом.")
-        return await state.clear()
-
     await state.update_data(username=username)
     await message.answer("Введите уровень админства (0 - pro-admin, 1 - выдача мерча, 2 - админ фш):")
     await state.set_state(AdminStates.waiting_level)

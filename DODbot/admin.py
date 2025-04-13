@@ -37,16 +37,15 @@ async def add_admin(adminname: str, adminlevel: int) -> bool:
                 "SELECT 1 FROM admins WHERE adminname = ?",
                 (adminname,)
             )
-            if await cursor.fetchone():
-                print(f"⚠️ {adminname} уже является админом.")
-                return False
-
-            # Добавление нового администратора
-            await conn.execute(
-                "INSERT INTO admins (adminname, adminlevel) VALUES (?, ?)",
-                (adminname, adminlevel)
-            )
-            await conn.commit()
+            is_exist = await cursor.fetchone()
+            if is_exist:
+                update_admin_info(adminname, adminlevel)
+            else:
+                await conn.execute(
+                    "INSERT INTO admins (adminname, adminlevel) VALUES (?, ?)",
+                    (adminname, adminlevel)
+                )
+                await conn.commit()
             return True
         except Exception as e:
             await conn.rollback()
