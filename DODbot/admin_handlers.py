@@ -334,6 +334,7 @@ async def merch_prices_menu(message: Message):
 
 @router.callback_query(F.data.startswith("edit_price"))
 async def edit_price_handler(call: CallbackQuery, state: FSMContext):
+    await call.answer()
     merch_type = call.data.split(":")[1]
     await state.update_data(merch_type=merch_type)
     await state.set_state(Form.edit_price)
