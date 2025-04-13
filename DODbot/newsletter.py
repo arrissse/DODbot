@@ -142,7 +142,7 @@ async def send_newsletter(text: str):
 
         for user in users:
             try:
-                await bot.send_message(chat_id=user.id, text=text)
+                await bot.send_message(chat_id=int(user['id']), text=text)
                 success += 1
             except Exception as e:
                 logger.error(f"Ошибка отправки {user.username}: {str(e)}")
