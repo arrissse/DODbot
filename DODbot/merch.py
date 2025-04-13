@@ -1,7 +1,7 @@
 import openpyxl
 from database import db_manager
 import datetime
-
+import logging
 
 async def create_merch_table():
     async with db_manager.get_connection() as conn:

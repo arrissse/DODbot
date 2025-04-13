@@ -265,6 +265,7 @@ async def statistics(message: Message):
 -----------------------
 '''
 
+
 async def create_price_table():
     async with db_manager.get_connection() as conn:
         await conn.execute("""
@@ -395,6 +396,7 @@ async def process_fusername(m: Message, state: FSMContext):
             logging.info(merch)
             price = await get_merch_price(merch)
             logging.info("before if")
+            
             if (
                 await check_points(username.strip('@')) >= price
                 and not await got_merch(username, merch)
