@@ -403,7 +403,7 @@ async def process_fusername(m: Message, state: FSMContext):
                     text=f"{merch}: {price}",
                     callback_data=f'give_merch:{price}:{merch}:{username}'
                 ))
-
+        markup.adjust(1)
         if markup.as_markup().inline_keyboard:
             await m.answer(
                 f"Количество баллов {username}: {await check_points(username)}. "
