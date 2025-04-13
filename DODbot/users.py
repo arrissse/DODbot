@@ -173,15 +173,17 @@ async def check_points(username: str) -> int:
     """Проверка баллов (асинхронная версия)"""
     try:
         async with db_manager.get_connection() as conn:
-            async with conn.execute((
+            async with conn.execute(
                 "SELECT quest_points FROM users WHERE username = ?",
-                username
-            )) as cursor:
+                (username,)
+            ) as cursor:
                 result = await cursor.fetchone()
-                return result[0] or 0
+                return result[0] if result else 0
     except Exception as e:
         print(f"Error checking points: {e}")
         return 0
+
+
 
 
 async def update_merch_points(username: str, points: int):
