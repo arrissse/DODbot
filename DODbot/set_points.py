@@ -19,7 +19,8 @@ class SetPointsStates(StatesGroup):
 @router.message(F.text == "Квест. Проставить баллы")
 async def set_points(message: Message, state: FSMContext):
     admin = await get_admin_by_username(f"@{message.from_user.username}")
-    if not admin or (admin.level != 0 and admin.level != 2):
+    level = await get_admin_level(f"@{message.from_user.username}")
+    if not admin or (level != 0 and level != 2):
         await message.answer("❌ У вас нет доступа к этой команде.")
         return
 
@@ -40,8 +41,8 @@ async def process_username(message: Message, state: FSMContext):
     admin = await get_admin_by_username(f"@{message.from_user.username}")
 
     await state.update_data(username=username, admin=admin)
-
-    if admin.level == 0:
+    level = await get_admin_level(f"@{message.from_user.username}")
+    if level == 0:
         builder = InlineKeyboardBuilder()
         for name, number in stations.items():
             builder.button(text=name, callback_data=f"select_station:{number}")
@@ -49,7 +50,7 @@ async def process_username(message: Message, state: FSMContext):
 
         await message.answer("Выберите номер станции:", reply_markup=builder.as_markup())
         await state.set_state(SetPointsStates.waiting_station)
-    elif admin.level == 2:
+    elif level == 2:
         if user.stations[admin.quest_num] != 0:
             await message.answer(f"❌ Пользователю {username} уже начислены баллы.")
             await state.clear()
