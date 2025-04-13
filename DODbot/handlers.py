@@ -80,7 +80,7 @@ async def start_handler(m: types.Message):
     commands = [BotCommand(command="start", description="Перезапустить бота")]
     await bot.set_my_commands(
         commands,
-        scope=BotCommandScopeChat(chat_id=user['id'])
+        scope=BotCommandScopeChat(chat_id=int(user['id']))
     )
     
     await bot.set_my_commands(commands)
