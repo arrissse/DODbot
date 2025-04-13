@@ -8,6 +8,7 @@ from users import update_user_points, get_user_by_username, is_quest_started, up
 from admin import get_admin_by_username, get_admin_level
 from handlers import stations
 from keyboard import main_keyboard
+import logging
 
 
 class SetPointsStates(StatesGroup):
@@ -84,7 +85,7 @@ async def process_points_selection(message: Message, username: str, station_num:
     builder = InlineKeyboardBuilder()
     builder.button(text="1️⃣", callback_data=f"points:1")
     builder.button(text="2️⃣", callback_data=f"points:2")
-    builder.button(text="🔙 Назад", callback_data=f"back_to_stations")
+    builder.button(text="🔙 Назад", callback_data=f"back_to_stations:username")
     builder.adjust(2)
 
     await message.answer(
@@ -98,25 +99,31 @@ async def process_points_selection(message: Message, username: str, station_num:
 async def back_to_stations(callback: CallbackQuery, state: FSMContext):
     try:
         await callback.answer()
-
+        username = callback.data.split(":")[1]
+        await callback.message.delete()
         # Редактируем текущее сообщение
-        await callback.message.edit_text(
-            text="Выберите номер станции:",
-            reply_markup=InlineKeyboardBuilder()
-            .add(*[
-                InlineKeyboardButton(
-                    text=name,
-                    callback_data=f"select_station:{number}"
-                ) for name, number in stations.items()
-            ])
-            .adjust(2)
-            .as_markup()
+        builder = InlineKeyboardBuilder()
+        for name, number in stations.items():
+            builder.button(
+                text=name,
+                # Добавляем username в callback_data
+                callback_data=f"select_station:{number}&{username}"
+            )
+        builder.adjust(2)
+
+        # Отправляем новое сообщение с клавиатурой
+        new_message = await callback.message.answer(
+            text=f"🔙 Возврат к выбору станции для @{username}",
+            reply_markup=builder.as_markup()
         )
 
+        # Обновляем состояние
+        await state.update_data(menu_message_id=new_message.message_id)
         await state.set_state(SetPointsStates.waiting_station)
 
     except Exception as e:
-        await callback.answer(f"⚠️ Ошибка: {str(e)}", show_alert=True)
+        logging.error(f"Ошибка в back_to_stations: {e}")
+        await callback.answer("⚠️ Произошла ошибка!", show_alert=True)
 
 @router.callback_query(F.data.startswith("points:"), SetPointsStates.waiting_points)
 async def process_points_callback(callback: CallbackQuery, state: FSMContext):
