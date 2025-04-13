@@ -165,7 +165,7 @@ async def start_quiz(call: CallbackQuery):
         async with db_manager.get_connection() as conn:
             quiz_info = await conn.fetchrow(
                 "SELECT * FROM quiz_schedule WHERE id = ?",
-                quiz_id
+                (quiz_id, )
             )
         if not quiz_info:
             return await call.message.answer("Ошибка: квиз не найден.")
@@ -193,7 +193,7 @@ async def check_answer(call: CallbackQuery):
     async with db_manager.get_connection() as conn:
         result = await conn.fetchrow(
             "SELECT is_correct FROM answers WHERE id = ?",
-            answer_id
+            (answer_id, )
         )
     if result and result['is_correct']:
         await call.message.answer("✅ Верно!")
