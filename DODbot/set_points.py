@@ -85,7 +85,7 @@ async def process_points_selection(message: Message, username: str, station_num:
     builder = InlineKeyboardBuilder()
     builder.button(text="1️⃣", callback_data=f"points:1")
     builder.button(text="2️⃣", callback_data=f"points:2")
-    builder.button(text="🔙 Назад", callback_data=f"back_to_stations:username")
+    builder.button(text="🔙 Назад", callback_data=f"back_to_stations:{username}")
     builder.adjust(2)
 
     await message.answer(
@@ -99,9 +99,7 @@ async def process_points_selection(message: Message, username: str, station_num:
 async def back_to_stations(callback: CallbackQuery, state: FSMContext):
     try:
         username = callback.data.split(":")[1]
-        logging.info(f"{username}")
         await callback.message.delete()
-        logging.info(f"Delete")
         builder = InlineKeyboardBuilder()
         for name, number in stations.items():
             builder.button(
@@ -114,7 +112,6 @@ async def back_to_stations(callback: CallbackQuery, state: FSMContext):
             text=f"🔙 Возврат к выбору станции для @{username}",
             reply_markup=builder.as_markup()
         )
-        logging.info(f"Message")
         await state.set_state(SetPointsStates.waiting_station)
 
     except Exception as e:
