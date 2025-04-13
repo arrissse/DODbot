@@ -34,12 +34,15 @@ async def add_admin(adminname: str, adminlevel: int) -> bool:
         try:
             # Проверка существования администратора
             cursor = await conn.execute(
-                "SELECT 1 FROM admins WHERE adminname = ?",
+                "SELECT * FROM admins WHERE adminname = ?",
                 (adminname,)
             )
-            is_exist = await cursor.fetchone()
-            if is_exist:
-                update_admin_info(adminname, adminlevel)
+            is_exists = await cursor.fetchone()
+            if is_exists:
+                await cursor.execute(
+                    "UPDATE admins SET adminlevel = ? WHERE adminname = ?",
+                    (adminlevel, adminname)
+                )
             else:
                 await conn.execute(
                     "INSERT INTO admins (adminname, adminlevel) VALUES (?, ?)",
@@ -50,16 +53,6 @@ async def add_admin(adminname: str, adminlevel: int) -> bool:
         except Exception as e:
             await conn.rollback()
             raise
-
-
-async def update_admin_info(adminname: str, admin_level: int):
-    async with db_manager.get_connection() as conn:
-        cursor = await conn.cursor()
-        await cursor.execute(
-            "UPDATE admins SET adminlevel = ? WHERE adminname = ?",
-            (admin_level, adminname)
-        )
-        await conn.commit()
 
 
 async def get_all_admins():
