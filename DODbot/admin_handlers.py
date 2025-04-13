@@ -321,10 +321,11 @@ async def merch_prices_menu(message: Message):
 
         markup = InlineKeyboardBuilder()
         for merch in merch_types:
-            markup.button(InlineKeyboardButton(  # Исправлено здесь
+            markup.row(InlineKeyboardButton(
                 text=merch,
                 callback_data=f"edit_price:{merch}"
             ))
+
         await message.answer(
             "Выберите товар для изменения стоимости:",
             reply_markup=markup.as_markup()
