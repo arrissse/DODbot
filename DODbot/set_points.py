@@ -105,7 +105,7 @@ async def back_to_stations(callback: CallbackQuery, state: FSMContext):
         for name, number in stations.items():
             builder.button(
                 text=name,
-                callback_data=f"select_station:{number}&{username}"
+                callback_data=f"select_station:{number}"
             )
         builder.adjust(2)
 
