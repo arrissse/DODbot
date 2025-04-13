@@ -9,7 +9,7 @@ async def create_merch_table():
             CREATE TABLE IF NOT EXISTS merch (
                 username TEXT UNIQUE,
                 "Раскрасить шоппер" INTEGER DEFAULT 0,
-                "Шоппер МФТИ" INTEGER DEFAULT 0,
+                "Шоппер" INTEGER DEFAULT 0,
                 "Раскрасить футболку" INTEGER DEFAULT 0,
                 "Футболка" INTEGER DEFAULT 0,
                 "Пауэрбанк" INTEGER DEFAULT 0
