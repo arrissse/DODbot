@@ -58,7 +58,6 @@ async def on_startup():
     await quiz.create_quiz_table()
     await admin.init_admins()
     asyncio.create_task(newsletter.newsletter_scheduler(bot))
-    logger.info("✅ Планировщик рассылок активирован")
 
 
 async def on_shutdown():

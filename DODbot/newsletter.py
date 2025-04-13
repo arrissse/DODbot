@@ -116,12 +116,6 @@ async def catch_unhandled_messages(message: Message):
     logger.warning(f"⚠️ Необработанное сообщение: {message.text}")
     await message.answer("❗ Извините, я не понял вашего запроса.")
 
-
-@router.message()
-async def catch_unhandled_messages(message: Message):
-    logger.warning(f"⚠️ Необработанное сообщение: {message.text}")
-    await message.answer("❗ Извините, я не понял вашего запроса.")
-
 @router.message(F.text == "Отправить рассылку")
 async def handle_newsletter(message: Message, state: FSMContext):
     user = await get_admin_by_username(f"@{message.from_user.username}")
