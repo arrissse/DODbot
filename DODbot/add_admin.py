@@ -5,7 +5,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from users import get_all_users, get_user_by_username
 from handlers import stations
-from admin import add_admin, get_all_admins, get_admin_by_username, update_admin_questnum, update_admin_info, get_admin_level
+from admin import add_admin, get_all_admins, get_admin_by_username, update_admin_questnum, get_admin_level
 
 
 class AdminStates(StatesGroup):
