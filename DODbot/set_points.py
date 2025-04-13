@@ -66,7 +66,7 @@ async def process_station_selection(callback: CallbackQuery, state: FSMContext):
     station_num = int(callback.data.split(":")[1])
 
     user = await get_user_by_username(username)
-    if user.stations[station_num] != 0:
+    if user[station_num] != 0:
         await callback.message.answer(f"❌ Пользователю {username} уже начислены баллы.")
         await state.clear()
         return
