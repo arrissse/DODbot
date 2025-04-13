@@ -77,13 +77,6 @@ async def start_handler(m: types.Message):
     logging.info(f"Пользователь: {current_username}")
 
     keyboard = main_keyboard()
-    commands = [BotCommand(command="start", description="Перезапустить бота")]
-    await bot.set_my_commands(
-        commands,
-        scope=BotCommandScopeChat(chat_id=m.chat.id)
-    )
-    
-    await bot.set_my_commands(commands)
 
     if current_username in admin_usernames:
 
