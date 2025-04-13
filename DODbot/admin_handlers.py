@@ -446,9 +446,9 @@ async def process_merch_callback(call: CallbackQuery):
 @router.callback_query(F.data.startswith("yes"))
 async def process_merch_call_yes(call: CallbackQuery):
     _, merch_price, merch_type, username = call.data.split(":")
+    logging.info(f"{merch_type}, {username}")
     await give_merch(username, merch_type)
     await update_merch_points(username, merch_price)
-    print(int(await get_merch_price(merch_type)))
     await call.answer("✅ Мерч за квест выдан!")
     await call.message.answer(f"✅ Пользователю {username} выдан мерч за квест!")
 
