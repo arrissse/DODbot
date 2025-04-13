@@ -394,9 +394,7 @@ async def process_fusername(m: Message, state: FSMContext):
         merch_types = await get_merch_types()
 
         for merch in merch_types:
-            logging.info(merch)
             price = await get_merch_price(merch)
-            logging.info("before if")
             
             if (
                 await check_points(username.strip('@')) >= price
@@ -407,7 +405,6 @@ async def process_fusername(m: Message, state: FSMContext):
                     text=f"{merch}: {price}",
                     callback_data=callback_data
                 ))
-                logging.info("after if")
         markup.adjust(1)
         if markup.as_markup().inline_keyboard:
             await m.answer(
