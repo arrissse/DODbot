@@ -1,11 +1,11 @@
-from bot import bot, router  # Предполагается, что bot и router уже настроены
-from aiogram import F
+from bot import bot, router
+import asyncio
 import logging
 from datetime import datetime
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram import F
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, InputFile
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-import asyncio
 
 from database import db_manager
 from users import get_all_users
@@ -14,7 +14,7 @@ from admin import get_admin_by_username, get_admin_level
 logger = logging.getLogger(__name__)
 
 
-# Определяем состояния рассылки
+# Определяем состояния рассылки через FSM:
 class NewsletterStates(StatesGroup):
     waiting_newsletter_text = State()
     waiting_send_time = State()
@@ -62,7 +62,7 @@ async def newsletter_scheduler(bot):
             logger.debug(f"⌛ Проверка времени: {current_time}")
 
             async with db_manager.get_connection() as conn:
-                # Получаем рассылки
+                # Получаем запланированные рассылки по текущему времени
                 cursor = await conn.execute(
                     "SELECT id, message FROM newsletter WHERE send_time = ?",
                     (current_time,)
@@ -79,20 +79,21 @@ async def newsletter_scheduler(bot):
                         success = 0
                         errors = 0
 
-                        # Отправка сообщений
+                        # Рассылка сообщения всем пользователям
                         for user in users:
                             try:
                                 await bot.send_message(
-                                    chat_id=user['id'],
+                                    chat_id=int(user['id']),
                                     text=message_text
                                 )
                                 success += 1
                             except Exception as e:
                                 logger.error(
-                                    f"❌ Ошибка отправки {user.get('username', 'N/A')}: {str(e)}")
+                                    f"❌ Ошибка отправки {user.get('username', 'N/A')}: {str(e)}"
+                                )
                                 errors += 1
 
-                        # Удаление отправленной рассылки
+                        # Удаляем рассылку после отправки
                         await conn.execute(
                             "DELETE FROM newsletter WHERE id = ?",
                             (newsletter_id,)
@@ -101,14 +102,16 @@ async def newsletter_scheduler(bot):
                         logger.info(
                             f"✅ Рассылка {newsletter_id} отправлена. Успешно: {success}, Ошибок: {errors}")
 
-            # Точная синхронизация до следующей минуты
+            # Ждем до начала следующей минуты
             sleep_time = 60 - datetime.now().second
             logger.debug(f"⏳ Следующая проверка через {sleep_time} сек.")
             await asyncio.sleep(sleep_time)
 
         except Exception as e:
-            logger.error(f"🔥 Критическая ошибка: {str(e)}", exc_info=True)
+            logger.error(
+                f"🔥 Критическая ошибка в планировщике: {str(e)}", exc_info=True)
             await asyncio.sleep(60)
+
 
 @router.message(F.text == "Отправить рассылку")
 async def handle_newsletter(message: Message, state: FSMContext):
@@ -147,10 +150,8 @@ async def handle_send_option(callback: CallbackQuery, state: FSMContext):
         await send_newsletter(newsletter_text)
         await callback.message.answer("✅ Рассылка начата!")
     else:
-        await callback.message.answer(
-            "📅 Введите дату и время в формате:\nYYYY-MM-DD HH:MM"
-        )
-        logger.info("date")
+        await callback.message.answer("📅 Введите дату и время в формате:\nYYYY-MM-DD HH:MM")
+        logger.info("Переход к вводу даты и времени")
         await state.set_state(NewsletterStates.waiting_custom_time)
 
     await state.clear()
@@ -168,10 +169,12 @@ async def send_newsletter(text: str):
                 await bot.send_message(chat_id=int(user['id']), text=text)
                 success += 1
             except Exception as e:
-                logger.error(f"Ошибка отправки {user.username}: {str(e)}")
+                logger.error(
+                    f"Ошибка отправки {user.get('username', 'N/A')}: {str(e)}")
                 errors += 1
 
-        logger.info(f"✅ Успешно: {success} | ❌ Ошибок: {errors}")
+        logger.info(
+            f"✅ Рассылка завершена. Успешно: {success} | Ошибок: {errors}")
     except Exception as e:
         logger.critical(f"Критическая ошибка рассылки: {str(e)}")
         raise
@@ -193,7 +196,7 @@ async def process_custom_time(message: Message, state: FSMContext):
         dt = datetime.strptime(send_time, '%Y-%m-%d %H:%M')
         formatted_time = dt.strftime('%Y-%m-%d %H:%M')
 
-        # Запись в БД
+        # Запись рассылки в базу
         async with db_manager.get_connection() as conn:
             await conn.execute(
                 "INSERT INTO newsletter (message, send_time) VALUES (?, ?)",
@@ -201,14 +204,13 @@ async def process_custom_time(message: Message, state: FSMContext):
             )
             await conn.commit()
 
-        logger.info(f"Новая рассылка на {formatted_time}")
+        logger.info(f"Новая рассылка запланирована на {formatted_time}")
         await message.answer(f"✅ Рассылка запланирована на {formatted_time}!")
-
     except ValueError as e:
         logger.error(f"Ошибка формата времени: {e}")
         await message.answer("❌ Неверный формат времени! Используйте YYYY-MM-DD HH:MM")
     except Exception as e:
-        logger.critical(f"Ошибка БД: {str(e)}")
+        logger.critical(f"Ошибка при работе с базой: {str(e)}")
         await message.answer("❌ Ошибка сервера при сохранении рассылки")
     finally:
         await state.clear()
