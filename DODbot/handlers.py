@@ -69,12 +69,10 @@ async def start_handler(m: types.Message):
     user_list = await get_all_users()
     if not user in user_list: 
         await add_user(m.chat.id, user.username)
-    logging.info(user_list)
     current_username = f"@{user.username}"
     admins = await get_all_admins()
     admin_usernames = [admin[0] for admin in admins]
-
-    logging.info(f"Список админов: {admin_usernames}")
+    
     logging.info(f"Пользователь: {current_username}")
 
     keyboard = main_keyboard()
