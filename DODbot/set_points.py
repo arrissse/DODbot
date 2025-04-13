@@ -98,11 +98,10 @@ async def process_points_selection(message: Message, username: str, station_num:
 @router.callback_query(F.data == "back_to_stations", SetPointsStates.waiting_points)
 async def back_to_stations(callback: CallbackQuery, state: FSMContext):
     try:
-        await callback.answer()
         username = callback.data.split(":")[1]
         logging.info(f"{username}")
         await callback.message.delete()
-        logging.error(f"Delete")
+        logging.info(f"Delete")
         builder = InlineKeyboardBuilder()
         for name, number in stations.items():
             builder.button(
@@ -115,7 +114,7 @@ async def back_to_stations(callback: CallbackQuery, state: FSMContext):
             text=f"🔙 Возврат к выбору станции для @{username}",
             reply_markup=builder.as_markup()
         )
-        logging.error(f"Message")
+        logging.info(f"Message")
         await state.set_state(SetPointsStates.waiting_station)
 
     except Exception as e:
