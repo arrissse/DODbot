@@ -100,25 +100,22 @@ async def back_to_stations(callback: CallbackQuery, state: FSMContext):
     try:
         await callback.answer()
         username = callback.data.split(":")[1]
+        logging.info(f"{username}")
         await callback.message.delete()
-        # Редактируем текущее сообщение
+        logging.error(f"Delete")
         builder = InlineKeyboardBuilder()
         for name, number in stations.items():
             builder.button(
                 text=name,
-                # Добавляем username в callback_data
                 callback_data=f"select_station:{number}&{username}"
             )
         builder.adjust(2)
 
-        # Отправляем новое сообщение с клавиатурой
         new_message = await callback.message.answer(
             text=f"🔙 Возврат к выбору станции для @{username}",
             reply_markup=builder.as_markup()
         )
-
-        # Обновляем состояние
-        await state.update_data(menu_message_id=new_message.message_id)
+        logging.error(f"Message")
         await state.set_state(SetPointsStates.waiting_station)
 
     except Exception as e:
