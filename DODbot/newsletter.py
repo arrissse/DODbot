@@ -61,7 +61,7 @@ async def newsletter_scheduler():
                 # Получаем все рассылки для текущего времени
                 cursor = await conn.execute(
                     "SELECT id, message FROM newsletter WHERE send_time = $1",
-                    current_time
+                    (current_time, )
                 )
                 newsletters = await cursor.fetchall()
 
@@ -87,7 +87,7 @@ async def newsletter_scheduler():
                         # Удаляем отправленную рассылку
                         await conn.execute(
                             "DELETE FROM newsletter WHERE id = $1",
-                            newsletter_id
+                            (newsletter_id, )
                         )
                         await conn.commit()
                         logger.info(
