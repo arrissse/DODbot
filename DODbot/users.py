@@ -175,7 +175,7 @@ async def check_points(username: str) -> int:
         async with db_manager.get_connection() as conn:
             async with conn.execute((
                 "SELECT quest_points FROM users WHERE username = ?",
-                (username,)
+                username
             )) as cursor:
                 result = await cursor.fetchone()
                 return result[0] or 0
