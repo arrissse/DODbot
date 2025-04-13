@@ -389,7 +389,7 @@ async def process_fusername(m: Message, state: FSMContext):
                 markup.button(InlineKeyboardButton(
                     f"{merch}: {price}", callback_data=f'give_merch:{price}:{merch}:{username}'))
         if markup.keyboard:
-            await m.answer(f"Количество баллов {username}: {await check_points(username)}. Выберите мерч пользователю {username}:", reply_markup=markup.as_markup())
+            await m.answer(f"Количество баллов {username}: {await check_points(username)}. Выберите мерч пользователю {username}:", reply_markup=markup)
         else:
             await m.answer(f"❌ Пользователь {username} не может получить мерч. Количество баллов: {await check_points(username)}")
         await state.clear()
