@@ -12,6 +12,34 @@ async def init_admins():
     try:
         await add_admin("@arrisse", 0)
         await add_admin("@Nikita_Savel", 0)
+    
+        await add_admin("@thelasttime111th", 2)
+        await update_admin_questnum("@thelasttime111th", 9)
+        await add_admin("@sobolevski", 2)
+        await update_admin_questnum("@sobolevski", 10)
+        await add_admin("@FilippovaEA", 2)
+        await update_admin_questnum("@FilippovaEA", 8)
+        await add_admin("@rainsmaker", 2)
+        await update_admin_questnum("@rainsmaker", 7)
+        await add_admin("@divenire3", 2)
+        await update_admin_questnum("@divenire3", 1)
+        await add_admin("@nalyotova", 2)
+        await update_admin_questnum("@nalyotova", 6)
+        await add_admin("@amy_ayr", 2)
+        await update_admin_questnum("@amy_ayr", 4)
+        await add_admin("@IRISHA_tay", 2)
+        await update_admin_questnum("@IRISHA_tay", 5)
+        await add_admin("@dmitrieva_p", 2)
+        await update_admin_questnum("@dmitrieva_p", 3)
+        await add_admin("@bonderson", 2)
+        await update_admin_questnum("@bonderson", 11)
+    
+        await add_admin("@kson27", 1)
+        await add_admin("@carefree_celery", 1)
+        await add_admin("@Lost_Soull8", 1)
+        await add_admin("@soniaaak", 1)
+        await add_admin("@iourok", 1)
+
     except Exception as e:
         print(f"Ошибка инициализации админов: {e}")
 
