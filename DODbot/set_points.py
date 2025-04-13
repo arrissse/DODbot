@@ -60,6 +60,7 @@ async def process_username(message: Message, state: FSMContext):
 
 @router.callback_query(F.data.startswith("select_station:"), SetPointsStates.waiting_station)
 async def process_station_selection(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
     data = await state.get_data()
     username = data['username']
     station_num = int(callback.data.split(":")[1])
@@ -95,6 +96,7 @@ async def process_points_selection(message: Message, username: str, station_num:
 
 @router.callback_query(F.data == "back_to_stations", SetPointsStates.waiting_points)
 async def back_to_stations(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
     data = await state.get_data()
 
     builder = InlineKeyboardBuilder()
@@ -111,6 +113,7 @@ async def back_to_stations(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data.startswith("points:"), SetPointsStates.waiting_points)
 async def process_points_callback(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
     points = int(callback.data.split(":")[1])
     data = await state.get_data()
 
