@@ -1,6 +1,6 @@
 import openpyxl
 from database import db_manager
-import asyncpg  # если он используется где-то ещё, но для aiosqlite не нужен
+# asyncpg можно удалить, если не используется
 
 
 async def create_merch_table():
@@ -25,6 +25,7 @@ async def is_valid_column(column_name: str) -> bool:
             "WHERE table_name = 'merch'"
         )
         columns = await cursor.fetchall()
+        # Предполагается, что каждая строка — кортеж, а имя столбца находится в индексе 0
         return any(row[0] == column_name for row in columns)
 
 
@@ -33,7 +34,6 @@ async def got_merch(username: str, merch_type: str) -> bool:
         raise ValueError(f"Недопустимое имя колонки: {merch_type}")
 
     async with db_manager.get_connection() as conn:
-        # Вставляем, если отсутствует запись для пользователя
         await conn.execute(
             "INSERT OR IGNORE INTO merch (username) VALUES (?)",
             (username,)
@@ -170,7 +170,6 @@ async def save_merch_to_excel():
     sheet.append(columns)
 
     for item in merch:
-        # Если item – это кортеж, преобразуем его в список
         sheet.append(list(item))
 
     filename = "merch.xlsx"
