@@ -15,7 +15,6 @@ async def create_merch_table():
                 "ПБ" INTEGER DEFAULT 0
             )
         """)
-        await conn.commit()
 
 
 async def is_valid_column(column_name: str) -> bool:
