@@ -55,38 +55,50 @@ async def add_newsletter(newsletter_text: str, send_time: str):
 async def newsletter_scheduler():
     """Проверка и отправка запланированных рассылок каждую минуту."""
     while True:
-        current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
-        async with db_manager.get_connection() as db:
-            async with db.execute(
-                "SELECT id, message FROM newsletter WHERE send_time = ?",
-                (current_time,)
-            ) as cursor:
+        try:
+            current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
+            async with db_manager.get_connection() as conn:
+                # Получаем все рассылки для текущего времени
+                cursor = await conn.execute(
+                    "SELECT id, message FROM newsletter WHERE send_time = $1",
+                    current_time
+                )
                 newsletters = await cursor.fetchall()
 
-            if newsletters:
-                users = await get_all_users()
-                for newsletter in newsletters:
-                    # newsletter_id - int, message_text - str
-                    newsletter_id, message_text = newsletter
-                    for user in users:
-                        try:
-                            # Предполагаем, что у объекта user есть атрибут id и username
-                            await bot.send_message(user.id, message_text)
-                        except Exception as e:
-                            logger.error(
-                                f"Ошибка отправки сообщения пользователю {user.username}: {e}")
+                if newsletters:
+                    users = await get_all_users()
+                    for newsletter in newsletters:
+                        newsletter_id, message_text = newsletter
+                        success = 0
+                        errors = 0
 
-                    # Удаляем отправленную рассылку
-                    async with db_manager.get_connection() as db:
-                        await db.execute(
-                            "DELETE FROM newsletter WHERE id = ?",
-                            (newsletter_id,)
+                        for user in users:
+                            try:
+                                await bot.send_message(
+                                    chat_id=user['id'],
+                                    text=message_text
+                                )
+                                success += 1
+                            except Exception as e:
+                                logger.error(
+                                    f"Ошибка отправки {user.get('username', 'N/A')}: {str(e)}")
+                                errors += 1
+
+                        # Удаляем отправленную рассылку
+                        await conn.execute(
+                            "DELETE FROM newsletter WHERE id = $1",
+                            newsletter_id
                         )
-                        await db.commit()
+                        await conn.commit()
                         logger.info(
-                            f"✅ Рассылка с id {newsletter_id} удалена после отправки")
+                            f"✅ Рассылка {newsletter_id} отправлена. Успешно: {success}, Ошибок: {errors}")
 
-        await asyncio.sleep(60)
+            # Точная синхронизация
+            await asyncio.sleep(60 - datetime.now().second)
+
+        except Exception as e:
+            logger.error(f"Ошибка в scheduler: {str(e)}")
+            await asyncio.sleep(60)
 
 
 @router.message(F.text == "Отправить рассылку")
@@ -162,6 +174,7 @@ async def process_custom_time(message: Message, state: FSMContext):
     send_time = message.text.strip()
 
     try:
+        datetime.strptime(send_time, '%Y-%m-%d %H:%M')
         await add_newsletter(newsletter_text, send_time)
         await message.answer(f"✅ Рассылка запланирована на {send_time}!")
     except Exception as e:
