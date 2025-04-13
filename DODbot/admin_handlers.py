@@ -406,7 +406,7 @@ async def process_fusername(m: Message, state: FSMContext):
                     callback_data=callback_data
                 ))
         markup.adjust(1)
-        if markup.as_markup().inline_keyboard:
+        if markup:
             await m.answer(
                 f"Количество баллов {username}: {await check_points(username)}. "
                 f"Выберите мерч:",
