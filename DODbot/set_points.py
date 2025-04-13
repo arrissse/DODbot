@@ -84,7 +84,7 @@ async def process_points_selection(message: Message, username: str, station_num:
     builder = InlineKeyboardBuilder()
     builder.button(text="1️⃣", callback_data=f"points:1")
     builder.button(text="2️⃣", callback_data=f"points:2")
-    builder.button(text="🔙 Назад", callback_data=f"back_to_stations:{username}")
+    builder.button(text="🔙 Назад", callback_data=f"back_to_stations")
     builder.adjust(2)
 
     await message.answer(
@@ -96,21 +96,27 @@ async def process_points_selection(message: Message, username: str, station_num:
 
 @router.callback_query(F.data == "back_to_stations", SetPointsStates.waiting_points)
 async def back_to_stations(callback: CallbackQuery, state: FSMContext):
-    await callback.answer()
-    username = int(callback.data.split(":")[1])
-    data = await state.get_data()
+    try:
+        await callback.answer()
 
-    builder = InlineKeyboardBuilder()
-    for name, number in stations.items():
-        builder.button(text=name, callback_data=f"select_station:{number}")
-    builder.adjust(2)
+        # Редактируем текущее сообщение
+        await callback.message.edit_text(
+            text="Выберите номер станции:",
+            reply_markup=InlineKeyboardBuilder()
+            .add(*[
+                InlineKeyboardButton(
+                    text=name,
+                    callback_data=f"select_station:{number}"
+                ) for name, number in stations.items()
+            ])
+            .adjust(2)
+            .as_markup()
+        )
 
-    await callback.message.answer(
-        "Выберите номер станции:",
-        reply_markup=builder.as_markup()
-    )
-    await state.set_state(SetPointsStates.waiting_station)
+        await state.set_state(SetPointsStates.waiting_station)
 
+    except Exception as e:
+        await callback.answer(f"⚠️ Ошибка: {str(e)}", show_alert=True)
 
 @router.callback_query(F.data.startswith("points:"), SetPointsStates.waiting_points)
 async def process_points_callback(callback: CallbackQuery, state: FSMContext):
