@@ -110,7 +110,7 @@ def continue_quest_keyboard():
              KeyboardButton(text="станция ФБВТ")],
             [KeyboardButton(text="станция ВШПИ"),
              KeyboardButton(text="станция ВШМ")],
-            [KeyboardButton(text="станция ПИШ РПИ"),
+            [KeyboardButton(text="станция ПИШ ФАЛТ"),
              KeyboardButton(text="⬅️ Назад")]
         ],
         resize_keyboard=True
@@ -125,7 +125,7 @@ def activity_keyboard():
             [KeyboardButton(text="ФПМИ"), KeyboardButton(text="ФБМФ")],
             [KeyboardButton(text="КНТ"), KeyboardButton(text="ФБВТ")],
             [KeyboardButton(text="ВШПИ"), KeyboardButton(text="ВШМ")],
-            [KeyboardButton(text="ПИШ РПИ"), KeyboardButton(text="⬅️ Назад")]
+            [KeyboardButton(text="ПИШ ФАЛТ"), KeyboardButton(text="⬅️ Назад")]
         ],
         resize_keyboard=True
     )
