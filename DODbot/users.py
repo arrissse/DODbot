@@ -75,14 +75,7 @@ async def get_user_by_username(username: str) -> dict:
                 (username,)
             )
             row = await cursor.fetchone()
-
-            if row:
-                # Преобразуем строки в словарь с помощью cursor.description
-                # Получаем названия колонок
-                columns = [col[0] for col in cursor.description]
-                # Соединяем названия колонок и значения строки
-                return dict(zip(columns, row))
-            return None
+            return dict(row) if row else None
     except Exception as e:
         logging.error(f"Ошибка получения пользователя: {e}", exc_info=True)
         return None

@@ -24,7 +24,6 @@ async def is_valid_column(column_name: str) -> bool:
         return any(row[1] == column_name for row in columns)
 
 
-
 async def got_merch(username: str, merch_type: str) -> bool:
     if not await is_valid_column(merch_type):
         raise ValueError(f"Недопустимое имя колонки: {merch_type}")
@@ -40,7 +39,11 @@ async def got_merch(username: str, merch_type: str) -> bool:
             (username,)
         )
         result = await cursor.fetchone()
-        return result is not None and result[0] == 1
+
+        if result:
+            return result[merch_type] == 1
+        return False
+
 
 
 async def give_merch(username: str, merch_type: str):
@@ -126,11 +129,11 @@ async def add_column(column_name: str, column_type: str = "INTEGER DEFAULT 0"):
         await conn.commit()
 
 
-
 async def get_all_merch():
     async with db_manager.get_connection() as conn:
         cursor = await conn.execute("SELECT * FROM merch")
-        return await cursor.fetchall()
+        rows = await cursor.fetchall()
+        return [dict(row) for row in rows]
 
 
 async def get_table_columns(table_name: str):
