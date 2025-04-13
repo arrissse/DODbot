@@ -4,6 +4,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 from aiogram.enums import ParseMode
 from aiogram.filters import Command
 from aiogram.types import FSInputFile
+from aiogram.types import BotCommandScopeChat
 
 from keyboard import main_keyboard, admin_keyboard, pro_admin_keyboard, mipt_admin_keyboard, quest_keyboard, quest_started_keyboard, continue_quest_keyboard, activity_keyboard
 from users import add_user, start_quest, is_quest_started, check_points, check_st_points, get_user_by_username, get_all_users
@@ -72,11 +73,16 @@ async def start_handler(m: types.Message):
     current_username = f"@{user.username}"
     admins = await get_all_admins()
     admin_usernames = [admin[0] for admin in admins]
-    
+
     logging.info(f"Пользователь: {current_username}")
 
     keyboard = main_keyboard()
     commands = [BotCommand(command="start", description="Перезапустить бота")]
+    await bot.set_my_commands(
+        commands,
+        scope=BotCommandScopeChat(chat_id=user['id'])
+    )
+    
     await bot.set_my_commands(commands)
 
     if current_username in admin_usernames:
