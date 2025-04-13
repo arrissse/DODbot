@@ -28,8 +28,8 @@ async def init_admins():
         await add_admin("@divenire3", 2)
         await update_admin_questnum("@divenire3", 1)
 
-        await add_admin("@nalyotova", 2)
-        await update_admin_questnum("@nalyotova", 6)
+        await add_admin("@ahimic10", 2)
+        await update_admin_questnum("@ahimic10", 6)
         await add_admin("@amy_ayr", 2)
         await update_admin_questnum("@amy_ayr", 4)
 
