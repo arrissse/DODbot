@@ -393,6 +393,7 @@ async def process_fusername(m: Message, state: FSMContext):
         for merch in merch_types:
             logging.info(f"merch: {merch}, price: {await get_merch_price(merch)}")
             if await check_points(username.strip('@')) >= await get_merch_price(merch) and not await got_merch(username, merch):
+                logging.info(f"merch: {merch}")
                 price = await get_merch_price(merch)
                 markup.button(InlineKeyboardButton(
                     f"{merch}: {price}", callback_data=f'give_merch:{price}:{merch}:{username}'))
