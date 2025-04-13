@@ -19,9 +19,10 @@ async def create_merch_table():
 
 async def is_valid_column(column_name: str) -> bool:
     async with db_manager.get_connection() as conn:
-        cursor = await conn.execute(f"PRAGMA table_info(merch)")
+        cursor = await conn.execute("PRAGMA table_info(merch)")
         columns = await cursor.fetchall()
-        return any(row[1] == column_name for row in columns)
+        # row[1] содержит имя столбца
+        return any(row[1].strip().lower() == column_name.strip().lower() for row in columns)
 
 
 async def got_merch(username: str, merch_type: str) -> bool:
@@ -48,7 +49,7 @@ async def got_merch(username: str, merch_type: str) -> bool:
 async def give_merch(username: str, merch_type: str):
     if not await is_valid_column(merch_type):
         raise ValueError(f"Недопустимое имя колонки: {merch_type}")
-    
+
     async with db_manager.get_connection() as conn:
         await conn.execute(
             "INSERT INTO merch (username) VALUES (?) ON CONFLICT (username) DO NOTHING",
@@ -143,61 +144,43 @@ async def get_table_columns(table_name: str):
 
 
 async def save_merch_to_excel():
-    try:
-        merch = await get_all_merch()
-        columns = await get_table_columns('merch')
-
-        if not merch:
-            return None
-
-        workbook = openpyxl.Workbook()
-        sheet = workbook.active
-        sheet.title = "Мерч"
-
-        header_style = openpyxl.styles.NamedStyle(name="header")
-        header_style.font = openpyxl.styles.Font(bold=True)
-        header_style.fill = openpyxl.styles.PatternFill(
-            "solid", fgColor="DDDDDD")
-        header_style.border = openpyxl.styles.Border(
-            bottom=openpyxl.styles.Side(style="thin")
-        )
-
-        for col_num, column_title in enumerate(columns, 1):
-            cell = sheet.cell(row=1, column=col_num, value=column_title)
-            cell.style = header_style
-
-        for row_num, item in enumerate(merch, 2):
-            for col_num, column_name in enumerate(columns, 1):
-                value = item.get(column_name)
-                if isinstance(value, datetime):
-                    value = value.strftime("%Y-%m-%d %H:%M:%S")
-                elif value is None:
-                    value = ""
-
-                sheet.cell(row=row_num, column=col_num, value=value)
-
-        # Автонастройка ширины столбцов
-        for column in sheet.columns:
-            max_length = 0
-            column = [cell for cell in column]
-            for cell in column:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(cell.value)
-                except:
-                    pass
-            adjusted_width = (max_length + 2) * 1.2
-            sheet.column_dimensions[column[0].column_letter].width = adjusted_width
-
-        filename = "merch.xlsx"
-        workbook.save(filename)
-
-        return filename
-
-    except Exception as e:
-        print(f"Error generating Excel file: {str(e)}")
+    merch = await get_all_merch()
+    columns = await get_table_columns('merch')
+    if not merch:
         return None
-
-    finally:
-        if 'workbook' in locals():
-            workbook.close()
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Border, Side, NamedStyle
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+    sheet.title = "Мерч"
+    header_style = NamedStyle(name="header")
+    header_style.font = Font(bold=True, color="FFFFFF")
+    header_style.fill = PatternFill("solid", fgColor="4F81BD")
+    header_style.border = Border(bottom=Side(style="thin"))
+    for col_num, column_title in enumerate(columns, 1):
+        cell = sheet.cell(row=1, column=col_num, value=column_title)
+        cell.style = header_style
+    for row_num, item in enumerate(merch, 2):
+        for col_num, column_name in enumerate(columns, 1):
+            value = item.get(column_name)
+            if isinstance(value, datetime):
+                value = value.strftime("%Y-%m-%d %H:%M:%S")
+            elif value is None:
+                value = ""
+            sheet.cell(row=row_num, column=col_num, value=value)
+    # Автоматическая настройка ширины столбцов
+    for column in sheet.columns:
+        max_length = 0
+        for cell in column:
+            try:
+                length = len(str(cell.value))
+                if length > max_length:
+                    max_length = length
+            except Exception:
+                pass
+        adjusted_width = (max_length + 2) * 1.2
+        sheet.column_dimensions[column[0].column_letter].width = adjusted_width
+    filename = "merch.xlsx"
+    workbook.save(filename)
+    workbook.close()
+    return filename
