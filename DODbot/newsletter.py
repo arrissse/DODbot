@@ -150,6 +150,7 @@ async def handle_send_option(callback: CallbackQuery, state: FSMContext):
         await callback.message.answer(
             "📅 Введите дату и время в формате:\nYYYY-MM-DD HH:MM"
         )
+        logger.info("date")
         await state.set_state(NewsletterStates.waiting_custom_time)
 
     await state.clear()
@@ -178,6 +179,7 @@ async def send_newsletter(text: str):
 
 @router.message(NewsletterStates.waiting_custom_time, F.text)
 async def process_custom_time(message: Message, state: FSMContext):
+    logger.info("before try")
     data = await state.get_data()
     newsletter_text = data.get('text')
     send_time = message.text.strip()
