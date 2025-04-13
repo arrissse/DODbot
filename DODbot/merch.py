@@ -48,7 +48,7 @@ async def got_merch(username: str, merch_type: str) -> bool:
 async def give_merch(username: str, merch_type: str):
     if not await is_valid_column(merch_type):
         raise ValueError(f"Недопустимое имя колонки: {merch_type}")
-
+    
     async with db_manager.get_connection() as conn:
         await conn.execute(
             "INSERT INTO merch (username) VALUES (?) ON CONFLICT (username) DO NOTHING",

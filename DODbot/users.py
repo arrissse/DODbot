@@ -193,7 +193,7 @@ async def update_merch_points(username: str, points: int):
             await conn.execute(
                 "UPDATE users SET quest_points = quest_points - ? "
                 "WHERE username = ?",
-                points, username
+                (points, username)
             )
     except Exception as e:
         print(f"Error updating merch points: {e}")
