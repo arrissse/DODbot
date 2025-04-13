@@ -18,7 +18,6 @@ from database import db_manager
 from aiogram.fsm.state import State, StatesGroup
 import logging
 from urllib.parse import quote, unquote
-from aiogram.utils.callback_answer import CallbackData
 
 
 class Form(StatesGroup):
@@ -374,120 +373,99 @@ async def give_merch_to_user(message: Message, state: FSMContext):
         await message.answer("❌ У вас нет доступа к этой команде.")
 
 
-merch_callback = CallbackData("give_merch", "price", "merch_type", "username")
-
-
 @router.message(Form.waiting_username)
 async def process_fusername(m: Message, state: FSMContext):
     try:
-        # Проверка формата username
-        if not m.text.startswith('@'):
-            await m.answer("❌ Введите ник в формате @username")
+        if m.text[0] != '@':
+            await m.answer("❌ Введите корректно ник пользователя.")
             return
 
         username = m.text.lstrip('@')
-
-        # Проверка наличия пользователя
-        if not await get_user_by_username(username):
-            await m.answer(f"❌ Пользователь @{username} не найден")
+        if await is_got_merch(username):
+            await m.answer(f"❌ Пользователь {username} уже получил мерч.")
             return
 
-        # Проверка получения мерча
-        if await is_got_merch(username):
-            await m.answer(f"❌ Пользователь @{username} уже получил мерч")
+        if not await get_user_by_username(username):
+            await m.answer(f"❌ Пользователя {username} нет в базе.")
             return
 
         await state.update_data(username=username)
-        user_points = await check_points(username)
         markup = InlineKeyboardBuilder()
         merch_types = await get_merch_types()
 
-        # Формируем кнопки
         for merch in merch_types:
-            try:
-                price = await get_merch_price(merch)
-                if user_points >= price and not await got_merch(username, merch):
-                    # Заменяем пробелы в названии мерча
-                    safe_merch = merch.replace(" ", "_")
-                    # Генерируем безопасный callback_data
-                    callback_data = merch_callback.new(
-                        price=str(price),
-                        merch_type=safe_merch,
-                        username=username
-                    )
-                    markup.add(InlineKeyboardButton(
-                        text=f"{merch} - {price} баллов",
-                        callback_data=callback_data
-                    ))
-            except Exception as e:
-                logging.error(f"Ошибка обработки мерча {merch}: {str(e)}")
-
+            price = await get_merch_price(merch)
+            
+            if (
+                await check_points(username.strip('@')) >= price
+                and not await got_merch(username, merch)
+            ):
+                callback_data = f"give_merch:{quote(str(price))}:{quote(str(merch))}:{quote(str(username))}"
+                markup.add(InlineKeyboardButton(
+                    text=f"{merch}: {price}",
+                    callback_data=callback_data
+                ))
+        logging.info("murkup_added")
         markup.adjust(1)
-        if markup.as_markup().inline_keyboard:
+        if markup:
             await m.answer(
-                f"🏆 Баллы пользователя @{username}: {user_points}\n"
-                "Выберите мерч для выдачи:",
+                f"Количество баллов {username}: {await check_points(username)}. "
+                f"Выберите мерч:",
                 reply_markup=markup.as_markup()
             )
         else:
-            await m.answer(f"⚠️ У пользователя @{username} недостаточно баллов ({user_points})")
+            await m.answer(f"❌ Недостаточно баллов: {await check_points(username.strip('@'))}")
 
         await state.clear()
 
     except Exception as e:
-        logging.error(f"Ошибка в process_fusername: {str(e)}")
-        await m.answer("❌ Произошла ошибка обработки запроса")
+        await m.answer(f"❌ Ошибка: {str(e)}")
         await state.clear()
 
 
-# Обработчик колбэка
-@router.callback_query(merch_callback.filter())
-async def process_merch_selection(
-    call: CallbackQuery,
-    callback_data: dict,
-    bot: Bot
-):
-    try:
-        # Извлекаем параметры
-        price = int(callback_data["price"])
-        merch_type = callback_data["merch_type"].replace(
-            "_", " ")  # Восстанавливаем пробелы
-        username = callback_data["username"]
+@router.callback_query(F.data.startswith("give_merch"))
+async def process_merch_callback(call: CallbackQuery):
+    _, merch_price, merch_type, username = call.data.split(":")
 
-        # Подтверждение выдачи
-        confirm_markup = InlineKeyboardBuilder()
-        confirm_markup.row(
-            InlineKeyboardButton(
-                text="✅ Подтвердить",
-                callback_data=merch_callback.new(
-                    price=price,
-                    merch_type=merch_type.replace(" ", "_"),
-                    username=username
-                )
-            ),
-            InlineKeyboardButton(
-                text="❌ Отменить",
-                callback_data="cancel_merch"
-            )
+    markup = InlineKeyboardBuilder()
+
+    markup.row(
+        InlineKeyboardButton(
+            text='Да',
+            callback_data=f'yes:{merch_price}:{merch_type}:{username}'
+        ),
+        InlineKeyboardButton(
+            text='Нет',
+            callback_data='no'
         )
+    )
 
-        await call.message.edit_text(
-            f"Вы уверены, что хотите выдать:\n"
-            f"👤 Пользователь: @{username}\n"
-            f"🎁 Мерч: {merch_type}\n"
-            f"🏅 Стоимость: {price} баллов",
-            reply_markup=confirm_markup.as_markup()
-        )
-
-    except Exception as e:
-        logging.error(f"Ошибка в process_merch_selection: {str(e)}")
-        await call.answer("❌ Ошибка обработки выбора")
+    await call.message.answer(
+        f"Выдать {username} {merch_type}?",
+        reply_markup=markup.as_markup()
+    )
 
 
-@router.callback_query(F.data == "cancel_merch")
-async def cancel_merch_selection(call: CallbackQuery):
-    await call.message.delete()
-    await call.answer("❌ Выдача отменена")
+@router.callback_query(F.data.startswith("yes"))
+async def process_merch_call_yes(call: CallbackQuery):
+    data_parts = call.data.split(":")
+    _, merch_price_enc, merch_type_enc, username_enc = data_parts
+    merch_price = unquote(merch_price_enc)
+    merch_type = unquote(merch_type_enc)
+    username = unquote(username_enc)
+    logging.info(f"{merch_type}, {username}")
+    await give_merch(username, merch_type)
+    await update_merch_points(username, merch_price)
+    await call.answer("✅ Мерч за квест выдан!")
+    await call.message.answer(f"✅ Пользователю {username} выдан мерч за квест!")
+
+
+@router.callback_query(F.data.startswith("no"))
+async def process_merch_call_no(call: CallbackQuery):
+    await call.answer("❌ Операция отменена.")
+    await call.message.answer("❌ Операция отменена.")
+
+
 '''
 -----------------------
 Добавить позицию мерча
