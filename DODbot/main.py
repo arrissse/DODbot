@@ -57,11 +57,6 @@ async def on_startup():
     await merch.create_merch_table()
     await quiz.create_quiz_table()
     await admin.init_admins()
-    from aiogram.types import BotCommand, BotCommandScopeDefault
-    commands = [
-        BotCommand(command="/start", description="Перезапустить бота"),
-    ]
-    await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
 
     asyncio.create_task(newsletter.newsletter_scheduler(bot))
 
