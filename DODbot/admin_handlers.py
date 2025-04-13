@@ -381,14 +381,17 @@ async def process_fusername(m: Message, state: FSMContext):
         if await is_got_merch(username):
             await m.answer(f"❌ Пользователь {username} уже получил мерч.")
             return
+        logging.info("is_got_merch")
         if not await get_user_by_username(username):
             await m.answer(f"❌ Пользователя {username} нет в базе.")
             return
+        logging.info("get_user_by_username")
         await state.update_data(username=username)
         markup = InlineKeyboardBuilder()
         merch_types = await get_merch_types()
+        logging.info("get_merch_types")
         for merch in merch_types:
-            print(f"merch: {merch}, price: {await get_merch_price(merch)}")
+            logging.info(f"merch: {merch}, price: {await get_merch_price(merch)}")
             if await check_points(username.strip('@')) >= await get_merch_price(merch) and not await got_merch(username, merch):
                 price = await get_merch_price(merch)
                 markup.button(InlineKeyboardButton(
