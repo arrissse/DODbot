@@ -17,6 +17,7 @@ from quiz import update_quiz_time
 from database import db_manager
 from aiogram.fsm.state import State, StatesGroup
 import logging
+from urllib.parse import quote, unquote
 
 
 class Form(StatesGroup):
@@ -401,9 +402,10 @@ async def process_fusername(m: Message, state: FSMContext):
                 await check_points(username.strip('@')) >= price
                 and not await got_merch(username, merch)
             ):
+                callback_data = f"give_merch:{quote(str(price))}:{quote(str(merch))}:{quote(str(username))}"
                 markup.add(InlineKeyboardButton(
                     text=f"{merch}: {price}",
-                    callback_data=f'give_merch:{price}:{merch}:{username}'
+                    callback_data=callback_data
                 ))
                 logging.info("after if")
         markup.adjust(1)
@@ -448,7 +450,11 @@ async def process_merch_callback(call: CallbackQuery):
 
 @router.callback_query(F.data.startswith("yes"))
 async def process_merch_call_yes(call: CallbackQuery):
-    _, merch_price, merch_type, username = call.data.split(":")
+    data_parts = call.data.split(":")
+    _, merch_price_enc, merch_type_enc, username_enc = data_parts
+    merch_price = unquote(merch_price_enc)
+    merch_type = unquote(merch_type_enc)
+    username = unquote(username_enc)
     logging.info(f"{merch_type}, {username}")
     await give_merch(username, merch_type)
     await update_merch_points(username, merch_price)
