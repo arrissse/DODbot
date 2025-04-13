@@ -384,14 +384,14 @@ async def process_fusername(m: Message, state: FSMContext):
         merch_types = await get_merch_types()
         for merch in merch_types:
             print(f"merch: {merch}, price: {await get_merch_price(merch)}")
-            if await check_points(username) >= await get_merch_price(merch) and not await got_merch(username, merch):
+            if await check_points(username.strip('@')) >= await get_merch_price(merch) and not await got_merch(username, merch):
                 price = await get_merch_price(merch)
                 markup.button(InlineKeyboardButton(
                     f"{merch}: {price}", callback_data=f'give_merch:{price}:{merch}:{username}'))
         if markup.as_markup().inline_keyboard:
             await m.answer(f"Количество баллов {username}: {await check_points(username)}. Выберите мерч пользователю {username}:", reply_markup=markup)
         else:
-            await m.answer(f"❌ Пользователь {username} не может получить мерч. Количество баллов: {await check_points(username)}")
+            await m.answer(f"❌ Пользователь {username} не может получить мерч. Количество баллов: {await check_points(username.strip('@'))}")
         await state.clear()
     except Exception as e:
         await m.answer(str(e))
