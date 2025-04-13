@@ -72,10 +72,10 @@ async def process_station_selection(callback: CallbackQuery, state: FSMContext):
 
     await state.update_data(station_num=station_num)
     await callback.message.answer(f"✅ Вы выбрали станцию {station_num}")
-    await process_points_selection(callback.message, username, station_num, user)
+    await process_points_selection(callback.message, username, station_num, user, state)
 
 
-async def process_points_selection(message: Message, username: str, station_num: int, user):
+async def process_points_selection(message: Message, username: str, station_num: int, user, state: FSMContext):
     if not await is_quest_started(username):
         await message.answer(f"❌ Пользователь {username} ещё не начал квест.")
         return
@@ -96,7 +96,6 @@ async def process_points_selection(message: Message, username: str, station_num:
 @router.callback_query(F.data == "back_to_stations", SetPointsStates.waiting_points)
 async def back_to_stations(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    username = data['username']
 
     builder = InlineKeyboardBuilder()
     for name, number in stations.items():
