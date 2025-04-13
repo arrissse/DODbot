@@ -13,8 +13,6 @@ from admin import get_admin_by_username, get_admin_level
 
 logger = logging.getLogger(__name__)
 
-
-# Определяем состояния рассылки через FSM:
 class NewsletterStates(StatesGroup):
     waiting_newsletter_text = State()
     waiting_send_time = State()
@@ -154,7 +152,6 @@ async def handle_send_option(callback: CallbackQuery, state: FSMContext):
         logger.info("Переход к вводу даты и времени")
         await state.set_state(NewsletterStates.waiting_custom_time)
 
-    await state.clear()
 
 
 async def send_newsletter(text: str):
