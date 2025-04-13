@@ -114,8 +114,11 @@ async def process_points_callback(callback: CallbackQuery, state: FSMContext):
     points = int(callback.data.split(":")[1])
     data = await state.get_data()
 
-    await update_user_points(data['username'], data['station_num'], points)
-    await update_user_queststation(data['username'])
+    try:
+        await update_user_points(data['username'], data['station_num'], points)
+        await update_user_queststation(data['username'])
+    except Exception as e:
+        await callback.message.answer(e)
 
     await callback.message.answer(
         f"✅ Пользователю {data['username']} начислено {points} баллов!"
