@@ -379,55 +379,46 @@ async def process_fusername(m: Message, state: FSMContext):
         if m.text[0] != '@':
             await m.answer("❌ Введите корректно ник пользователя.")
             return
-        username = m.text.lstrip('@')
 
-        # Проверка, получил ли пользователь мерч
+        username = m.text.lstrip('@')
         if await is_got_merch(username):
             await m.answer(f"❌ Пользователь {username} уже получил мерч.")
             return
-        logging.info("is_got_merch")
 
-        # Проверка существования пользователя в базе
         if not await get_user_by_username(username):
             await m.answer(f"❌ Пользователя {username} нет в базе.")
             return
-        logging.info("get_user_by_username")
 
         await state.update_data(username=username)
         markup = InlineKeyboardBuilder()
-
-        # Получение типов мерча
         merch_types = await get_merch_types()
-        logging.info("get_merch_types")
 
         for merch in merch_types:
-            logging.info(f"merch: {merch}, price: {await get_merch_price(merch)}")
-            if await check_points(username.strip('@')) >= await get_merch_price(merch) and not await got_merch(username, merch):
-                logging.info(f"merch: {merch}")
-                price = await get_merch_price(merch)
-                logging.info(f"merch: {merch} before button")
+            price = await get_merch_price(merch)
+            if (
+                await check_points(username.strip('@')) >= price
+                and not await got_merch(username, merch)
+            ):
+                # Исправлено здесь: используем именованные аргументы
+                markup.add(InlineKeyboardButton(
+                    text=f"{merch}: {price}",  # Явно указываем text=
+                    # callback_data=
+                    callback_data=f'give_merch:{price}:{merch}:{username}'
+                ))
 
-                # Формируем callback_data в правильном формате
-                callback_data = f'give_merch:{price}:{merch}:{username}'
-
-                # Добавляем кнопку в клавиатуру
-                markup.add(
-                    InlineKeyboardButton(
-                        f"{merch}: {price}",
-                        callback_data=callback_data
-                    )
-                )
-                logging.info(f"merch: {merch} button")
-
-        # Если кнопки добавлены, отправляем клавиатуру
-        if markup.as_markup():
-            await m.answer(f"Количество баллов {username}: {await check_points(username)}. Выберите мерч пользователю {username}:", reply_markup=markup.as_markup())
+        if markup.as_markup().inline_keyboard:
+            await m.answer(
+                f"Количество баллов {username}: {await check_points(username)}. "
+                f"Выберите мерч:",
+                reply_markup=markup.as_markup()
+            )
         else:
-            await m.answer(f"❌ Пользователь {username} не может получить мерч. Количество баллов: {await check_points(username.strip('@'))}")
+            await m.answer(f"❌ Недостаточно баллов: {await check_points(username.strip('@'))}")
 
         await state.clear()
+
     except Exception as e:
-        await m.answer(str(e))
+        await m.answer(f"❌ Ошибка: {str(e)}")
         await state.clear()
 
 
