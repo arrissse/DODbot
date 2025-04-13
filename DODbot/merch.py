@@ -11,7 +11,7 @@ async def create_merch_table():
                 "Раскрасить шоппер" INTEGER DEFAULT 0,
                 "Шоппер МФТИ" INTEGER DEFAULT 0,
                 "Раскрасить футболку" INTEGER DEFAULT 0,
-                "Футболка МФТИ" INTEGER DEFAULT 0,
+                "Футболка" INTEGER DEFAULT 0,
                 "Пауэрбанк" INTEGER DEFAULT 0
             )
         """)
