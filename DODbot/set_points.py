@@ -71,9 +71,9 @@ async def process_station_selection(callback: CallbackQuery, state: FSMContext):
         await callback.message.answer(f"❌ Пользователю {username} уже начислены баллы.")
         await state.clear()
         return
-
+    st = stations[station_num]
     await state.update_data(station_num=station_num)
-    await callback.message.answer(f"✅ Вы выбрали станцию {station_num}")
+    await callback.message.answer(f"✅ Вы выбрали станцию {st}")
     await process_points_selection(callback.message, username, station_num, user, state)
 
 
