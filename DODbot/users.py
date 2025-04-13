@@ -299,12 +299,12 @@ async def update_user_points(username: str, admin_num: int, points: int):
             await conn.execute(
                 f"UPDATE users SET quest{admin_num}_points = quest{admin_num}_points + ? "
                 "WHERE username = ?",
-                points, username
+                (points, username)
             )
             await conn.execute(
                 "UPDATE users SET quest_points = quest_points + ? "
                 "WHERE username = ?",
-                points, username
+                (points, username)
             )
     except Exception as e:
         print(f"Error updating user points: {e}")
@@ -317,12 +317,12 @@ async def update_quize_points(username: str, num: int):
             await conn.execute(
                 f"UPDATE users SET quize_{num} = quize_{num} + 1 "
                 "WHERE username = ?",
-                username
+                (username, )
             )
             await conn.execute(
                 "UPDATE users SET quize_points = quize_points + 1 "
                 "WHERE username = ?",
-                username
+                (username, )
             )
     except Exception as e:
         print(f"Error updating quiz points: {e}")
