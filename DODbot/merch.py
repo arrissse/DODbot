@@ -15,7 +15,7 @@ async def create_merch_table():
                 "Пауэрбанк" INTEGER DEFAULT 0
             )
         """)
-
+     await conn.commit()
 
 async def is_valid_column(column_name: str) -> bool:
     async with db_manager.get_connection() as conn:
