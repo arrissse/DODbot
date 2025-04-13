@@ -83,14 +83,17 @@ async def process_points_selection(message: Message, username: str, station_num:
         await message.answer(f"❌ Пользователь {username} ещё не начал квест.")
         return
 
+    await state.update_data(station_num=station_num, username=username)
+
     builder = InlineKeyboardBuilder()
     builder.button(text="1️⃣", callback_data=f"points:1")
     builder.button(text="2️⃣", callback_data=f"points:2")
-    builder.button(text="🔙 Назад", callback_data=f"back_to_stations:{username}")
+    builder.button(
+        text="🔙 Назад", callback_data=f"back_to_stations:{username}")
     builder.adjust(2)
 
     await message.answer(
-        f"Выберите количество баллов для {username}:",
+        f"Выберите количество баллов для @{username}:",
         reply_markup=builder.as_markup()
     )
     await state.set_state(SetPointsStates.waiting_points)
@@ -99,8 +102,11 @@ async def process_points_selection(message: Message, username: str, station_num:
 @router.callback_query(F.data.startswith("back_to_stations:"), SetPointsStates.waiting_points)
 async def back_to_stations(callback: CallbackQuery, state: FSMContext):
     try:
-        username = callback.data.split(":")[1]
         await callback.message.delete()
+
+        username = callback.data.split(":")[1]
+        await state.update_data(username=username)
+
         builder = InlineKeyboardBuilder()
         for name, number in stations.items():
             builder.button(
@@ -109,15 +115,17 @@ async def back_to_stations(callback: CallbackQuery, state: FSMContext):
             )
         builder.adjust(2)
 
-        new_message = await callback.message.answer(
+        await callback.message.answer(
             text=f"🔙 Возврат к выбору станции для @{username}",
             reply_markup=builder.as_markup()
         )
+
         await state.set_state(SetPointsStates.waiting_station)
 
     except Exception as e:
         logging.error(f"Ошибка в back_to_stations: {e}")
         await callback.answer("⚠️ Произошла ошибка!", show_alert=True)
+
 
 @router.callback_query(F.data.startswith("points:"), SetPointsStates.waiting_points)
 async def process_points_callback(callback: CallbackQuery, state: FSMContext):
