@@ -52,7 +52,7 @@ async def process_username(message: Message, state: FSMContext):
         await message.answer("Выберите номер станции:", reply_markup=builder.as_markup())
         await state.set_state(SetPointsStates.waiting_station)
     elif level == 2:
-        if user.stations[admin.quest_num] != 0:
+        if user.get('stations', {}).get(admin.quest_num, 0) != 0:
             await message.answer(f"❌ Пользователю {username} уже начислены баллы.")
             await state.clear()
             return
