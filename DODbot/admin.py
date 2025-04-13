@@ -15,22 +15,30 @@ async def init_admins():
     
         await add_admin("@thelasttime111th", 2)
         await update_admin_questnum("@thelasttime111th", 9)
+
         await add_admin("@sobolevski", 2)
         await update_admin_questnum("@sobolevski", 10)
+
         await add_admin("@FilippovaEA", 2)
         await update_admin_questnum("@FilippovaEA", 8)
+
         await add_admin("@rainsmaker", 2)
         await update_admin_questnum("@rainsmaker", 7)
+
         await add_admin("@divenire3", 2)
         await update_admin_questnum("@divenire3", 1)
+
         await add_admin("@nalyotova", 2)
         await update_admin_questnum("@nalyotova", 6)
         await add_admin("@amy_ayr", 2)
         await update_admin_questnum("@amy_ayr", 4)
+
         await add_admin("@IRISHA_tay", 2)
         await update_admin_questnum("@IRISHA_tay", 5)
+
         await add_admin("@dmitrieva_p", 2)
         await update_admin_questnum("@dmitrieva_p", 3)
+
         await add_admin("@bonderson", 2)
         await update_admin_questnum("@bonderson", 11)
     
@@ -116,9 +124,8 @@ async def update_admin_questnum(username: str, new_value: int):
 
 
 async def save_admins_to_excel(bot):
-    admins = await get_all_admins()  # Предполагается асинхронная реализация
+    admins = await get_all_admins()
 
-    # Создание Excel файла
     workbook = Workbook()
     sheet = workbook.active
     sheet.append(["Username", "Level", "Station"])
@@ -126,13 +133,14 @@ async def save_admins_to_excel(bot):
     for admin in admins:
         sheet.append([admin[0], admin[1], admin[2]])
 
-    # Сохранение в байтовый поток
     buffer = BytesIO()
     workbook.save(buffer)
     buffer.seek(0)
 
-    # Возвращаем файл для отправки
-    return BufferedInputFile(buffer.read(), filename="admins.xlsx")
+    return BufferedInputFile(
+        file=buffer.read(),
+        filename="admins.xlsx"
+    )
 
 
 async def get_admin_by_username(username: str):

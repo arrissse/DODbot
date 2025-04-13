@@ -42,16 +42,13 @@ async def send_admins_list(message: Message):
     level = await get_admin_level(f'@{message.from_user.username}') if user else None
 
     if user and level == 0:
-        filename = await save_admins_to_excel(bot=bot)
-        print(f"Файл Excel создан: {filename}")
-
-        if filename:
-            await message.answer_document(FSInputFile(filename))
+        file = await save_admins_to_excel(bot=bot)
+        if file:
+            await message.answer_document(file)  # Убрали FSInputFile()
         else:
-            await message.answer("❌ В базе данных нет пользователей.")
+            await message.answer("❌ В базе данных нет администраторов.")
     else:
         await message.answer("❌ У вас нет доступа к этой команде.")
-
 
 '''
 -----------------------
