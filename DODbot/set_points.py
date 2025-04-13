@@ -90,7 +90,7 @@ async def process_points_selection(message: Message, username: str, station_num:
         f"Выберите количество баллов для {username}:",
         reply_markup=builder.as_markup()
     )
-    await message.get_state().set_state(SetPointsStates.waiting_points)
+    await state.set_state(SetPointsStates.waiting_points)
 
 
 @router.callback_query(F.data == "back_to_stations", SetPointsStates.waiting_points)
