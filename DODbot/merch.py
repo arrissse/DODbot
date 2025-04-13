@@ -1,31 +1,27 @@
 import openpyxl
 from database import db_manager
 import datetime
-import logging
+
 
 async def create_merch_table():
     async with db_manager.get_connection() as conn:
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS merch (
                 username TEXT UNIQUE,
-                "Шоппер для рисования" INTEGER DEFAULT 0,
-                "Шоппер с символикой МФТИ" INTEGER DEFAULT 0,
-                "Футболка для рисования" INTEGER DEFAULT 0,
-                "Футболка с символикой МФТИ" INTEGER DEFAULT 0,
+                "Раскрасить шоппер" INTEGER DEFAULT 0,
+                "Шоппер МФТИ" INTEGER DEFAULT 0,
+                "Раскрасить футболку" INTEGER DEFAULT 0,
+                "Футболка МФТИ" INTEGER DEFAULT 0,
                 "Пауэрбанк" INTEGER DEFAULT 0
             )
         """)
 
 
 async def is_valid_column(column_name: str) -> bool:
-    try:
-        async with db_manager.get_connection() as conn:
-            cursor = await conn.execute("PRAGMA table_info(merch)")
-            columns = await cursor.fetchall()
-            return any(row[1] == column_name for row in columns)
-    except Exception as e:
-        logging.error(f"Error checking column: {str(e)}")
-        return False
+    async with db_manager.get_connection() as conn:
+        cursor = await conn.execute(f"PRAGMA table_info(merch)")
+        columns = await cursor.fetchall()
+        return any(row[1] == column_name for row in columns)
 
 
 async def got_merch(username: str, merch_type: str) -> bool:
@@ -47,7 +43,6 @@ async def got_merch(username: str, merch_type: str) -> bool:
         if result:
             return result[merch_type] == 1
         return False
-
 
 
 async def give_merch(username: str, merch_type: str):

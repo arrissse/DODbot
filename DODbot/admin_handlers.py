@@ -12,7 +12,7 @@ from keyboard import main_keyboard, pro_admin_merch, pro_admin_keyboard, pro_adm
 from users import save_users_to_excel, count_active_quests, get_user_by_username
 from users import count_finished_quests, check_points, update_merch_points
 from admin import save_admins_to_excel, get_admin_by_username, get_admin_level
-from merch import give_merch, is_got_merch, got_merch, add_column, save_merch_to_excel, is_valid_column
+from merch import give_merch, is_got_merch, got_merch, add_column, save_merch_to_excel
 from quiz import update_quiz_time
 from database import db_manager
 from aiogram.fsm.state import State, StatesGroup
@@ -42,13 +42,16 @@ async def send_admins_list(message: Message):
     level = await get_admin_level(f'@{message.from_user.username}') if user else None
 
     if user and level == 0:
-        file = await save_admins_to_excel(bot=bot)
-        if file:
-            await message.answer_document(file)  # Убрали FSInputFile()
+        filename = await save_admins_to_excel(bot=bot)
+        print(f"Файл Excel создан: {filename}")
+
+        if filename:
+            await message.answer_document(FSInputFile(filename))
         else:
-            await message.answer("❌ В базе данных нет администраторов.")
+            await message.answer("❌ В базе данных нет пользователей.")
     else:
         await message.answer("❌ У вас нет доступа к этой команде.")
+
 
 '''
 -----------------------
@@ -262,7 +265,6 @@ async def statistics(message: Message):
 -----------------------
 '''
 
-
 async def create_price_table():
     async with db_manager.get_connection() as conn:
         await conn.execute("""
@@ -272,12 +274,12 @@ async def create_price_table():
             )
         """)
         await conn.execute("""
-            INSERT INTO merch_prices (merch_type, price) VALUES
-                ("Шоппер для рисования", 5),
-                ("Шоппер с символикой МФТИ", 6),
-                ("Футболка для рисования", 7),
-                ("Футболка с символикой МФТИ", 8),
-                ("Пауэрбанк", 15)
+            INSERT INTO merch_prices (merch_type, price) VALUES 
+                ('Раскрасить шоппер', 5),
+                ('Шоппер МФТИ', 6),
+                ('Раскрасить футболку', 7),
+                ('Футболка МФТИ', 8),
+                ('Пауэрбанк', 15)
             ON CONFLICT (merch_type) DO NOTHING
         """)
         await conn.commit()
@@ -359,7 +361,6 @@ async def process_new_price(message: Message, state: FSMContext):
 -----------------------
 '''
 
-
 @router.message(F.text == "Выдать мерч")
 async def give_merch_to_user(message: Message, state: FSMContext):
     user = await get_admin_by_username(f'@{message.from_user.username}')
@@ -391,20 +392,15 @@ async def process_fusername(m: Message, state: FSMContext):
         merch_types = await get_merch_types()
 
         for merch in merch_types:
-            # Проверяем, существует ли колонка в таблице merch
-            if not await is_valid_column(merch):
-                await add_column(merch)  # Создаем колонку, если ее нет
-                logging.info(f"Добавлена колонка {merch} в таблицу merch")
-
             price = await get_merch_price(merch)
             if (
-            await check_points(username.strip('@')) >= price
-            and not await got_merch(username, merch)
+                await check_points(username.strip('@')) >= price
+                and not await got_merch(username, merch)
             ):
                 markup.add(InlineKeyboardButton(
-                text=f"{merch}: {price}",
-                callback_data=f'give_merch:{price}:{merch}:{username}'
-        ))
+                    text=f"{merch}: {price}",
+                    callback_data=f'give_merch:{price}:{merch}:{username}'
+                ))
         markup.adjust(1)
         if markup.as_markup().inline_keyboard:
             await m.answer(
