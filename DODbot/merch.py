@@ -1,7 +1,7 @@
 import openpyxl
 from database import db_manager
 import datetime
-
+import logging
 
 async def create_merch_table():
     async with db_manager.get_connection() as conn:
@@ -18,10 +18,14 @@ async def create_merch_table():
 
 
 async def is_valid_column(column_name: str) -> bool:
-    async with db_manager.get_connection() as conn:
-        cursor = await conn.execute(f"PRAGMA table_info(merch)")
-        columns = await cursor.fetchall()
-        return any(row[1] == column_name for row in columns)
+    try:
+        async with db_manager.get_connection() as conn:
+            cursor = await conn.execute("PRAGMA table_info(merch)")
+            columns = await cursor.fetchall()
+            return any(row[1] == column_name for row in columns)
+    except Exception as e:
+        logging.error(f"Error checking column: {str(e)}")
+        return False
 
 
 async def got_merch(username: str, merch_type: str) -> bool:
