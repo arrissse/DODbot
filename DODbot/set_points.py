@@ -57,7 +57,7 @@ async def process_username(message: Message, state: FSMContext):
             await message.answer(f"❌ Пользователю {username} уже начислены баллы.")
             await state.clear()
             return
-        await process_points_selection(message, username, admin.quest_num, user)
+        await process_points_selection(message, username, admin['quest_num'], user)
 
 
 @router.callback_query(F.data.startswith("select_station:"), SetPointsStates.waiting_station)
