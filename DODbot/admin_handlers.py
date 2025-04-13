@@ -405,6 +405,8 @@ async def process_fusername(m: Message, state: FSMContext):
                     text=f"{merch}: {price}",
                     callback_data=callback_data
                 ))
+                logging.info("button")
+        logging.info("murkup_added")
         markup.adjust(1)
         if markup:
             await m.answer(
