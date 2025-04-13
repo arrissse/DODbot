@@ -52,24 +52,34 @@ async def add_newsletter(newsletter_text: str, send_time: str):
         logger.error(f"Ошибка формата времени: {e}")
 
 
-async def newsletter_scheduler():
+async def newsletter_scheduler(bot):
+    """Проверка и отправка запланированных рассылок каждую минуту."""
+    logger.info("✅ Планировщик рассылок активирован")
+
     while True:
         try:
             current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
+            logger.debug(f"⌛ Проверка времени: {current_time}")
+
             async with db_manager.get_connection() as conn:
+                # Получаем рассылки
                 cursor = await conn.execute(
                     "SELECT id, message FROM newsletter WHERE send_time = ?",
-                    (current_time, )
+                    (current_time,)
                 )
                 newsletters = await cursor.fetchall()
 
                 if newsletters:
                     users = await get_all_users()
+                    logger.info(
+                        f"📨 Найдено {len(newsletters)} рассылок для отправки")
+
                     for newsletter in newsletters:
                         newsletter_id, message_text = newsletter
                         success = 0
                         errors = 0
 
+                        # Отправка сообщений
                         for user in users:
                             try:
                                 await bot.send_message(
@@ -79,25 +89,38 @@ async def newsletter_scheduler():
                                 success += 1
                             except Exception as e:
                                 logger.error(
-                                    f"Ошибка отправки {user.get('username', 'N/A')}: {str(e)}")
+                                    f"❌ Ошибка отправки {user.get('username', 'N/A')}: {str(e)}")
                                 errors += 1
 
-                        # Удаляем отправленную рассылку
+                        # Удаление отправленной рассылки
                         await conn.execute(
                             "DELETE FROM newsletter WHERE id = ?",
-                            (newsletter[0], )
+                            (newsletter_id,)
                         )
                         await conn.commit()
                         logger.info(
                             f"✅ Рассылка {newsletter_id} отправлена. Успешно: {success}, Ошибок: {errors}")
 
-            # Точная синхронизация
-            await asyncio.sleep(60 - datetime.now().second)
+            # Точная синхронизация до следующей минуты
+            sleep_time = 60 - datetime.now().second
+            logger.debug(f"⏳ Следующая проверка через {sleep_time} сек.")
+            await asyncio.sleep(sleep_time)
 
         except Exception as e:
-            logger.error(f"Ошибка в scheduler: {str(e)}")
+            logger.error(f"🔥 Критическая ошибка: {str(e)}", exc_info=True)
             await asyncio.sleep(60)
 
+
+@router.message()
+async def catch_unhandled_messages(message: Message):
+    logger.warning(f"⚠️ Необработанное сообщение: {message.text}")
+    await message.answer("❗ Извините, я не понял вашего запроса.")
+
+
+@router.message()
+async def catch_unhandled_messages(message: Message):
+    logger.warning(f"⚠️ Необработанное сообщение: {message.text}")
+    await message.answer("❗ Извините, я не понял вашего запроса.")
 
 @router.message(F.text == "Отправить рассылку")
 async def handle_newsletter(message: Message, state: FSMContext):

@@ -52,13 +52,13 @@ async def on_startup():
     await bot.set_webhook(WEBHOOK_URL)
     await newsletter.init_db()
     await users.create_users_table()
-    logging.info("users")
     await admin.create_admins_table()
     await admin_handlers.create_price_table()
     await merch.create_merch_table()
     await quiz.create_quiz_table()
     await admin.init_admins()
-    asyncio.create_task(newsletter.newsletter_scheduler())
+    asyncio.create_task(newsletter.newsletter_scheduler(bot))
+    logger.info("✅ Планировщик рассылок активирован")
 
 
 async def on_shutdown():
