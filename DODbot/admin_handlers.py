@@ -471,14 +471,14 @@ async def process_type_cost(message: Message, state: FSMContext):
         await conn.execute("""
             INSERT OR IGNORE INTO merch_prices (merch_type, price) VALUES (?, ?)
         """, (merch_type, cost))
-        try:
-            await add_column(merch_type)
-        except Exception as e:
-            await message.answer(f"❌ Ошибка при добавлении колонки: {e}")
-            await state.clear()
-            return
-        await message.answer(f"✅ Позиция '{merch_type}' добавлена с ценой {cost} баллов.")
+    try:
+        await add_column(merch_type)
+    except Exception as e:
+        await message.answer(f"❌ Ошибка при добавлении колонки: {e}")
         await state.clear()
+        return
+    await message.answer(f"✅ Позиция '{merch_type}' добавлена с ценой {cost} баллов.")
+    await state.clear()
 
 
 '''
