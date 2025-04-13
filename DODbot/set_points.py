@@ -25,8 +25,8 @@ async def set_points(message: Message, state: FSMContext):
         await message.answer("❌ У вас нет доступа к этой команде.")
         return
 
-    await state.set_state(SetPointsStates.waiting_username)
     await message.answer("Введите ник пользователя (@username):")
+    await state.set_state(SetPointsStates.waiting_username)
 
 
 @router.message(SetPointsStates.waiting_username)
