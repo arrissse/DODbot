@@ -95,7 +95,7 @@ async def process_points_selection(message: Message, username: str, station_num:
     await state.set_state(SetPointsStates.waiting_points)
 
 
-@router.callback_query(F.data == "back_to_stations", SetPointsStates.waiting_points)
+@router.callback_query(F.data.startswith("back_to_stations"), SetPointsStates.waiting_points)
 async def back_to_stations(callback: CallbackQuery, state: FSMContext):
     try:
         username = callback.data.split(":")[1]
