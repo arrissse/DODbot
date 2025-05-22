@@ -1,0 +1,17 @@
+aiogram
+aiosqlite
+asyncio
+defusedxml
+flask
+pytest
+pytest_asyncio
+python-docx
+python-dotenv
+openpyxl
+requests
+pytest-cov
+pytest
+coverage
+requests
+requests-mock
+

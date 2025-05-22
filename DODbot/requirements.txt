@@ -1,5 +1,0 @@
-telebot
-openpyxl
-pyTelegramBotAPI
-requests
-flask
